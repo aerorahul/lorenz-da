@@ -35,7 +35,7 @@ from   plot_stats import plot_trace, plot_abs_error, plot_abs_error_var
 global Ndof, par, lab
 global Q, H, R
 global nassim, ntimes, dt
-global update, Nens, inflation, infl_fac
+global Eupdate, Nens, infl, infl_fac
 global use_climo
 
 # settings for Lorenz 63
@@ -51,9 +51,9 @@ nassim    = 160                 # no. of assimilation cycles
 ntimes    = 0.25                # do assimilation every ntimes non-dimensional time units
 dt        = 0.01                # time-step
 
-update    = 3                   # DA method (1= Perturbed Obs; 2= Potter; 3= EnKF; 4= EAKF; 5= ETKF)
+Eupdate   = 3                   # DA method (1= Perturbed Obs; 2= Potter; 3= EnKF; 4= EAKF; 5= ETKF)
 Nens      = 50                  # number of ensemble members
-inflation = 1                   # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
+infl      = 1                   # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
                                 # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
 infl_fac  = 1.01                # Depends on inflation method (see values in [] above)
 
@@ -136,8 +136,8 @@ def main():
         if ( use_climo ):
             B = Bc.copy()
         else:
-#            if ( inflation ): # square-root filter
-#                Xbp = inflation * Xbp
+#            if ( infl ): # square-root filter
+#                Xbp = infl_fac * Xbp
 #                # additive zero-mean white model error
 #                Xbp = Xbp + np.dot(Q,np.random.randn(Ndof,Nens))
 #            B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1) + Q
@@ -178,18 +178,18 @@ def update_ensDA(xbm, Xbp, Xb, B, y, R, H):
 
     Nobs = np.shape(y)[0]
 
-    if ( update == 1 ):   # update using perturbed observations
+    if ( Eupdate == 1 ):   # update using perturbed observations
         Xa  = PerturbedObs(Xb, B, y, H, R)
         xam = np.mean(Xa,axis=1)
         [tmp, Xam] = np.meshgrid(np.ones(Nens),xam)
         Xap = Xa - Xam
 
-    elif ( update == 2 ): # update using the Potter algorithm
+    elif ( Eupdate == 2 ): # update using the Potter algorithm
         [xam, Xap] = Potter(xbm, Xbp, y, H, R)
         [tmp, Xam] = np.meshgrid(np.ones(Nens),xam)
         Xa = Xam + Xap
 
-    elif ( update == 3 ): # update using the EnKF algorithm
+    elif ( Eupdate == 3 ): # update using the EnKF algorithm
         loc = np.ones((Nobs,Ndof)) # this does no localization
         [xam, Xap] = EnKF(xbm, Xbp, y, H, R, loc)
         [tmp, Xam] = np.meshgrid(np.ones(Nens),xam)
@@ -200,24 +200,24 @@ def update_ensDA(xbm, Xbp, Xb, B, y, R, H):
         sys.exit(2)
 
     # Must inflate if using EnKF flavors
-    if ( update > 1 ):
+    if ( Eupdate > 1 ):
 
-        if   ( inflation == 1 ): # multiplicative inflation
+        if   ( infl == 1 ): # multiplicative inflation
             Xap = infl_fac * Xap
 
-        elif ( inflation == 2 ): # additive zero-mean white model error
+        elif ( infl == 2 ): # additive zero-mean white model error
             Xap = Xap + infl_fac * np.random.randn(Ndof,Nens)
 
-        elif ( inflation == 3 ): # covariance relaxation (Zhang, Snyder)
+        elif ( infl == 3 ): # covariance relaxation (Zhang, Snyder)
             Xap = Xbp * infl_fac + Xap * (1 - infl_fac)
 
-        elif ( inflation == 4 ): # posterior spread restoration (Whitaker & Hammill)
+        elif ( infl == 4 ): # posterior spread restoration (Whitaker & Hammill)
             xbs = np.std(Xb,axis=1)
             xas = np.std(Xa,axis=1)
             for dof in np.arange(0,Ndof):
                 Xap[dof,:] =  np.sqrt((infl_fac * (xbs[dof] - xas[dof])/xas[dof]) + 1) * Xap[dof,:]
 
-        elif ( inflation == 5 ): # adaptive (Anderson)
+        elif ( infl == 5 ): # adaptive (Anderson)
             print 'adaptive inflation is not implemented yet'
             sys.exit(2)
 

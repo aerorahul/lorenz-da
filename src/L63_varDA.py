@@ -34,7 +34,7 @@ from plot_stats import plot_trace, plot_abs_error
 global Ndof, par, lab
 global A, Q, H, R
 global nassim, ntimes, dt
-global update, maxiter, alpha, cg
+global Vupdate, maxiter, alpha, cg
 
 # settings for Lorenz 63
 Ndof = 3
@@ -50,7 +50,7 @@ nassim = 160                 # no. of assimilation cycles
 ntimes = 0.25                # do assimilation every ntimes non-dimensional time units
 dt     = 0.01                # time-step
 
-update  = 1                  # DA method (1= 3Dvar; 2= 4Dvar)
+Vupdate = 1                  # DA method (1= 3Dvar; 2= 4Dvar)
 maxiter = 100                # maximum iterations
 alpha   = 4e-3               # size of step in direction of normalized J
 cg      = True               # True = Use conjugate gradient; False = Perform line search
@@ -144,10 +144,10 @@ def main():
 
 ###############################################################
 def update_varDA(xb, B, y, R, H):
-    if ( update == 1 ):
+    if ( Vupdate == 1 ):
         [xa, A] = ThreeDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=True)
 
-    elif ( update == 2 ):
+    elif ( Vupdate == 2 ):
         [xa, A] = FourDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=True)
 
     else:

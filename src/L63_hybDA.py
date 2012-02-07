@@ -199,22 +199,20 @@ def main():
 ###############################################################
 def update_ensDA(xbm, Xbp, Xb, B, y, R, H):
 
-    update = Eupdate
-
     Nobs = np.shape(y)[0]
 
-    if ( update == 1 ):   # update using perturbed observations
+    if ( Eupdate == 1 ):   # update using perturbed observations
         Xa  = PerturbedObs(Xb, B, y, H, R)
         xam = np.mean(Xa,axis=1)
         [tmp, Xam] = np.meshgrid(np.ones(Nens),xam)
         Xap = Xa - Xam
 
-    elif ( update == 2 ): # update using the Potter algorithm
+    elif ( Eupdate == 2 ): # update using the Potter algorithm
         [xam, Xap] = Potter(xbm, Xbp, y, H, R)
         [tmp, Xam] = np.meshgrid(np.ones(Nens),xam)
         Xa = Xam + Xap
 
-    elif ( update == 3 ): # update using the EnKF algorithm
+    elif ( Eupdate == 3 ): # update using the EnKF algorithm
         loc = np.ones((Nobs,Ndof)) # this does no localization
         [xam, Xap] = EnKF(xbm, Xbp, y, H, R, loc)
         [tmp, Xam] = np.meshgrid(np.ones(Nens),xam)
@@ -225,7 +223,7 @@ def update_ensDA(xbm, Xbp, Xb, B, y, R, H):
         sys.exit(2)
 
     # Must inflate if using EnKF flavors
-    if ( update > 1 ):
+    if ( Eupdate > 1 ):
 
         if   ( infl == 1 ): # multiplicative inflation
             Xap = infl_fac * Xap
@@ -264,12 +262,10 @@ def update_ensDA(xbm, Xbp, Xb, B, y, R, H):
 ###############################################################
 def update_varDA(xb, B, y, R, H):
 
-    update = Vupdate
-
-    if ( update == 1 ):
+    if ( Vupdate == 1 ):
         [xa, A] = ThreeDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=True)
 
-    elif ( update == 2 ):
+    elif ( Vupdate == 2 ):
         [xa, A] = FourDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=True)
 
     else:

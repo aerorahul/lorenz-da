@@ -10,8 +10,6 @@
 
 ###############################################################
 # L63_ensDA.py - cycle Ensemble DA on the 1963 Lorenz attractor
-#
-# created : Oct 2011 : Rahul Mahajan : GMAO / GSFC / NASA
 ###############################################################
 
 ###############################################################
@@ -35,7 +33,7 @@ from   plot_stats import plot_trace, plot_abs_error, plot_abs_error_var
 
 ###############################################################
 global Ndof, par, lab
-global q, H, R
+global Q, H, R
 global nassim, ntimes, dt
 global update, Nens, inflation, infl_fac
 global use_climo
@@ -45,11 +43,11 @@ Ndof = 3
 par  = np.array([10.0, 28.0, 8.0/3.0])
 lab  = ['x', 'y', 'z']
 
-q         = 0.001               # model error variance (covariance model is white for now)
+Q         = np.eye(Ndof)*1e-3   # model error variance (covariance model is white for now)
 H         = np.eye(Ndof)        # obs operator ( eye(3) gives identity obs )
 R         = np.eye(Ndof)*1e-2   # observation error covariance
 
-nassim    = 10                 # no. of assimilation cycles
+nassim    = 160                 # no. of assimilation cycles
 ntimes    = 0.25                # do assimilation every ntimes non-dimensional time units
 dt        = 0.01                # time-step
 
@@ -141,8 +139,8 @@ def main():
 #            if ( inflation ): # square-root filter
 #                Xbp = inflation * Xbp
 #                # additive zero-mean white model error
-#                Xbp = Xbp + q*np.random.randn(Ndof,Nens)
-#            B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1) + q*np.eye(Ndof)
+#                Xbp = Xbp + np.dot(Q,np.random.randn(Ndof,Nens))
+#            B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1) + Q
             B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1)
 
         # update step

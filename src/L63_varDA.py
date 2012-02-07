@@ -9,9 +9,7 @@
 ###############################################################
 
 ###############################################################
-# L63_3Dvar.py - cycle 3DVAR on the 1963 Lorenz attractor
-#
-# created : Oct 2011 : Rahul Mahajan : GMAO / GSFC / NASA
+# L63_varDA.py - cycle variational DA on the 1963 Lorenz attractor
 ###############################################################
 
 ###############################################################
@@ -36,7 +34,7 @@ from plot_stats import plot_trace, plot_abs_error
 global Ndof, par, lab
 global A, Q, H, R
 global nassim, ntimes, dt
-global maxiter, alpha, cg
+global update, maxiter, alpha, cg
 
 # settings for Lorenz 63
 Ndof = 3
@@ -44,7 +42,7 @@ par  = np.array([10.0, 28.0, 8.0/3.0])
 lab  = ['x', 'y', 'z']
 
 A      = np.eye(Ndof)        # initial analysis error covariance
-Q      = np.eye(Ndof)*0      # model error covariance
+Q      = np.eye(Ndof)*1e-3   # model error covariance ( covariance model is white for now)
 H      = np.eye(Ndof)        # obs operator ( eye(Ndof) gives identity obs )
 R      = np.eye(Ndof)*1e-2   # observation error covariance
 
@@ -148,8 +146,10 @@ def main():
 def update_varDA(xb, B, y, R, H):
     if ( update == 1 ):
         [xa, A] = ThreeDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=True)
+
     elif ( update == 2 ):
-        [xa, A] = FourDvar(xb, B, y, R, H)
+        [xa, A] = FourDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=True)
+
     else:
         print 'invalid update algorithm ...'
         sys.exit(2)

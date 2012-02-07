@@ -27,15 +27,15 @@ def EnKF(xbm, Xbp, Y, H, R, loc):
     update an ensemble using the EnKF algorithm
     '''
 
-    Ndof = np.shape(Xbp)[0] # number of degrees of freedom in state vector
-    Nens = np.shape(Xbp)[1] # number of ensemble members
-    Nobs = np.shape(Y)[0]   # number of observations
+    N = np.shape(Xbp)[0] # number of degrees of freedom in state vector
+    M = np.shape(Xbp)[1] # number of ensemble members
+    P = np.shape(Y)[0]   # number of observations
 
     # full vector of model estimated observations and mean
-    Ye  = np.dot(H, np.transpose(np.tile(xbm,(Nens,1))) + Xbp)
+    Ye  = np.dot(H, np.transpose(np.tile(xbm,(M,1))) + Xbp)
     mye = np.mean(Ye,axis=1)
 
-    for ob in range(0,Nobs):
+    for ob in range(0,P):
 
         # vector of model estimated obs with mean removed
         ye = Ye[ob,:] - mye[ob]
@@ -47,7 +47,7 @@ def EnKF(xbm, Xbp, Y, H, R, loc):
         innov_var = varye + obs_err
 
         # B H^T ~ X (H X)^T ~ cov(x,ye)
-        kcov = np.dot(Xbp,np.transpose(ye)) / (Nens - 1)
+        kcov = np.dot(Xbp,np.transpose(ye)) / (M - 1)
 
         # localize the gain
         kcov = kcov * np.transpose(loc[ob,:])
@@ -72,14 +72,14 @@ def PerturbedObs(Xb, B, Y, H, R):
     update an ensemble by perturbed observations
     '''
 
-    Ndof = np.shape(Xb)[0] # number of degrees of freedom in state vector
-    Nens = np.shape(Xb)[1] # number of ensemble members
+    N = np.shape(Xb)[0] # number of degrees of freedom in state vector
+    M = np.shape(Xb)[1] # number of ensemble members
 
     Xa = Xb.copy() # initialize Xa
 
-    for n in range(0,Nens):
+    for n in range(0,M):
         xb = Xb[:,n].copy()
-        Yp = Y + np.diag(np.diag(np.random.randn(Ndof))*np.sqrt(R))
+        Yp = Y + np.diag(np.diag(np.random.randn(N))*np.sqrt(R))
         K  = np.dot(B,np.linalg.inv(B + R))
         Xa[:,n] = Xb[:,n] + np.dot(K, (Yp - Xb[:,n]))
 
@@ -92,17 +92,17 @@ def Potter(xbm, Xbp, Y, H, R):
     update an ensemble using the Potter algorithm
     '''
 
-    Ndof = np.shape(Xbp)[0] # number of degrees of freedom in state vector
-    Nens = np.shape(Xbp)[1] # number of ensemble members
-    Nobs = np.shape(Y)[0]   # number of observations
+    N = np.shape(Xbp)[0] # number of degrees of freedom in state vector
+    M = np.shape(Xbp)[1] # number of ensemble members
+    P = np.shape(Y)[0]   # number of observations
 
-    for ob in range(0,Nobs):
-        F     = np.dot(H[ob,:],Xbp)                       # (1 x M) model estimate (y_e)
+    for ob in range(0,P):
+        F     = np.dot(H[ob,:],Xbp)                          # (1 x M) model estimate (y_e)
         alpha = 1/(np.dot(F,np.transpose(F)) + R[ob,ob])     # (scalar) innovation variance (HBH^T + R)
-        gamma = 1/(1 + np.sqrt(alpha*R[ob,ob]))           # (scalar) beta for reduced Kalman gain
+        gamma = 1/(1 + np.sqrt(alpha*R[ob,ob]))              # (scalar) beta for reduced Kalman gain
         K     = alpha*np.dot(Xbp,np.transpose(F))            # Kalman gain (N x 1)
         xam = xbm + np.dot(K, (Y[ob] - np.dot(H[ob,:],xbm))) # update mean
-        Xap = Xbp - gamma*np.outer(K,F)                   # update perturbations
+        Xap = Xbp - gamma*np.outer(K,F)                      # update perturbations
 
     return xam, Xap
 # }}}

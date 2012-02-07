@@ -19,6 +19,7 @@ __license__   = "GPL"
 __status__    = "Prototype"
 
 import numpy as np
+from matplotlib import pyplot
 
 def L63(x0, t, par, dummy):
 # {{{
@@ -80,4 +81,42 @@ def L63_tlm(x0, t, par, xsave, tsave, adjoint):
         xs = np.dot(M,x0)
 
     return xs
+# }}}
+
+def plot_L63(attractor,xdim=0,ydim=2,segment=None):
+# {{{
+    '''
+    Plot the Lorenz 1963 attractor in 2D
+    attractor - x,y,z from t = 0,T
+         xdim - variable along x-axis (X)
+         ydim - variable along y-axis (Z)
+      segment - overlay segment on attractor (None)
+    '''
+
+    if ( xdim == ydim ):
+        xdim = 0
+        ydim = 2
+
+    if ( xdim < 0  or xdim > 2 ) : xdim = 0
+    if ( ydim < 0  or ydim > 2 ) : ydim = 2
+
+    if   ( xdim == 0 ): xlab = 'X'
+    elif ( xdim == 1 ): xlab = 'Y'
+    elif ( xdim == 2 ): xlab = 'Z'
+
+    if   ( ydim == 0 ): ylab = 'X'
+    elif ( ydim == 1 ): ylab = 'Y'
+    elif ( ydim == 2 ): ylab = 'Z'
+
+    fig = pyplot.figure()
+    pyplot.clf()
+    pyplot.hold(True)
+    pyplot.plot(attractor[:,xdim],attractor[:,ydim],color='gray',linewidth=1)
+    pyplot.xlabel(xlab,fontweight='bold',fontsize=12)
+    pyplot.ylabel(ylab,fontweight='bold',fontsize=12)
+    pyplot.title('Lorenz attractor',fontweight='bold',fontsize=14)
+    if ( segment != None ):
+        pyplot.plot(segment[:,0],segment[:,2],'ro',linewidth=2)
+    pyplot.hold(False)
+    return
 # }}}

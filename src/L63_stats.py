@@ -9,10 +9,8 @@
 ###############################################################
 
 ###############################################################
-# L63_stats.py - compute covariance matrix for the 1963 Lorenz
-#                attractor
-#
-# created : Oct 2011 : Rahul Mahajan : GMAO / GSFC / NASA
+# L63_stats.py - compute climatological covariance matrix for
+#                the 1963 Lorenz attractor
 ###############################################################
 
 __author__    = "Rahul Mahajan"
@@ -23,7 +21,7 @@ __status__    = "Prototype"
 
 import os
 import numpy      as     np
-from   lorenz     import L63
+from   lorenz     import L63, plot_L63
 from   netCDF4    import Dataset
 from   scipy      import integrate, io
 from   matplotlib import pyplot
@@ -46,7 +44,7 @@ print 'running ON the attractor ...'
 ts = np.arange(0.0,1000.0,dt)
 xs = integrate.odeint(L63, xt, ts, (par,0.0))
 
-X = xs
+X = xs.copy()
 nsamp = np.shape(X)[0]
 print 'number of samples : %d' % nsamp
 
@@ -73,11 +71,7 @@ Var      = nc.createVariable('B', 'f8', ('xyz','xyz',))
 Var[:,:] = B
 nc.close()
 
-fig = pyplot.figure()
-pyplot.clf()
-pyplot.plot(xs[:,0], xs[:,2], color='gray', linewidth=1)
-pyplot.xlabel('X',fontweight='bold',fontsize=12)
-pyplot.ylabel('Z',fontweight='bold',fontsize=12)
-pyplot.plot(xs[50:155,0], xs[50:155,2], 'go-', linewidth=1)
-pyplot.title('Lorenz attractor',fontweight='bold',fontsize=14)
+# plot the attractor
+plot_L63(xs, segment = xs[50:155,:])
+
 pyplot.show()

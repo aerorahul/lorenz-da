@@ -43,16 +43,16 @@ Ndof = 3
 par  = np.array([10.0, 28.0, 8.0/3.0])
 lab  = ['x', 'y', 'z']
 
-Q         = np.eye(Ndof)*1e-3   # model error variance (covariance model is white for now)
-H         = np.eye(Ndof)        # obs operator ( eye(3) gives identity obs )
-R         = np.eye(Ndof)*1e-2   # observation error covariance
+Q = np.eye(Ndof)*1.0            # model error variance (covariance model is white for now)
+H = np.eye(Ndof)                # obs operator ( eye(3) gives identity obs )
+R = np.eye(Ndof)*2.0            # observation error covariance
 
 nassim    = 160                 # no. of assimilation cycles
 ntimes    = 0.25                # do assimilation every ntimes non-dimensional time units
 dt        = 0.01                # time-step
 
-Eupdate   = 3                   # DA method (1= Perturbed Obs; 2= Potter; 3= EnKF; 4= EAKF; 5= ETKF)
-Nens      = 50                  # number of ensemble members
+Eupdate   = 3                   # DA method (1= Perturbed Obs; 2= Potter; 3= EnKF)
+Nens      = 100                 # number of ensemble members
 infl      = 1                   # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
                                 # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
 infl_fac  = 1.01                # Depends on inflation method (see values in [] above)
@@ -75,13 +75,22 @@ def main():
     # IC for truth taken from last time:
     xt = xs[-1,:].copy()
 
+    # initial conditions from Miller et al., 1994
+    xs = np.array([1.508870, -1.531271, 25.46091])
+    xt = np.array([1.508870, -1.531271, 25.46091])
+
+    # model error covariance matrix from Evensen 1997
+    Q = np.array([[0.1491, 0.1505, 0.0007],
+                  [0.1505, 0.9048, 0.0014],
+                  [0.0007, 0.0014, 0.9180]])
+
     # Make a copy of truth for plotting later
     truth = xt.copy()
     truth = xs.copy()
 
     # populate initial ensemble analysis by perturbing true state
     [tmp, Xa] = np.meshgrid(np.ones(Nens),xt)
-    pert = 1e-1 * np.random.randn(Ndof,Nens)
+    pert = np.random.randn(Ndof,Nens) * np.sqrt(2.0)
     Xa = Xa + pert
     Xb = Xa.copy()
 
@@ -96,16 +105,16 @@ def main():
     print 'Cycling ON the attractor ...'
 
     # initialize arrays for statistics before cycling
-    xbe  = np.zeros((Ndof,nassim))
-    xae  = np.zeros((Ndof,nassim))
-    xye  = np.zeros((Ndof,nassim))
-    xbev = np.zeros((Ndof,nassim))
-    xaev = np.zeros((Ndof,nassim))
+    xbe  = np.zeros((Ndof,nassim)) * np.NaN
+    xae  = np.zeros((Ndof,nassim)) * np.NaN
+    xye  = np.zeros((Ndof,nassim)) * np.NaN
+    xbev = np.zeros((Ndof,nassim)) * np.NaN
+    xaev = np.zeros((Ndof,nassim)) * np.NaN
 
-    hist_ver = np.zeros((Ndof,nassim))
-    hist_obs = np.zeros((Ndof,nassim))
-    hist_xbm = np.zeros((Ndof,nassim))
-    hist_xam = np.zeros((Ndof,nassim))
+    hist_ver = np.zeros((Ndof,nassim)) * np.NaN
+    hist_obs = np.zeros((Ndof,nassim)) * np.NaN
+    hist_xbm = np.zeros((Ndof,nassim)) * np.NaN
+    hist_xam = np.zeros((Ndof,nassim)) * np.NaN
 
     ts = np.arange(0,ntimes,dt)     # time between assimilations
 
@@ -119,7 +128,7 @@ def main():
         xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values
-        y   = np.dot(H,xt) + np.diag(np.diag(np.random.randn(Ndof))*np.sqrt(R))
+        y   = np.dot(H,xt) + np.random.randn(Ndof) * np.sqrt(np.diag(R))
         ver = xt.copy()
 
         # advance background ensemble with the full nonlinear model
@@ -136,12 +145,7 @@ def main():
         if ( use_climo ):
             B = Bc.copy()
         else:
-#            if ( infl ): # square-root filter
-#                Xbp = infl_fac * Xbp
-#                # additive zero-mean white model error
-#                Xbp = Xbp + np.dot(Q,np.random.randn(Ndof,Nens))
-#            B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1) + Q
-            B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1)
+            B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1) + Q
 
         # update step
         [xam, Xap, Xa, A] = update_ensDA(xbm, Xbp, Xb, B, y, R, H)
@@ -160,15 +164,16 @@ def main():
         hist_xam[:,k] = xam
 
         # check for filter divergence
-        if ( np.abs(xae[1,k]) > 10 and np.abs(xae[2,k]) > 10 ):
+        if ( np.abs(xae[0,k]) > 10 and np.abs(xae[1,k]) > 10 ):
             print 'filter divergence'
-            sys.exit(2)
+            #break
 
     # make some plots
     plot_L63(truth,segment=xs)
-    plot_trace(hist_obs, hist_ver, hist_xbm, hist_xam, label=lab, N=Ndof)
+    plot_trace(obs=hist_obs, ver=hist_ver, xb=hist_xbm, xa=hist_xam, label=lab, N=Ndof)
     plot_abs_error(xbe,xae,label=lab,N=Ndof)
     plot_abs_error_var(xbev,xaev,label=lab,N=Ndof)
+    plot_trace(obs=hist_obs, ver=hist_ver, label=lab, N=Ndof)
 
     pyplot.show()
 ###############################################################

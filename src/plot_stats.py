@@ -22,17 +22,18 @@ import numpy      as     np
 from   matplotlib import pyplot
 
 ###############################################################
-def plot_trace(obs, ver, xb, xa, label=['x'], N=1):
+def plot_trace(obs=None, ver=None, xb=None, xa=None, label=['x'], N=1):
     fig = pyplot.figure()
     pyplot.clf()
     for k in range(0,N):
         pyplot.subplot(N,1,k+1)
         pyplot.hold(True)
-        pyplot.plot(obs[k,:],'ro',label='observation')
-        pyplot.plot(ver[k,:],'k-',label='truth')
-        pyplot.plot(xb[k,:], 'c-',label='background')
-        pyplot.plot(xa[k,:], 'b-',label='analysis')
+        if ( obs != None ): pyplot.plot(obs[k,:],'ro',label='observation')
+        if ( ver != None ): pyplot.plot(ver[k,:],'k-',label='truth')
+        if ( xb  != None ): pyplot.plot(xb[k,:], 'c-',label='background')
+        if ( xa  != None ): pyplot.plot(xa[k,:], 'b-',label='analysis')
         pyplot.ylabel(label[k],fontweight='bold',fontsize=12)
+        if ( (k == 0) or (k == 1) ): pyplot.plot(np.zeros(len(ver[k,:])),'k:')
         pyplot.hold(False)
         if ( k == 0 ):
             pyplot.title('Time trace',fontweight='bold',fontsize=14)
@@ -79,7 +80,6 @@ def plot_abs_error(xbe, xae, label=['x'], N=1, yscale='semilog'):
             pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
     return
 ###############################################################
-
 
 ###############################################################
 def plot_abs_error_var(xbev, xaev, label=['x'], N=1, yscale='semilog'):

@@ -20,7 +20,7 @@ __status__    = "Prototype"
 
 import numpy as np
 
-def ThreeDvar(xb, B, y, R, H, maxiter=100, alpha=4e-3, cg=True):
+def ThreeDvar(xb, B, y, R, H, maxiter=1000, alpha=4e-3, cg=True):
 # {{{
     '''
     ThreeDvar(xb, B, y, R, H, maxiter=100, alpha=4e-3, cg=True)
@@ -42,16 +42,16 @@ def ThreeDvar(xb, B, y, R, H, maxiter=100, alpha=4e-3, cg=True):
 
         Jold = J
 
-        # cost function
-        Jb = 2 * np.dot(np.transpose((x - xb)), np.dot(Binv,(x-xb)))
-        Jo = 2 * np.dot(np.transpose((y - np.dot(H,x))), np.dot(np.linalg.inv(R),(y - np.dot(H,x))))
+        # cost function : 2J(x) = Jb + Jo | Jb = [x-xb]^T B^(-1) [x-xb] | Jo = [y-Hx]^T R^(-1) [y-Hx]
+        Jb = 0.5 * np.dot(np.transpose((x - xb)), np.dot(Binv,(x-xb)))
+        Jo = 0.5 * np.dot(np.transpose((y - np.dot(H,x))), np.dot(np.linalg.inv(R),(y - np.dot(H,x))))
         J = Jb + Jo
 
         if ( niters == 0 ): print "initial cost = %10.5f" % J
         print "cost = %10.5f" % J
 
-        # cost function gradient
-        gJ = 2 * np.dot(Binv,(x - xb)) - 2 * np.dot(np.linalg.inv(R),(y-np.dot(H,x)))
+        # cost function gradient : dJ/dx
+        gJ = np.dot(Binv,(x - xb)) - np.dot(np.linalg.inv(R),(y-np.dot(H,x)))
 
         if ( cg ):
             if ( niters == 0 ):
@@ -77,10 +77,10 @@ def ThreeDvar(xb, B, y, R, H, maxiter=100, alpha=4e-3, cg=True):
     # analysis error covariance from Hessian
     A = np.linalg.inv( Binv + np.linalg.inv(R) )
 
-    return xa, A
+    return xa, A, niters
 # }}}
 
-def FourDvar(xb, B, y, R, H, maxiter=100, alpha=4e-3, cg=True):
+def FourDvar(xb, B, y, R, H, maxiter=1000, alpha=4e-3, cg=True):
 # {{{
     '''
     FourDvar(xb, B, y, R, H, maxiter=100, alpha=4e-3, cg=True)
@@ -89,7 +89,7 @@ def FourDvar(xb, B, y, R, H, maxiter=100, alpha=4e-3, cg=True):
     currently calls 3Dvar update
     '''
 
-    [xa, A] = ThreeDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=cg)
+    [xa, A, niters] = ThreeDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=cg)
 
-    return xa, A
+    return xa, A, niters
 # }}}

@@ -31,7 +31,7 @@ def L63(x0, t, par, dummy):
 
        xs - final state at time t = T
        x0 - initial state at time t = 0
-        t - vector of time from t = 0 to t = T
+        t - vector of time from t = [0, T]
       par - parameters of the Lorenz system
     dummy - Arguments coming in after x0, t MUST be a tuple (,) for scipy.integrate.odeint to work
     '''
@@ -52,13 +52,13 @@ def L63_tlm(x0, t, par, xsave, tsave, adjoint):
 # {{{
     '''
     L63_tlm - function that integrates the Lorenz 1963 equations forward or backward using a TLM and
-    its adjoint, given parameters 'par' and initial conditions 'x0'
+    its adjoint, given parameters 'par' and initial perturbations 'x0'
 
     xs = L63_tlm(x0, t, (par, xsave, tsave, adjoint))
 
-         xs - final state at time t = T
-         x0 - initial state at time t = 0
-          t - vector of time from t = 0 to t = T
+         xs - evolved perturbations at time t = T
+         x0 - initial perturbations at time t = 0
+          t - vector of time from t = [0, T]
         par - parameters of the Lorenz system
       xsave - states along the control trajectory for the TLM / Adjoint
       tsave - time vector along the control trajectory for the TLM / Adjoint
@@ -87,7 +87,10 @@ def plot_L63(attractor,xdim=0,ydim=2,segment=None):
 # {{{
     '''
     Plot the Lorenz 1963 attractor in 2D
-    attractor - x,y,z from t = 0,T
+
+    plot_L63(attractor, xdim=0, ydim=2, segment=None)
+
+    attractor - x,y,z from t = [0, T]
          xdim - variable along x-axis (X)
          ydim - variable along y-axis (Z)
       segment - overlay segment on attractor (None)

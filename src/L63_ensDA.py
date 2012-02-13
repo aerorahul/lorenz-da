@@ -69,7 +69,7 @@ def main():
     # get a state on the attractor
     print 'running onto the attractor ...'
     x0 = np.array([10.0, 20.0, 30.0]) # initial conditions
-    ts = np.arange(0.0,100.0,2*dt)    # how long to run on the attractor
+    ts = np.arange(0.0,100.0+2*dt,2*dt)    # how long to run on the attractor
     xs = integrate.odeint(L63, x0, ts, (par,0.0))
 
     # IC for truth taken from last time:
@@ -116,7 +116,9 @@ def main():
     hist_xbm = np.zeros((Ndof,nassim)) * np.NaN
     hist_xam = np.zeros((Ndof,nassim)) * np.NaN
 
-    ts = np.arange(0,ntimes,dt)     # time between assimilations
+    ts = np.arange(0.0,ntimes+dt,dt)     # time between assimilations
+
+    hist_obs_truth = np.zeros((Ndof,(nassim+1)*(len(ts)-1)+1)) * np.NaN
 
     for k in range(0, nassim):
 
@@ -142,6 +144,7 @@ def main():
         [tmp, Xbm] = np.meshgrid(np.ones(Nens),xbm)
         Xbp = Xb - Xbm
 
+        # compute background error covariance; optionally, add model error covariance
         if ( use_climo ):
             B = Bc.copy()
         else:
@@ -162,10 +165,11 @@ def main():
         hist_obs[:,k] = y
         hist_xbm[:,k] = xbm
         hist_xam[:,k] = xam
+        hist_obs_truth[:,(k+1)*(len(ts)-1)+1] = y
 
         # check for filter divergence
         if ( np.abs(xae[0,k]) > 10 and np.abs(xae[1,k]) > 10 ):
-            print 'filter divergence'
+            print 'filter divergence at k = %d' % (k
             #break
 
     # make some plots
@@ -173,7 +177,8 @@ def main():
     plot_trace(obs=hist_obs, ver=hist_ver, xb=hist_xbm, xa=hist_xam, label=lab, N=Ndof)
     plot_abs_error(xbe,xae,label=lab,N=Ndof)
     plot_abs_error_var(xbev,xaev,label=lab,N=Ndof)
-    plot_trace(obs=hist_obs, ver=hist_ver, label=lab, N=Ndof)
+    plot_trace(obs=hist_obs_truth, ver=np.transpose(truth), label=lab, N=Ndof)
+    print truth
 
     pyplot.show()
 ###############################################################

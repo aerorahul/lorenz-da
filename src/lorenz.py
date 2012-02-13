@@ -32,7 +32,7 @@ def L63(x0, t, par, dummy):
        xs - final state at time t = T
        x0 - initial state at time t = 0
         t - vector of time from t = [0, T]
-      par - parameters of the Lorenz system
+      par - parameters of the Lorenz 1963 system
     dummy - Arguments coming in after x0, t MUST be a tuple (,) for scipy.integrate.odeint to work
     '''
 
@@ -59,7 +59,7 @@ def L63_tlm(x0, t, par, xsave, tsave, adjoint):
          xs - evolved perturbations at time t = T
          x0 - initial perturbations at time t = 0
           t - vector of time from t = [0, T]
-        par - parameters of the Lorenz system
+        par - parameters of the Lorenz 1963 system
       xsave - states along the control trajectory for the TLM / Adjoint
       tsave - time vector along the control trajectory for the TLM / Adjoint
     adjoint - Forward TLM (False) or Adjoint (True)
@@ -74,6 +74,83 @@ def L63_tlm(x0, t, par, xsave, tsave, adjoint):
     M = np.array([[-s,   s,  0],
                   [r-z, -1, -x],
                   [y,    x, -b]])
+
+    if ( adjoint ):
+        xs = np.dot(np.transpose(M),x0)
+    else:
+        xs = np.dot(M,x0)
+
+    return xs
+# }}}
+
+def L96(x0, t, F, dummy):
+# {{{
+    '''
+    L96 - function that integrates the Lorenz and Emanuel 1998 equations, given forcing 'F' and initial
+    conditions 'x0'
+
+    xs = L96(x0, t, (F, dummy))
+
+       xs - final state at time t = T
+       x0 - initial state at time t = 0
+        t - vector of time from t = [0, T]
+        F - Forcing
+    dummy - Arguments coming in after x0, t MUST be a tuple (,) for scipy.integrate.odeint to work
+    '''
+
+    Ndof = len(x0)
+    xs = np.zeros(Ndof)
+
+    for j in range(0,Ndof):
+        jp1 = j + 1
+        if ( jp1 >= Ndof ): jp1 = jp1 - Ndof
+        jm2 = j - 2
+        if ( jm2 < 0 ): jm2 = Ndof + jm2
+        jm1 = j - 1
+        if ( jm1 < 0 ): jm1 = Ndof + jm1
+
+        xs[j] = ( x0[jp1] - x0[jm2] ) * x0[jm1] - x0[j] + F
+
+    return xs
+# }}}
+
+def L96_tlm(x0, t, F, xsave, tsave, adjoint):
+# {{{
+    '''
+    L96_tlm - function that integrates the Lorenz and Emanuel 1998 equations forward or backward
+    using a TLM and its adjoint, given Forcing 'F' and initial perturbations 'x0'
+
+    xs = L96_tlm(x0, t, (F, xsave, tsave, adjoint))
+
+         xs - evolved perturbations at time t = T
+         x0 - initial perturbations at time t = 0
+          t - vector of time from t = [0, T]
+          F - Forcing
+      xsave - states along the control trajectory for the TLM / Adjoint
+      tsave - time vector along the control trajectory for the TLM / Adjoint
+    adjoint - Forward TLM (False) or Adjoint (True)
+    '''
+
+    Ndof = len(x0)
+    x = np.zeros(Ndof)
+
+    for j in range(0,Ndof):
+        x[j] = np.interp(t,tsave,xsave[:,j])
+
+    M = np.zeros((Ndof,Ndof))
+
+    for j in range(0,Ndof):
+        jp1 = j + 1
+        if ( jp1 >= Ndof ): jp1 = jp1 - Ndof
+        jm2 = j - 2
+        if ( jm2 < 0 ): jm2 = Ndof + jm2
+        jm1 = j - 1
+        if ( jm1 < 0 ): jm1 = Ndof + jm1
+
+        M[j,jm2] = -x[jm1]
+        M[j,jm1] = x[jp1] - x[jm2]
+        M[j,j]   = -1
+        M[j,jp1] = x[jm1]
 
     if ( adjoint ):
         xs = np.dot(np.transpose(M),x0)

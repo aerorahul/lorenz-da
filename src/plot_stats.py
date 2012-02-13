@@ -33,7 +33,7 @@ def plot_trace(obs=None, ver=None, xb=None, xa=None, label=['x'], N=1):
         if ( xb  != None ): pyplot.plot(xb[k,:], 'c-',label='background')
         if ( xa  != None ): pyplot.plot(xa[k,:], 'b-',label='analysis')
         pyplot.ylabel(label[k],fontweight='bold',fontsize=12)
-        if ( (k == 0) or (k == 1) ): pyplot.plot(np.zeros(len(ver[k,:])),'k:')
+        if ( label[k] != 'z' ): pyplot.plot(np.zeros(len(ver[k,:])),'k:')
         pyplot.hold(False)
         if ( k == 0 ):
             pyplot.title('Time trace',fontweight='bold',fontsize=14)

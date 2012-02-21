@@ -82,6 +82,32 @@ def plot_abs_error(xbe, xae, label=['x'], N=1, yscale='semilog'):
 ###############################################################
 
 ###############################################################
+def plot_rmse(xbrmse, xarmse, xyrmse = None, yscale='semilog'):
+
+    if ( (yscale != 'linear') and (yscale != 'semilog') ): yscale = 'semilog'
+
+    fig = pyplot.figure()
+    pyplot.clf()
+    pyplot.hold(True)
+    if ( yscale == 'linear' ):
+        pyplot.plot(xbrmse,'b-',label='prior',    linewidth=2)
+        pyplot.plot(xarmse,'r-',label='posterior',linewidth=2)
+        if ( xyrmse != None ):
+            pyplot.plot(xyrmse,'k-',label='observation',linewidth=2)
+    elif ( yscale == 'semilog' ):
+        pyplot.semilogy(xbrmse,'b-',label='prior',    linewidth=2)
+        pyplot.semilogy(xarmse,'r-',label='posterior',linewidth=2)
+        if ( xyrmse != None ):
+            pyplot.semilogy(xyrmse,'k-',label='observation',linewidth=2)
+    pyplot.xlabel('Assimilation Cycle',fontweight='bold',fontsize=12)
+    pyplot.ylabel('RMSE',fontweight='bold',fontsize=12)
+    pyplot.title('Root Mean Squared Error',fontweight='bold',fontsize=14)
+    pyplot.legend(loc=0)
+    pyplot.hold(False)
+    return
+###############################################################
+
+###############################################################
 def plot_abs_error_var(xbev, xaev, label=['x'], N=1, yscale='semilog'):
 
     if ( (yscale != 'linear') and (yscale != 'semilog') ): yscale = 'semilog'

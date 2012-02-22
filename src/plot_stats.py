@@ -82,7 +82,7 @@ def plot_abs_error(xbe, xae, label=['x'], N=1, yscale='semilog'):
 ###############################################################
 
 ###############################################################
-def plot_rmse(xbrmse, xarmse, xyrmse = None, yscale='semilog'):
+def plot_rmse(xbrmse, xarmse, xyrmse=None, yscale='semilog'):
 
     if ( (yscale != 'linear') and (yscale != 'semilog') ): yscale = 'semilog'
 

@@ -48,7 +48,7 @@ def ThreeDvar(xb, B, y, R, H, maxiter=1000, alpha=4e-3, cg=True):
         J = Jb + Jo
 
         if ( niters == 0 ): print "initial cost = %10.5f" % J
-        print "cost = %10.5f" % J
+        #print "cost = %10.5f" % J
 
         # cost function gradient : dJ/dx
         gJ = np.dot(Binv,(x - xb)) - np.dot(np.linalg.inv(R),(y-np.dot(H,x)))
@@ -69,7 +69,7 @@ def ThreeDvar(xb, B, y, R, H, maxiter=1000, alpha=4e-3, cg=True):
 
         niters = niters + 1
 
-    print 'final cost = %10.5f after %d iterations' % (J, niters)
+    print 'final cost   = %10.5f after %d iterations' % (J, niters)
 
     # 3DVAR estimate
     xa = x.copy()

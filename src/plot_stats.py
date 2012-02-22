@@ -144,3 +144,25 @@ def plot_abs_error_var(xbev, xaev, label=['x'], N=1, yscale='semilog'):
             pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
     return
 ###############################################################
+
+###############################################################
+def plot_iteration_stats(itstats, xlab='Assimilation Step',ylab='# Iterations'):
+    fig = pyplot.figure()
+    pyplot.clf()
+    pyplot.hold(True)
+    pyplot.plot(itstats,'k-',label='# iterations', linewidth=2)
+    yl = pyplot.get(pyplot.gca(),'ylim')
+    yoff = yl[0] + 0.25 * (yl[1] - yl[0])
+    str = 'min  iterations : %d' % (np.min(itstats))
+    pyplot.text(2,yoff,str,fontsize=10)
+    yoff = yoff - 1
+    str = 'mean iterations : %d' % (np.int(np.mean(itstats)))
+    pyplot.text(2,yoff,str,fontsize=10)
+    yoff = yoff - 1
+    str = 'max  iterations : %d' % (np.max(itstats))
+    pyplot.text(2,yoff,str,fontsize=10)
+    pyplot.xlabel(xlab,fontweight='bold',fontsize=12)
+    pyplot.ylabel(ylab,fontweight='bold',fontsize=12)
+    pyplot.hold(False)
+    return
+###############################################################

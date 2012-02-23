@@ -12,20 +12,79 @@
 # varDA.py - Functions related to variational data assimilation
 ###############################################################
 
+###############################################################
 __author__    = "Rahul Mahajan"
 __email__     = "rahul.mahajan@nasa.gov"
 __copyright__ = "Copyright 2012, NASA / GSFC / GMAO"
 __license__   = "GPL"
 __status__    = "Prototype"
+###############################################################
 
+###############################################################
+import sys
 import numpy as np
+###############################################################
 
-def ThreeDvar(xb, B, y, R, H, maxiter=1000, alpha=4e-3, cg=True):
+def update_varDA(xb, B, y, R, H, Vupdate=None, minimization=[None, None, None]):
 # {{{
     '''
-    ThreeDvar(xb, B, y, R, H, maxiter=100, alpha=4e-3, cg=True)
-    update using 3Dvar algorithm
+    Update the prior with a variational-based state estimation algorithm to produce a posterior
+
+    xa, A, niters = update_varDA(xb, B, y, R, H, Vupdate=1, minimization = [1000, 4e-3, True])
+
+          xb - prior
+           B - background error covariance
+           y - observations
+           R - observation error covariance
+           H - forward operator
+     Vupdate - variational data assimilation algorithm [1 = ThreeDvar]
+minimization - minimization parameters [maxiter=1000, alpha=4e-3, cg=True]
+          xa - posterior
+           A - analysis error covariance from Hessian
+      niters - number of iterations required for minimizing the cost function
     '''
+
+    # set defaults:
+    maxiter, alpha, cg = minimization
+    if ( Vupdate == None ): Vupdate = 1
+    if ( maxiter == None ): maxiter = 1000
+    if ( alpha   == None ): alpha   = 4e-3
+    if ( cg      == None ): cg      = True
+    minimization = [maxiter, alpha, cg]
+
+    if ( Vupdate == 1 ):
+        xa, A, niters = ThreeDvar(xb, B, y, R, H, minimization)
+
+    elif ( Vupdate == 2 ):
+        xa, A, niters = FourDvar(xb, B, y, R, H, minimization)
+
+    else:
+        print 'invalid update algorithm ...'
+        sys.exit(2)
+
+    return xa, A, niters
+# }}}
+
+def ThreeDvar(xb, B, y, R, H, minimization):
+# {{{
+    '''
+    Update the prior with 3Dvar algorithm to produce a posterior
+
+    xa, A, niters = ThreeDvar(xb, B, y, R, H, minimization)
+
+          xb - prior
+           B - background error covariance
+           y - observations
+           R - observation error covariance
+           H - forward operator
+minimization - minimization parameters [maxiter, alpha, cg]
+          xa - posterior
+           A - analysis error covariance from Hessian
+      niters - number of iterations required for minimizing the cost function
+    '''
+
+    # get minimization parameters
+    maxiter, alpha, cg = minimization
 
     # start with background
     x       = xb.copy()
@@ -80,16 +139,27 @@ def ThreeDvar(xb, B, y, R, H, maxiter=1000, alpha=4e-3, cg=True):
     return xa, A, niters
 # }}}
 
-def FourDvar(xb, B, y, R, H, maxiter=1000, alpha=4e-3, cg=True):
+def FourDvar(xb, B, y, R, H, minimization):
 # {{{
     '''
-    FourDvar(xb, B, y, R, H, maxiter=100, alpha=4e-3, cg=True)
-    update using 4Dvar algorithm
+    Update the prior with 4Dvar algorithm to produce a posterior
 
-    currently calls 3Dvar update
+    xa, A, niters = FourDvar(xb, B, y, R, H, minimization)
+
+          xb - prior
+           B - background error covariance
+           y - observations
+           R - observation error covariance
+           H - forward operator
+minimization - minimization parameters [maxiter, alpha, cg]
+          xa - posterior
+           A - analysis error covariance from Hessian
+      niters - number of iterations required for minimizing the cost function
+
+    currently calls the 3Dvar update
     '''
 
-    [xa, A, niters] = ThreeDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=cg)
+    xa, A, niters = ThreeDvar(xb, B, y, R, H, minimization)
 
     return xa, A, niters
 # }}}

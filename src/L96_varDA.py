@@ -34,7 +34,7 @@ from plot_stats import *
 global Ndof, F, dF, lab
 global A, Q, H, R
 global nassim, ntimes, dt, t0
-global Vupdate, maxiter, alpha, cg
+global Vupdate, minimization
 
 Ndof = 40
 F    = 8.0
@@ -56,6 +56,7 @@ Vupdate = 1                  # DA method (1= 3Dvar; 2= 4Dvar)
 maxiter = 1000               # maximum iterations
 alpha   = 4e-3               # size of step in direction of normalized J
 cg      = True               # True = Use conjugate gradient; False = Perform line search
+minimization = [maxiter, alpha, cg]
 ###############################################################
 
 ###############################################################
@@ -116,7 +117,7 @@ def main():
         xb = xs[-1,:].copy()
 
         # update step
-        xa, A, itstats[k] = update_varDA(xb, Bc, y, R, H)
+        xa, A, itstats[k] = update_varDA(xb, Bc, y, R, H, Vupdate=Vupdate, minimization=minimization)
 
         # error statistics
         xbrmse[k] = np.sqrt( np.sum( (ver - xb)**2 ) / Ndof )
@@ -132,7 +133,7 @@ def main():
         plot_L96(obs=y, ver=ver, xa=xa, xb=xb, t=k+1, N=Ndof, figNum=1)
         pyplot.pause(0.1)
 
-    print 'mean, max and min number of iterations : %5.3f %d %d' %(np.mean(itstats), np.max(itstats), np.min(itstats))
+    print 'mean, max and min number of iterations : %5.3f %d %d' %(np.int(np.mean(itstats)), np.max(itstats), np.min(itstats))
 
     # make some plots
     plot_trace(obs=hist_obs, ver=hist_ver, xb=hist_xb, xa=hist_xa,label=lab,N=5)
@@ -140,21 +141,6 @@ def main():
     plot_iteration_stats(itstats)
 
     pyplot.show()
-###############################################################
-
-###############################################################
-def update_varDA(xb, B, y, R, H):
-    if ( Vupdate == 1 ):
-        [xa, A, niters] = ThreeDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=cg)
-
-    elif ( Vupdate == 2 ):
-        [xa, A, niters] = FourDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=cg)
-
-    else:
-        print 'invalid update algorithm ...'
-        sys.exit(2)
-
-    return xa, A, niters
 ###############################################################
 
 ###############################################################

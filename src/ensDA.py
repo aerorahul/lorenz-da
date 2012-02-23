@@ -108,15 +108,130 @@ def Potter(xbm, Xbp, Y, H, R):
     return xam, Xap
 # }}}
 
+def update_ensDA(Xb, B, y, R, H, Eupdate=None, inflation=[None, None], localization=[None,
+        None]):
+# {{{
+    '''
+    Update the prior with an ensemble-based state estimation algorithm to produce a posterior
+
+    Xa, A, error_variance_ratio = update_ensDA(Xb, B, y, R, H, Eupdate=3, inflation=[1, 1.02], localization=[True, 1.0])
+
+          Xb - prior ensemble
+           B - background error covariance
+           y - observations
+           R - observation error covariance
+           H - forward operator
+     Eupdate - ensemble-based data assimilation algorithm [3 = EAKF]
+   inflation - inflation settings [method, factor = 1, 1.02]
+localization - localization settings [localize, cutoff = True, 1.0]
+          Xa - posterior ensemble
+           A - analysis error covariance
+     evratio - ratio of innovation variance to total variance
+    '''
+
+    # set defaults:
+    if ( Eupdate         == None ): Eupdate         = 2
+    if ( inflation[0]    == None ): inflation[0]    = 1
+    if ( inflation[1]    == None ): inflation[1]    = 1.02
+    if ( localization[0] == None ): localization[0] = True
+    if ( localization[1] == None ): localization[1] = 1.0
+
+    Nobs = np.shape(y)[0]
+    Ndof = np.shape(Xb)[0]
+    Nens = np.shape(Xb)[1]
+
+    innov  = np.zeros(Nobs) * np.NaN
+    totvar = np.zeros(Nobs) * np.NaN
+
+    temp_ens = Xb.copy()
+
+    for ob in range(0, Nobs):
+
+        ye = np.dot(H[ob,:],temp_ens)
+
+        if   ( Eupdate == 0 ): # no assimilation
+            obs_inc, innov[ob], totvar[ob] = np.zeros(Ndof), 0.0, 0.0
+
+        elif ( Eupdate == 1 ): # update using the EnKF
+            obs_inc, innov[ob], totvar[ob] = obs_increment_EnKF(y[ob], R[ob,ob], ye)
+
+        elif ( Eupdate == 2 ): # update using the EnSRF
+            obs_inc, innov[ob], totvar[ob] = obs_increment_EnSRF(y[ob], R[ob,ob], ye)
+
+        elif ( Eupdate == 3 ): # update using the EAKF
+            obs_inc, innov[ob], totvar[ob] = obs_increment_EAKF(y[ob], R[ob,ob], ye)
+
+        else:
+            print 'invalid update algorithm ...'
+            sys.exit(2)
+
+        for i in range(0,Ndof):
+            state_inc = state_increment(obs_inc, temp_ens[i,:], ye)
+
+            # localization
+            if ( localization[0] ):
+                dist = np.abs( ob - i ) / Ndof
+                if ( dist > 0.5 ): dist = 1.0 - dist
+                cov_factor = compute_cov_factor(dist, localization[1])
+            else:
+                cov_factor = 1.0
+
+            temp_ens[i,:] = temp_ens[i,:] + state_inc * cov_factor
+
+    Xa = temp_ens.copy()
+
+    # compute analysis mean and perturbations
+    xam = np.mean(Xa,axis=1)
+    Xap = np.transpose(np.transpose(Xa) - xam)
+
+    # inflation
+    if   ( inflation[0] == 1 ): # multiplicative inflation
+        Xap = inflation[1] * Xap
+
+    elif ( inflation[0] == 2 ): # additive white model error (mean:zero, spread:inflation[1])
+        Xap = Xap + inflation[1] * np.random.randn(Ndof,Nens)
+
+    elif ( inflation[0] == 3 ): # covariance relaxation (Zhang, Snyder)
+        Xap = Xbp * inflation[1] + Xap * (1.0 - inflation[1])
+
+    elif ( inflation[0] == 4 ): # posterior spread restoration (Whitaker & Hammill)
+        xbs = np.std(Xb,axis=1)
+        xas = np.std(Xa,axis=1)
+        for i in np.arange(0,Ndof):
+            Xap[i,:] =  np.sqrt((inflation[1] * (xbs[i] - xas[dof])/xas[i]) + 1.0) * Xap[i,:]
+
+    else:
+        print 'invalid inflation algorithm ...'
+        sys.exit(2)
+
+    # add inflated perturbations back to analysis mean
+    Xa = np.transpose(np.transpose(Xap) + xam)
+
+    # compute analysis error covariance matrix
+    A = np.dot(Xap,np.transpose(Xap)) / (Nens - 1)
+
+    # check for filter divergence
+    error_variance_ratio = np.sum(innov**2) / np.sum(totvar)
+    if not ( 0.5 < error_variance_ratio < 2.0 ):
+        print 'FILTER DIVERGENCE : ERROR / TOTAL VARIANCE = %f' % (error_variance_ratio)
+        #break
+
+    return Xa, A, error_variance_ratio
+# }}}
+
 def obs_increment_EnKF(obs, obs_err_var, pr_obs_est):
 # {{{
     '''
-    obs_increment_EnKF(obs, obs_err_var, pr_obs_est)
     compute observation increment due to a single observation using traditional EnKF
+
+    obs_inc, innov, totvar = obs_increment_EnKF(obs, obs_err_var, pr_obs_est)
+
             obs - observation
     obs_err_var - observation error variance
      pr_obs_est - prior observation estimate
         obs_inc - observation increment
+          innov - innovation
+         totvar - total variance
     '''
 
     # compute mean and variance of the PRIOR model estimate of the observation
@@ -147,12 +262,16 @@ def obs_increment_EnKF(obs, obs_err_var, pr_obs_est):
 def obs_increment_EnSRF(obs, obs_err_var, pr_obs_est):
 # {{{
     '''
-    obs_increment_EnSRF(obs, obs_err_var, pr_obs_est)
     compute observation increment due to a single observation using EnSRF
+
+    obs_inc, innov, totvar = obs_increment_EnSRF(obs, obs_err_var, pr_obs_est)
+
             obs - observation
     obs_err_var - observation error variance
      pr_obs_est - prior observation estimate
         obs_inc - observation increment
+          innov - innovation
+         totvar - total variance
     '''
 
     # compute mean and variance of the PRIOR model estimate of the observation
@@ -180,12 +299,16 @@ def obs_increment_EnSRF(obs, obs_err_var, pr_obs_est):
 def obs_increment_EAKF(obs, obs_err_var, pr_obs_est):
 # {{{
     '''
-    obs_increment_EAKF(obs, obs_err_var, pr_obs_est)
     compute observation increment due to a single observation using EAKF
+
+    obs_inc, innov, totvar = obs_increment_EAKF(obs, obs_err_var, pr_obs_est)
+
             obs - observation
     obs_err_var - observation error variance
      pr_obs_est - prior observation estimate
         obs_inc - observation increment
+          innov - innovation
+         totvar - total variance
     '''
 
     # compute mean and variance of the PRIOR model estimate of the observation
@@ -212,8 +335,10 @@ def obs_increment_EAKF(obs, obs_err_var, pr_obs_est):
 def state_increment(obs_inc, pr, pr_obs_est):
 # {{{
     '''
-    state_increment(obs_inc, pr_obs_est, pr)
-    compute state increment due to an observation increment
+    compute state increment by regressing an observation increment on the state
+
+    state_inc = state_increment(obs_inc, pr_obs_est, pr)
+
         obs_inc - observation increment
              pr - prior
      pr_obs_est - prior observation estimate
@@ -229,12 +354,15 @@ def state_increment(obs_inc, pr, pr_obs_est):
 def compute_cov_factor(dist, cov_cutoff):
 # {{{
     '''
-    compute_cov_factor(dist, cov_cutoff)
     compute the covariance factor using Gaspari & Cohn polynomial function
-          dist - distance between the points
+
+    cov_factor = compute_cov_factor(dist, cov_cutoff)
+
+          dist - distance between "points"
     cov_cutoff - normalized cutoff distance = cutoff_distance / (2 * normalization_factor)
-                 normalized cutoff distance = 1 / (2 * 40)
-                 localize at 1 point in the 40-variable LE98 model
+                 Eg. normalized cutoff distance = 1 / (2 * 40)
+                     localize at 1 point in the 40-variable LE98 model
+    cov_factor - covariance factor
     '''
 
     if ( np.abs(dist) >= 2.0*cov_cutoff ):

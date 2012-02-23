@@ -12,14 +12,18 @@
 # plot_stats.py - Functions related to plotting statistics
 ###############################################################
 
+###############################################################
 __author__    = "Rahul Mahajan"
 __email__     = "rahul.mahajan@nasa.gov"
 __copyright__ = "Copyright 2011, NASA / GSFC / GMAO"
 __license__   = "GPL"
 __status__    = "Prototype"
+###############################################################
 
+###############################################################
 import numpy      as     np
 from   matplotlib import pyplot
+###############################################################
 
 ###############################################################
 def plot_trace(obs=None, ver=None, xb=None, xa=None, label=['x'], N=1):
@@ -146,23 +150,40 @@ def plot_abs_error_var(xbev, xaev, label=['x'], N=1, yscale='semilog'):
 ###############################################################
 
 ###############################################################
-def plot_iteration_stats(itstats, xlab='Assimilation Step',ylab='# Iterations'):
+def plot_iteration_stats(itstats):
     fig = pyplot.figure()
     pyplot.clf()
     pyplot.hold(True)
-    pyplot.plot(itstats,'k-',label='# iterations', linewidth=2)
+    pyplot.plot(itstats,'k-',linewidth=2)
     yl = pyplot.get(pyplot.gca(),'ylim')
     yoff = yl[0] + 0.25 * (yl[1] - yl[0])
     str = 'min  iterations : %d' % (np.min(itstats))
     pyplot.text(2,yoff,str,fontsize=10)
-    yoff = yoff - 1
+    yoff = yoff - 2
     str = 'mean iterations : %d' % (np.int(np.mean(itstats)))
     pyplot.text(2,yoff,str,fontsize=10)
-    yoff = yoff - 1
+    yoff = yoff - 2
     str = 'max  iterations : %d' % (np.max(itstats))
     pyplot.text(2,yoff,str,fontsize=10)
-    pyplot.xlabel(xlab,fontweight='bold',fontsize=12)
-    pyplot.ylabel(ylab,fontweight='bold',fontsize=12)
+    pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
+    pyplot.ylabel('# Iterations',     fontweight='bold',fontsize=12)
+    pyplot.title('# Iterations for cost function',fontweight='bold',fontsize=14)
+    pyplot.hold(False)
+    return
+###############################################################
+
+###############################################################
+def plot_error_variance_stats(evratio):
+    fig = pyplot.figure()
+    pyplot.clf()
+    pyplot.hold(True)
+    pyplot.plot(evratio,'k-',linewidth=2)
+    pyplot.plot(np.ones(len(evratio))*0.5,'r:')
+    pyplot.plot(np.ones(len(evratio))*1.0,'k-')
+    pyplot.plot(np.ones(len(evratio))*2.0,'r:')
+    pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
+    pyplot.ylabel('Innovation Variance / Total Variance',fontweight='bold',fontsize=12)
+    pyplot.title('Innovation Variance / Total Variance',fontweight='bold',fontsize=14)
     pyplot.hold(False)
     return
 ###############################################################

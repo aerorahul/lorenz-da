@@ -116,7 +116,7 @@ def main():
         xb = xs[-1,:].copy()
 
         # update step
-        [xa, A, itstats[k]] = update_varDA(xb, Bc, y, R, H)
+        xa, A, itstats[k] = update_varDA(xb, Bc, y, R, H)
 
         # error statistics
         xbrmse[k] = np.sqrt( np.sum( (ver - xb)**2 ) / Ndof )

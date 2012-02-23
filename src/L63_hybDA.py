@@ -144,8 +144,7 @@ def main():
 
         # compute background ensemble mean and perturbations
         xbm = np.mean(Xb,axis=1)
-        [tmp, Xbm] = np.meshgrid(np.ones(Nens),xbm)
-        Xbp = Xb - Xbm
+        Xbp = np.transpose(np.transpose(Xb) - xbm)
 
         # compute background error covariance matrix
 #        if ( infl ): # square-root filter
@@ -166,8 +165,7 @@ def main():
 
         # replace ensemble mean analysis with central analysis
         xam = xac.copy()
-        [tmp, Xam] = np.meshgrid(np.ones(Nens),xam)
-        Xa = Xam + Xap
+        Xa = np.transpose(xam + np.transpose(Xap))
 
         # error statistics for ensemble mean
         xbe[:,k]  = xbm - ver

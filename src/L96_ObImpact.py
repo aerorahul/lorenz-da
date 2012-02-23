@@ -24,13 +24,13 @@ __status__    = "Prototype"
 ###############################################################
 import sys
 import numpy      as     np
-from   ensDA      import PerturbedObs, Potter, EnKF
-from   varDA      import ThreeDvar, FourDvar
-from   lorenz     import L96, L96_tlm
 from   matplotlib import pyplot
 from   netCDF4    import Dataset
 from   scipy      import integrate, io
-from   plot_stats import plot_trace, plot_abs_error, plot_abs_error_var
+from   lorenz     import L96, L96_tlm
+from   ensDA      import *
+from   varDA      import *
+from   plot_stats import *
 ###############################################################
 
 ###############################################################

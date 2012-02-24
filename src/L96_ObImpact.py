@@ -27,53 +27,59 @@ import numpy      as     np
 from   matplotlib import pyplot
 from   netCDF4    import Dataset
 from   scipy      import integrate, io
-from   lorenz     import L96, L96_tlm
+from   lorenz     import L96, L96_tlm, plot_L96
 from   ensDA      import *
 from   varDA      import *
 from   plot_stats import *
 ###############################################################
 
 ###############################################################
-global Ndof, F, lab
+global Ndof, F, dF, lab
 global Q, H, R
 global nassim, ntimes, dt, t0
-global Eupdate, Nens, infl, infl_fac
-global Vupdate, maxiter, alpha, cg
-global do_hybrid, hybrid_wght
+global Eupdate, Nens, inflation, localization
+global Vupdate, minimization
+global hybrid_wght, do_hybrid
 global nf, mxf
 
 Ndof = 40
-F = 8.0
-lab = []
+F    = 8.0
+dF   = 0.0
+lab  = []
 for j in range(0,Ndof): lab.append( 'x' + str(j+1) )
 
-Q = np.eye(Ndof)*1e-3           # model error variance (covariance model is white for now)
-H = np.eye(Ndof)                # obs operator ( eye(3) gives identity obs )
-R = np.eye(Ndof)*(0.2*0.2)      # observation error covariance
+Q = np.eye(Ndof)*0.0            # model error variance (covariance model is white for now)
+H = np.eye(Ndof)                # obs operator ( eye(Ndof) gives identity obs )
+R = np.eye(Ndof)*(4.0**2)       # observation error covariance
 
-nassim = 7500                   # no. of assimilation cycles
+nassim = 160                    # no. of assimilation cycles
 ntimes = 0.05                   # do assimilation every ntimes non-dimensional time units
-dt     = 0.001                  # time-step
+dt     = 1.0e-4                 # time-step
 t0     = 0.0                    # initial time
 
-Eupdate  = 3                    # ens. DA method (1= Perturbed Obs; 2= Potter; 3= EnKF)
-Nens     = 40                   # number of ensemble members
-infl     = 1                    # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
+Eupdate      = 2                # ensemble-based DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
+Nens         = 20               # number of ensemble members
+localize     = True             # do localization
+cov_cutoff   = 1.0              # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
+localization = [localize, cov_cutoff]
+infl_meth    = 1                # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
                                 # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
-infl_fac = 1.01                 # Depends on inflation method (see values in [] above)
+infl_fac     = 1.02             # Depends on inflation method (see values in [] above)
+inflation    = [infl_meth, infl_fac]
 
-Vupdate = 1                     # var. DA method (1= 3Dvar; 2= 4Dvar)
-maxiter = 1000                  # maximum iterations
+Vupdate = 1                     # variational-based DA method (1= 3Dvar; 2= 4Dvar)
+maxiter = 1000                  # maximum iterations for minimization
 alpha   = 4e-3                  # size of step in direction of normalized J
 cg      = True                  # True = Use conjugate gradient; False = Perform line search
+minimization = [maxiter, alpha, cg]
 
-do_hybrid   = False             # re-center the ensemble to the mean from varDA
 hybrid_wght = 0.0               # weight for hybrid (0.0= varDA; 1.0= ensDA)
+do_hybrid   = True              # True= re-center ensemble about varDA, False= only ensDA
 
-nf  = 4                         # extended forecast length : tf = nf * ntimes
-mxf = np.zeros(Ndof)
+nf     = 4                      # extended forecast length : tf = nf * ntimes
+mxf    = np.zeros(Ndof)
 mxf[0] = 1.0                    # metric: single variable
-mxf = np.ones(Ndof)             # metric: sum of variables
+mxf    = np.ones(Ndof)          # metric: sum of variables
 ###############################################################
 
 ###############################################################
@@ -82,17 +88,20 @@ def main():
     # insure the same sequence of random numbers EVERY TIME
     np.random.seed(0)
 
-    x0 = np.ones(Ndof) * F
-    x0[19] = x0[19] + 0.008
-    xt = x0.copy()
-    truth = xt.copy()
+    # initial setup from LE1998
+    x0    = np.ones(Ndof) * F
+    x0[0] = 1.001 * F
+
+    # Make a copy of truth for plotting later
+    xt    = x0.copy()
+    truth = x0.copy()
 
     # populate initial ensemble analysis by perturbing true state
     [tmp, Xa] = np.meshgrid(np.ones(Nens),xt)
-    pert = 1e-1 * np.random.randn(Ndof,Nens)
-    Xa  = Xa + pert
+    pert = 0.001 * ( np.random.randn(Ndof,Nens) )
+    Xa = Xa + pert
     xam = np.mean(Xa,axis=1)
-    Xb  = Xa.copy()
+    Xb = Xa.copy()
     xbm = xam.copy()
 
     print 'load static climatological covariance ...'
@@ -102,23 +111,24 @@ def main():
 
     print 'Cycling ON the attractor ...'
 
-    # initialize arrays for statistics before cycling
-    xbe  = np.zeros((Ndof,nassim))
-    xae  = np.zeros((Ndof,nassim))
-    xye  = np.zeros((Ndof,nassim))
-    xbev = np.zeros((Ndof,nassim))
-    xaev = np.zeros((Ndof,nassim))
-
-    hist_ver = np.zeros((Ndof,nassim))
-    hist_obs = np.zeros((Ndof,nassim))
-    hist_xbm = np.zeros((Ndof,nassim))
-    hist_xam = np.zeros((Ndof,nassim))
-
-    dJe = np.zeros((nassim,1))
-    dJa = np.zeros((nassim,1))
-
     ts = np.arange(t0,ntimes+dt,dt)     # time between assimilations
     tf = np.arange(t0,nf*ntimes+dt,dt)  # extended forecast
+
+    # initialize arrays for statistics before cycling
+    evstats = np.zeros(nassim) * np.NaN
+    itstats = np.zeros(nassim) * np.NaN
+    xbrmse  = np.zeros(nassim) * np.NaN
+    xarmse  = np.zeros(nassim) * np.NaN
+    xyrmse  = np.zeros(nassim) * np.NaN
+
+    hist_ver       = np.zeros((Ndof,nassim)) * np.NaN
+    hist_obs       = np.zeros((Ndof,nassim)) * np.NaN
+    hist_xbm       = np.zeros((Ndof,nassim)) * np.NaN
+    hist_xam       = np.zeros((Ndof,nassim)) * np.NaN
+    hist_obs_truth = np.zeros((Ndof,(nassim+1)*(len(ts)-1)+1)) * np.NaN
+
+    dJe = np.zeros(nassim) * np.NaN
+    dJa = np.zeros(nassim) * np.NaN
 
     for k in range(0, nassim):
 
@@ -130,74 +140,66 @@ def main():
         xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values
-        y   = np.dot(H,xt) + np.diag(np.diag(np.random.randn(Ndof))*np.sqrt(R))
+        y   = np.dot(H,xt) + np.random.randn(Ndof) * np.sqrt(np.diag(R))
         ver = xt.copy()
 
         # advance analysis ensemble with the full nonlinear model
-        for n in range(0,Nens):
-            xa = Xa[:,n].copy()
-            xs = integrate.odeint(L96, xa, ts, (F,0.0))
-            Xb[:,n] = xs[-1,:].copy()
+        for m in range(0,Nens):
+            xa = Xa[:,m].copy()
+            xs = integrate.odeint(L96, xa, ts, (F+dF,0.0))
+            Xb[:,m] = xs[-1,:].copy()
 
         if ( do_hybrid ):
             # advance central analysis with the full nonlinear model
-            xs = integrate.odeint(L96, xam, ts, (F,0.0))
+            xs = integrate.odeint(L96, xam, ts, (F+dF,0.0))
             xbc = xs[-1,:].copy()
 
-        # compute background ensemble mean and perturbations
+        # compute background ensemble mean and perturbations from the mean
         xbm = np.mean(Xb,axis=1)
-        [tmp, Xbm] = np.meshgrid(np.ones(Nens),xbm)
-        Xbp = Xb - Xbm
+        Xbp = np.transpose(np.transpose(Xb) - xbm)
 
-        # compute background error covariance matrix
-#        if ( infl ): # square-root filter
-#            Xbp = infl_fac * Xbp
-#            # additive zero-mean white model error
-#            Xbp = Xbp + np.dot(Q,np.random.randn(Ndof,Nens))
-#        B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1) + Q
+        # compute background error covariance
         B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1)
 
         # update ensemble (mean and perturbations)
-        [xam, Xap, Xa, A] = update_ensDA(xbm, Xbp, Xb, B, y, R, H)
+        Xa, A, evstats[k] = update_ensDA(Xb, B, y, R, H, Eupdate=Eupdate, inflation=inflation, localization=localization)
+        xam = np.mean(Xa,axis=1)
+        Xap = np.transpose(np.transpose(Xa) - xam)
 
         if ( do_hybrid ):
             # blend covariance from flow-dependent (ensemble) and static (climatology)
             Bc = (1.0 - hybrid_wght) * Bs + hybrid_wght * B
 
             # update the central trajectory
-            [xac, Ac, dummy] = update_varDA(xbc, Bc, y, R, H)
+            xac, Ac, itstats[k] = update_varDA(xbc, Bc, y, R, H, Vupdate=Vupdate, minimization=minimization)
 
             # replace ensemble mean analysis with central analysis
             xam = xac.copy()
-            [tmp, Xam] = np.meshgrid(np.ones(Nens),xam)
-            Xa = Xam + Xap
+            Xa = np.transpose(xam + np.transpose(Xap))
 
         # error statistics for ensemble mean
-        xbe[:,k]  = xbm - ver
-        xae[:,k]  = xam - ver
-        xye[:,k]  = y   - ver
-        xbev[:,k] = np.diag(B)
-        xaev[:,k] = np.diag(A)
+        xbrmse[k] = np.sqrt( np.sum( (ver - xbm)**2 ) / Ndof )
+        xarmse[k] = np.sqrt( np.sum( (ver - xam)**2 ) / Ndof )
+        xyrmse[k] = np.sqrt( np.sum( (ver -   y)**2 ) / Ndof )
 
         # history (for plotting)
         hist_ver[:,k] = ver
         hist_obs[:,k] = y
         hist_xbm[:,k] = xbm
         hist_xam[:,k] = xam
+        hist_obs_truth[:,(k+1)*(len(ts)-1)+1] = y
 
-        # check for filter divergence
-        if ( np.abs(xae[1,k]) > 10 and np.abs(xae[2,k]) > 10 ):
-            print 'filter divergence'
-            sys.exit(2)
+        plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
+        pyplot.pause(0.1)
 
         # observation impact
 
         # advance analysis ensemble with the full nonlinear model
         Xf = np.zeros((Ndof,Nens))
-        for n in range(0,Nens):
-            xa = Xa[:,n].copy()
-            xf = integrate.odeint(L96, xa, tf, (F,0.0))
-            Xf[:,n] = xf[-1,:].copy()
+        for m in range(0,Nens):
+            xa = Xa[:,m].copy()
+            xf = integrate.odeint(L96, xa, tf, (F+dF,0.0))
+            Xf[:,m] = xf[-1,:].copy()
 
         # construct metric : J = (x^T)Wx ; dJ/dx = J_x = 2Wx ; choose W = I, x = xfmet, J_x = Jxf
         xfmet = np.transpose(mxf * np.transpose(Xf))
@@ -212,127 +214,25 @@ def main():
         dJe[k] = np.dot(Jp,np.dot(np.transpose(np.dot(H,Xo)),np.dot(np.linalg.inv(R),dy))) / (Nens - 1)
 
         # advance analysis ensemble mean with the full nonlinear model
-        xfm = integrate.odeint(L96, xam, tf, (F,0.0))
+        xfm = integrate.odeint(L96, xam, tf, (F+dF,0.0))
         Jxf = mxf * 2 * xfm[-1,:]
 
         if ( do_hybrid ):
             dy = y - np.dot(H,xbc)
 
         # integrate the metric gradient from the end time to the initial time using the adjoint
-        Jxa = integrate.odeint(L96_tlm, Jxf, tf, (F,np.flipud(xfm),tf,True))
+        Jxa = integrate.odeint(L96_tlm, Jxf, tf, (F+dF,np.flipud(xfm),tf,True))
         Jxi = Jxa[-1,:].copy()
         dJa[k] = np.dot(Jxi,np.dot(A,np.dot(np.transpose(H),np.dot(np.linalg.inv(R),dy))))
 
     # make some plots
-    plot_trace(hist_obs, hist_ver, hist_xbm, hist_xam, label=lab, N=3)
-    plot_abs_error(xbe,xae,label=lab,N=3)
-    plot_abs_error_var(xbev,xaev,label=lab,N=3)
-    plot_ObImpact(dJe, dJa)
+    plot_trace(obs=hist_obs, ver=hist_ver, xb=hist_xbm, xa=hist_xam, label=lab, N=3)
+    plot_rmse(xbrmse, xarmse, yscale='linear')
+    plot_iteration_stats(itstats)
+    plot_error_variance_stats(evstats)
+    plot_ObImpact(dJa=dJa, dJe=dJe)
 
     pyplot.show()
-###############################################################
-
-###############################################################
-def update_ensDA(xbm, Xbp, Xb, B, y, R, H):
-
-    Nobs = np.shape(y)[0]
-
-    if ( Eupdate == 1 ):   # update using perturbed observations
-        Xa  = PerturbedObs(Xb, B, y, H, R)
-        xam = np.mean(Xa,axis=1)
-        [tmp, Xam] = np.meshgrid(np.ones(Nens),xam)
-        Xap = Xa - Xam
-
-    elif ( Eupdate == 2 ): # update using the Potter algorithm
-        [xam, Xap] = Potter(xbm, Xbp, y, H, R)
-        [tmp, Xam] = np.meshgrid(np.ones(Nens),xam)
-        Xa = Xam + Xap
-
-    elif ( Eupdate == 3 ): # update using the EnKF algorithm
-        loc = np.ones((Nobs,Ndof)) # this does no localization
-        [xam, Xap] = EnKF(xbm, Xbp, y, H, R, loc)
-        [tmp, Xam] = np.meshgrid(np.ones(Nens),xam)
-        Xa = Xam + Xap
-
-    else:
-        print 'invalid ensemble update algorithm ...'
-        sys.exit(2)
-
-    # Must inflate if using EnKF flavors
-    if ( Eupdate > 1 ):
-
-        if   ( infl == 1 ): # multiplicative inflation
-            Xap = infl_fac * Xap
-
-        elif ( infl == 2 ): # additive zero-mean white model error
-            Xap = Xap + infl_fac * np.random.randn(Ndof,Nens)
-
-        elif ( infl == 3 ): # covariance relaxation (Zhang, Snyder)
-            Xap = Xbp * infl_fac + Xap * (1 - infl_fac)
-
-        elif ( infl == 4 ): # posterior spread restoration (Whitaker & Hammill)
-            xbs = np.std(Xb,axis=1)
-            xas = np.std(Xa,axis=1)
-            for dof in np.arange(0,Ndof):
-                Xap[dof,:] =  np.sqrt((infl_fac * (xbs[dof] - xas[dof])/xas[dof]) + 1) * Xap[dof,:]
-
-        elif ( infl == 5 ): # adaptive (Anderson)
-            print 'adaptive inflation is not implemented yet'
-            sys.exit(2)
-
-        else:
-            print 'invalid inflation algorithm ...'
-            sys.exit(2)
-
-        # add inflated perturbation back to analysis mean
-        Xa = Xam + Xap
-
-    # compute analysis error covariance matrix
-    A = np.dot(Xap,np.transpose(Xap)) / (Nens - 1)
-
-    print 'trace of B and A: %7.4f  %7.4f' % ( np.trace(B), np.trace(A) )
-
-    return xam, Xap, Xa, A
-###############################################################
-
-###############################################################
-def update_varDA(xb, B, y, R, H):
-
-    if ( Vupdate == 1 ):
-        [xa, A, dummy] = ThreeDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=True)
-
-    elif ( Vupdate == 2 ):
-        [xa, A, dummy] = FourDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=True)
-
-    else:
-        print 'invalid variational update algorithm ...'
-        sys.exit(2)
-
-    return xa, A, dummy
-###############################################################
-
-###############################################################
-def plot_ObImpact(dJe, dJa):
-    fig = pyplot.figure()
-    pyplot.clf()
-    pyplot.hold(True)
-    pyplot.plot(dJe,'r.-',label='Ensemble',linewidth=2)
-    pyplot.plot(dJa,'b.-',label='Adjoint', linewidth=2)
-    pyplot.plot(np.zeros(len(dJe)),'k:')
-    pyplot.ylabel('delta J',fontweight='bold',fontsize=12)
-    pyplot.xlabel('Assimilation Step', fontweight='bold',fontsize=12)
-    pyplot.title('Observation Impact',fontweight='bold',fontsize=14)
-    pyplot.legend(loc=0)
-    stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(dJe), np.std(dJe,ddof=1))
-    stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(dJa), np.std(dJa,ddof=1))
-    yl = pyplot.get(pyplot.gca(),'ylim')
-    yoff = yl[0] + ( yl[1] - yl[0] ) / 10
-    pyplot.text(0,yoff,stre,fontsize=10)
-    yoff = yl[0] + ( yl[1] - yl[0] ) / 20
-    pyplot.text(0,yoff,stra,fontsize=10)
-    pyplot.hold(False)
-    return
-
 ###############################################################
 
 ###############################################################

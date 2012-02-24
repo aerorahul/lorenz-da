@@ -38,6 +38,7 @@ global Q, H, R
 global nassim, ntimes, dt, t0
 global Eupdate, Nens, inflation, localization
 global Vupdate, minimization
+global hybrid_wght, do_hybrid
 
 Ndof = 40
 F    = 8.0
@@ -49,12 +50,12 @@ Q = np.eye(Ndof)*0.0            # model error variance (covariance model is whit
 H = np.eye(Ndof)                # obs operator ( eye(Ndof) gives identity obs )
 R = np.eye(Ndof)*(4.0**2)       # observation error covariance
 
-nassim = 160                   # no. of assimilation cycles
+nassim = 160                    # no. of assimilation cycles
 ntimes = 0.05                   # do assimilation every ntimes non-dimensional time units
 dt     = 1.0e-4                 # time-step
 t0     = 0.0                    # initial time
 
-Eupdate      = 2                # DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
+Eupdate      = 2                # ensemble-based DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
 Nens         = 20               # number of ensemble members
 localize     = True             # do localization
 cov_cutoff   = 1.0              # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
@@ -64,13 +65,14 @@ infl_meth    = 1                # inflation (1= Multiplicative [1.01], 2= Additi
 infl_fac     = 1.02             # Depends on inflation method (see values in [] above)
 inflation    = [infl_meth, infl_fac]
 
-Vupdate = 1                     # DA method (1= 3Dvar; 2= 4Dvar)
+Vupdate = 1                     # variational-based DA method (1= 3Dvar; 2= 4Dvar)
 maxiter = 1000                  # maximum iterations for minimization
 alpha   = 4e-3                  # size of step in direction of normalized J
 cg      = True                  # True = Use conjugate gradient; False = Perform line search
 minimization = [maxiter, alpha, cg]
 
-hybrid_wght = 0.0               # weight for hybrid (0= varDA; 1= ensDA)
+hybrid_wght = 0.0               # weight for hybrid (0.0= varDA; 1.0= ensDA)
+do_hybrid   = True              # True= re-center ensemble about varDA, False= only ensDA
 ###############################################################
 
 ###############################################################
@@ -136,9 +138,10 @@ def main():
             xs = integrate.odeint(L96, xa, ts, (F+dF,0.0))
             Xb[:,m] = xs[-1,:].copy()
 
-        # advance central analysis with the full nonlinear model
-        xs = integrate.odeint(L96, xam, ts, (F+dF,0.0))
-        xbc = xs[-1,:].copy()
+        if ( do_hybrid ):
+            # advance central analysis with the full nonlinear model
+            xs = integrate.odeint(L96, xam, ts, (F+dF,0.0))
+            xbc = xs[-1,:].copy()
 
         # compute background ensemble mean and perturbations from the mean
         xbm = np.mean(Xb,axis=1)
@@ -148,19 +151,20 @@ def main():
         B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1)
 
         # update ensemble (mean and perturbations)
-        Xa, A, evstats[k] = update_ensDA(Xb, B, y, R, H, inflation=inflation, localization=localization)
+        Xa, A, evstats[k] = update_ensDA(Xb, B, y, R, H, Eupdate=Eupdate, inflation=inflation, localization=localization)
         xam = np.mean(Xa,axis=1)
         Xap = np.transpose(np.transpose(Xa) - xam)
 
-        # blend covariance from flow-dependent (ensemble) and static (climatology)
-        Bc = (1.0 - hybrid_wght) * Bs + hybrid_wght * B
+        if ( do_hybrid ):
+            # blend covariance from flow-dependent (ensemble) and static (climatology)
+            Bc = (1.0 - hybrid_wght) * Bs + hybrid_wght * B
 
-        # update the central trajectory
-        xac, Ac, itstats[k] = update_varDA(xbc, Bc, y, R, H, Vupdate=Vupdate, minimization=minimization)
+            # update the central trajectory
+            xac, Ac, itstats[k] = update_varDA(xbc, Bc, y, R, H, Vupdate=Vupdate, minimization=minimization)
 
-        # replace ensemble mean analysis with central analysis
-        xam = xac.copy()
-        Xa = np.transpose(xam + np.transpose(Xap))
+            # replace ensemble mean analysis with central analysis
+            xam = xac.copy()
+            Xa = np.transpose(xam + np.transpose(Xap))
 
         # error statistics for ensemble mean
         xbrmse[k] = np.sqrt( np.sum( (ver - xbm)**2 ) / Ndof )

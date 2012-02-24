@@ -26,41 +26,41 @@ from   netCDF4    import Dataset
 from   scipy      import integrate, io
 from   matplotlib import pyplot
 
-dt = 0.001
+dt = 1.0e-3   # time-step
+ts = 100.0    # time for spin-up
+tc = 1000.0   # time for climatology
 
-# setup from Lorenz & Emanuel, 1998
-F = 8.0
-Ndof = 40
-x0 = np.ones(Ndof) * F
-x0[19] = x0[19] + 0.008
+# initial setup from LE1998
+Ndof  = 40
+F     = 8.0
+x0    = np.ones(Ndof) * F
+x0[0] = 1.001 * F
 
 # get a state on the attractor
 print 'spinning-up onto the attractor ...'
-ts = np.arange(0.0,100.0,dt)       # how long to run onto the attractor
+ts = np.arange(0.0,ts+dt,dt)       # how long to run onto the attractor
 xs = integrate.odeint(L96, x0, ts, (F,0.0))
 
 # use the end state to run ON the attractor
 xt = xs[-1,:]
 
 print 'running ON the attractor ...'
-ts = np.arange(0.0,1000.0,dt)
-xs = integrate.odeint(L96, xt, ts, (F,0.0))
+ts = np.arange(0.0,tc+dt,dt)
+X = integrate.odeint(L96, xt, ts, (F,0.0))
 
-X = xs.copy()
 nsamp = np.shape(X)[0]
 print 'number of samples : %d' % nsamp
 
 # calculate sample mean
 xm = np.mean(X,axis=0)
-[Xm, tmp] = np.meshgrid(xm,np.ones(nsamp));
 
 # remove the sample mean from the sample
-Xp = np.transpose(X - Xm)
+Xp = X - xm
 
 # compute climatological covariance matrix
-B = np.dot(Xp,np.transpose(Xp)) / (nsamp - 1)
+B = np.cov(np.transpose(Xp),ddof=1)
 
-# option to save B to disk for use with DA experiments (both MatLAB and netCDF)
+# save B to disk for use with DA experiments (both MatLAB and netCDF)
 print 'save B to disk ...'
 os.system('rm -f L96_climo_B.mat L96_climo_B.nc4')
 data      = {}
@@ -72,7 +72,3 @@ Dim      = nc.createDimension('xyz',Ndof)
 Var      = nc.createVariable('B', 'f8', ('xyz','xyz',))
 Var[:,:] = B
 nc.close()
-
-# plot the attractor
-
-pyplot.show()

@@ -228,13 +228,13 @@ def main():
     # make some plots
     fig2 = plot_trace(obs=hist_obs, ver=hist_ver, xb=hist_xbm, xa=hist_xam, label=lab, N=3)
     fig3 = plot_rmse(xbrmse, xarmse, yscale='linear')
-    pyplot.savefig('L96_RMSE.png',dpi=100,orientation='landscape',format='png')
+    fig3.savefig('L96_RMSE.png',dpi=100,orientation='landscape',format='png')
     fig4 = plot_iteration_stats(itstats)
-    pyplot.savefig('L96_ItStats.png',dpi=100,orientation='landscape',format='png')
+    fig4.savefig('L96_ItStats.png',dpi=100,orientation='landscape',format='png')
     fig5 = plot_error_variance_stats(evstats)
-    pyplot.savefig('L96_EVStats.png',dpi=100,orientation='landscape',format='png')
+    fig5.savefig('L96_EVStats.png',dpi=100,orientation='landscape',format='png')
     fig6 = plot_ObImpact(dJa=dJa, dJe=dJe)
-    pyplot.savefig('L96_ObImpact.png',dpi=100,orientation='landscape',format='png')
+    fig6.savefig('L96_ObImpact.png',dpi=100,orientation='landscape',format='png')
 
     pyplot.show()
 ###############################################################

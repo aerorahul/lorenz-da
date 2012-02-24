@@ -52,7 +52,7 @@ Q = np.eye(Ndof)*0.0            # model error variance (covariance model is whit
 H = np.eye(Ndof)                # obs operator ( eye(Ndof) gives identity obs )
 R = np.eye(Ndof)*(4.0**2)       # observation error covariance
 
-nassim = 160                    # no. of assimilation cycles
+nassim = 1000                   # no. of assimilation cycles
 ntimes = 0.05                   # do assimilation every ntimes non-dimensional time units
 dt     = 1.0e-4                 # time-step
 t0     = 0.0                    # initial time
@@ -189,7 +189,7 @@ def main():
         hist_xam[:,k] = xam
         hist_obs_truth[:,(k+1)*(len(ts)-1)+1] = y
 
-        plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
+        fig1 = plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
         pyplot.pause(0.1)
 
         # observation impact
@@ -226,11 +226,15 @@ def main():
         dJa[k] = np.dot(Jxi,np.dot(A,np.dot(np.transpose(H),np.dot(np.linalg.inv(R),dy))))
 
     # make some plots
-    plot_trace(obs=hist_obs, ver=hist_ver, xb=hist_xbm, xa=hist_xam, label=lab, N=3)
-    plot_rmse(xbrmse, xarmse, yscale='linear')
-    plot_iteration_stats(itstats)
-    plot_error_variance_stats(evstats)
-    plot_ObImpact(dJa=dJa, dJe=dJe)
+    fig2 = plot_trace(obs=hist_obs, ver=hist_ver, xb=hist_xbm, xa=hist_xam, label=lab, N=3)
+    fig3 = plot_rmse(xbrmse, xarmse, yscale='linear')
+    pyplot.savefig('L96_RMSE.png',dpi=100,orientation='landscape',format='png')
+    fig4 = plot_iteration_stats(itstats)
+    pyplot.savefig('L96_ItStats.png',dpi=100,orientation='landscape',format='png')
+    fig5 = plot_error_variance_stats(evstats)
+    pyplot.savefig('L96_EVStats.png',dpi=100,orientation='landscape',format='png')
+    fig6 = plot_ObImpact(dJa=dJa, dJe=dJe)
+    pyplot.savefig('L96_ObImpact.png',dpi=100,orientation='landscape',format='png')
 
     pyplot.show()
 ###############################################################

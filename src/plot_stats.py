@@ -45,7 +45,7 @@ def plot_trace(obs=None, ver=None, xb=None, xa=None, label=['x'], N=1):
             pyplot.legend(loc=0,ncol=2)
         if ( k == N-1 ):
             pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
-    return
+    return fig
 ###############################################################
 
 ###############################################################
@@ -82,7 +82,7 @@ def plot_abs_error(xbe, xae, label=['x'], N=1, yscale='semilog'):
             pyplot.legend(loc=0)
         if ( k == N-1 ):
             pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
-    return
+    return fig
 ###############################################################
 
 ###############################################################
@@ -108,7 +108,7 @@ def plot_rmse(xbrmse, xarmse, xyrmse=None, yscale='semilog'):
     pyplot.title('Root Mean Squared Error',fontweight='bold',fontsize=14)
     pyplot.legend(loc=0)
     pyplot.hold(False)
-    return
+    return fig
 ###############################################################
 
 ###############################################################
@@ -146,7 +146,7 @@ def plot_abs_error_var(xbev, xaev, label=['x'], N=1, yscale='semilog'):
             pyplot.legend(loc=1)
         if ( k == N-1 ):
             pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
-    return
+    return fig
 ###############################################################
 
 ###############################################################
@@ -169,7 +169,7 @@ def plot_iteration_stats(itstats):
     pyplot.ylabel('# Iterations',     fontweight='bold',fontsize=12)
     pyplot.title('# Iterations for cost function',fontweight='bold',fontsize=14)
     pyplot.hold(False)
-    return
+    return fig
 ###############################################################
 
 ###############################################################
@@ -185,14 +185,14 @@ def plot_error_variance_stats(evratio):
     pyplot.ylabel('Innovation Variance / Total Variance',fontweight='bold',fontsize=12)
     pyplot.title('Innovation Variance / Total Variance',fontweight='bold',fontsize=14)
     pyplot.hold(False)
-    return
+    return fig
 ###############################################################
 
 ###############################################################
 def plot_ObImpact(dJa=None, dJe=None):
     if ( dJa.all() == dJe.all() == None ):
         print 'dJa == dJe == None, nothing to plot.'
-        return
+        return None
     fig = pyplot.figure()
     pyplot.clf()
     pyplot.hold(True)
@@ -200,19 +200,19 @@ def plot_ObImpact(dJa=None, dJe=None):
     if ( dJa != None ):
         pyplot.plot(dJa,'bo-',label='Adjoint', linewidth=2)
         pyplot.plot(np.ones(len(dJa))*np.mean(dJa),'b:')
-        yoff = yl[0] + ( yl[1] - yl[0] ) / 10
+        yoff = yl[0] + 15
         stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(dJa), np.std(dJa,ddof=1))
         pyplot.text(1,yoff,stra,fontsize=10)
     if ( dJe != None ):
         pyplot.plot(dJe,'r.-',label='Ensemble',linewidth=2)
         pyplot.plot(np.ones(len(dJe))*np.mean(dJe),'r:')
         stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(dJe), np.std(dJe,ddof=1))
-        yoff = yl[0] + ( yl[1] - yl[0] ) / 20
+        yoff = yoff + 10
         pyplot.text(1,yoff,stre,fontsize=10)
     pyplot.xlabel('Assimilation Step', fontweight='bold',fontsize=12)
     pyplot.ylabel('delta J',           fontweight='bold',fontsize=12)
     pyplot.title('Observation Impact',fontweight='bold',fontsize=14)
     pyplot.legend(loc=4,ncol=2)
     pyplot.hold(False)
-    return
+    return fig
 ###############################################################

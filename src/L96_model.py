@@ -27,14 +27,16 @@ from   matplotlib import pyplot
 # insure the same sequence of random numbers EVERY TIME
 np.random.seed(0)
 
+dt = 1.0e-4
 t0 = 0.0
-dt = 0.001
 
-# setup from Lorenz & Emanuel, 1998
-F = 8.0
-Ndof = 40
-x0 = np.ones(Ndof) * F
-x0[19] = x0[19] + 0.008
+tol = 1.0e-12
+
+# initial setup from LE1998
+Ndof  = 40
+F     = 8.0
+x0    = np.ones(Ndof) * F
+x0[0] = 1.001 * F
 
 label_list = []
 for j in range(1,Ndof+1): label_list.append( 'x' + str(j) )
@@ -46,24 +48,23 @@ ts = np.arange(t0,tf+dt,dt)
 
 xs = integrate.odeint(L96, x0, ts, (F,0.0))
 
-#plot_L63(xs)
 plot_trace(ver = np.transpose(xs), label=label_list, N=3)
 
 # let final state of previous integration be IC of next integration
 x0 = xs[-1,:].copy()
 
-tf = 0.05
+tf = 0.05 * 4
 ts = np.arange(t0,tf+dt,dt)
 
-xs = integrate.odeint(L96, x0, ts, (F,0.0))
+xs = integrate.odeint(L96, x0, ts, (F,0.0),rtol=tol,atol=tol)
 xsf = xs[-1,:].copy()
 
-xp0 = np.random.randn(Ndof) * 1e-5
+xp0 = np.random.randn(Ndof) * 1.0e-4
 
-xsp = integrate.odeint(L96, x0+xp0, ts, (F,0.0))
+xsp = integrate.odeint(L96, x0+xp0, ts, (F,0.0),rtol=tol,atol=tol)
 xspf = xsp[-1,:].copy()
 
-xp = integrate.odeint(L96_tlm, xp0, ts, (F, xs, ts, False))
+xp = integrate.odeint(L96_tlm, xp0, ts, (F, xs, ts, False),rtol=tol,atol=tol)
 xpf = xp[-1,:].copy()
 
 print 'check TLM ...'
@@ -71,7 +72,7 @@ for j in range(0,Ndof):
     print 'j = %2d | Ratio = %f' % (j+1, ( xspf[j] - xsf[j] ) / xpf[j])
 
 xa0 = xpf.copy()
-xa = integrate.odeint(L96_tlm, xa0, ts, (F, np.flipud(xs), ts, True))
+xa = integrate.odeint(L96_tlm, xa0, ts, (F, np.flipud(xs), ts, True),rtol=tol,atol=tol)
 xaf = xa[-1,:].copy()
 
 q1 = np.dot(np.transpose(xpf),xpf)

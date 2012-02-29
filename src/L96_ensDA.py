@@ -22,13 +22,14 @@ __status__    = "Prototype"
 
 ###############################################################
 import sys
-import numpy      as     np
-from   matplotlib import pyplot
-from   netCDF4    import Dataset
-from   scipy      import integrate, io
-from   lorenz     import L96, plot_L96
-from   ensDA      import *
-from   plot_stats import *
+import numpy         as     np
+from   scipy         import integrate, io
+from   matplotlib    import pyplot
+from   netCDF4       import Dataset
+from   module_Lorenz import L96, plot_L96
+from   module_DA     import *
+from   module_IO     import *
+from   plot_stats    import *
 ###############################################################
 
 ###############################################################
@@ -36,7 +37,7 @@ global Ndof, F, dF, lab
 global Q, H, R
 global nassim, ntimes, dt, t0
 global Eupdate, Nens, inflation, localization
-global use_climo
+global use_climo, diag_fname
 
 Ndof = 40
 F    = 8.0
@@ -63,7 +64,8 @@ infl_meth    = 1                # inflation (1= Multiplicative [1.01], 2= Additi
 infl_fac     = 1.01             # Depends on inflation method (see values in [] above)
 inflation    = [infl_meth, infl_fac]
 
-use_climo = False               # option to use climatological covariance (False = flow dependent)
+use_climo  = False                # option to use climatological covariance (False = flow dependent)
+diag_fname = 'L96_ensDA_diag.nc4' # name of output diagnostic file
 ###############################################################
 
 ###############################################################
@@ -110,6 +112,10 @@ def main():
     hist_xam       = np.zeros((Ndof,nassim)) * np.NaN
     hist_obs_truth = np.zeros((Ndof,(nassim+1)*(len(ts)-1)+1)) * np.NaN
 
+    # create diagnostic file
+    create_diag(diag_fname, Ndof, nens=Nens)
+    write_diag(diag_fname, 0, xt, Xb, Xa, np.dot(H,xt), np.diag(R))
+
     for k in range(0, nassim):
 
         print '========== assimilation time = %d ========== ' % (k+1)
@@ -154,6 +160,9 @@ def main():
         hist_xbm[:,k] = xbm
         hist_xam[:,k] = xam
         hist_obs_truth[:,(k+1)*(len(ts)-1)+1] = y
+
+        # write diagnostics to disk
+        write_diag(diag_fname, k+1, ver, Xb, Xa, y, np.diag(R))
 
         plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
         pyplot.pause(0.1)

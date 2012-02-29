@@ -37,7 +37,7 @@ global Ndof, F, dF, lab
 global Q, H, R
 global nassim, ntimes, dt, t0
 global Eupdate, Nens, inflation, localization
-global use_climo, diag_fname
+global use_climo, diag_fname, diag_fattr
 
 Ndof = 40
 F    = 8.0
@@ -66,6 +66,13 @@ inflation    = [infl_meth, infl_fac]
 
 use_climo  = False                # option to use climatological covariance (False = flow dependent)
 diag_fname = 'L96_ensDA_diag.nc4' # name of output diagnostic file
+diag_fattr = {'ntimes'      : str(ntimes),
+              'dt'          : str(dt),
+              'Eupdate'     : str(Eupdate),
+              'localize'    : str(int(localize)),
+              'cov_cutoff'  : str(cov_cutoff),
+              'infl_meth'   : str(infl_meth),
+              'infl_fac'    : str(infl_fac)}
 ###############################################################
 
 ###############################################################
@@ -86,12 +93,17 @@ def main():
     [tmp, Xa] = np.meshgrid(np.ones(Nens),xt)
     pert = 0.001 * ( np.random.randn(Ndof,Nens) )
     Xa = Xa + pert
+
+    # re-center the ensemble about initial true state
+    xam = np.mean(Xa,axis=1)
+    Xap = np.transpose(np.transpose(Xa) - xam)
+    Xa  = np.transpose(xt + np.transpose(Xap))
+
+    xam = np.mean(Xa,axis=1)
     Xb = Xa.copy()
 
     if ( use_climo ):
         print 'using climatological covariance ...'
-        #data = io.loadmat('L96_climo_B.mat')
-        #Bc   = data['B']copy
         nc = Dataset('L96_climo_B.nc4','r')
         Bc = nc.variables['B'][:]
         nc.close()
@@ -113,7 +125,7 @@ def main():
     hist_obs_truth = np.zeros((Ndof,(nassim+1)*(len(ts)-1)+1)) * np.NaN
 
     # create diagnostic file
-    create_diag(diag_fname, Ndof, nens=Nens)
+    create_diag(diag_fname, diag_fattr, Ndof, nens=Nens)
     write_diag(diag_fname, 0, xt, Xb, Xa, np.dot(H,xt), np.diag(R))
 
     for k in range(0, nassim):

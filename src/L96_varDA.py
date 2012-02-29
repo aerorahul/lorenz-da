@@ -37,7 +37,7 @@ global Ndof, F, dF, lab
 global A, Q, H, R
 global nassim, ntimes, dt, t0
 global Vupdate, minimization
-global diag_fname
+global diag_fname, diag_fattr
 
 Ndof = 40
 F    = 8.0
@@ -62,6 +62,12 @@ cg      = True               # True = Use conjugate gradient; False = Perform li
 minimization = [maxiter, alpha, cg]
 
 diag_fname = 'L96_varDA_diag.nc4' # name of output diagnostic file
+diag_fattr = {'ntimes'      : str(ntimes),
+              'dt'          : str(dt),
+              'Vupdate'     : str(Vupdate),
+              'maxiter'     : str(maxiter),
+              'alpha'       : str(alpha),
+              'cg'          : str(int(cg))}
 ###############################################################
 
 ###############################################################
@@ -106,7 +112,7 @@ def main():
     hist_xa  = np.zeros((Ndof,nassim))
 
     # create diagnostic file
-    create_diag(diag_fname, Ndof)
+    create_diag(diag_fname, diag_fattr, Ndof)
     write_diag(diag_fname, 0, xt, xb, xa, np.dot(H,xt), np.diag(R))
 
     for k in range(0, nassim):

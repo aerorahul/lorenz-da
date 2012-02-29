@@ -22,14 +22,14 @@ __status__    = "Prototype"
 
 ###############################################################
 import sys
-import numpy      as     np
-from   matplotlib import pyplot
-from   netCDF4    import Dataset
-from   scipy      import integrate, io
-from   lorenz     import L96, plot_L96
-from   ensDA      import *
-from   varDA      import *
-from   plot_stats import *
+import numpy         as     np
+from   scipy         import integrate, io
+from   matplotlib    import pyplot
+from   netCDF4       import Dataset
+from   module_Lorenz import L96, plot_L96
+from   module_DA     import *
+from   module_IO     import *
+from   plot_stats    import *
 ###############################################################
 
 ###############################################################
@@ -39,6 +39,7 @@ global nassim, ntimes, dt, t0
 global Eupdate, Nens, inflation, localization
 global Vupdate, minimization
 global hybrid_wght, do_hybrid
+global diag_fname, diag_fattr
 
 Ndof = 40
 F    = 8.0
@@ -71,8 +72,23 @@ alpha   = 4e-3                  # size of step in direction of normalized J
 cg      = True                  # True = Use conjugate gradient; False = Perform line search
 minimization = [maxiter, alpha, cg]
 
-hybrid_wght = 0.0               # weight for hybrid (0.0= varDA; 1.0= ensDA)
+hybrid_wght = 0.5               # weight for hybrid (0.0= varDA; 1.0= ensDA)
 do_hybrid   = True              # True= re-center ensemble about varDA, False= only ensDA
+
+diag_fname = 'L96_hybDA_diag.nc4' # name of output diagnostic file
+diag_fattr = {'ntimes'      : str(ntimes),
+              'dt'          : str(dt),
+              'Eupdate'     : str(Eupdate),
+              'localize'    : str(int(localize)),
+              'cov_cutoff'  : str(cov_cutoff),
+              'infl_meth'   : str(infl_meth),
+              'infl_fac'    : str(infl_fac),
+              'Vupdate'     : str(Vupdate),
+              'maxiter'     : str(maxiter),
+              'alpha'       : str(alpha),
+              'cg'          : str(int(cg)),
+              'do_hybrid'   : str(int(do_hybrid)),
+              'hybrid_wght' : str(hybrid_wght)}
 ###############################################################
 
 ###############################################################
@@ -93,11 +109,17 @@ def main():
     [tmp, Xa] = np.meshgrid(np.ones(Nens),xt)
     pert = 0.001 * ( np.random.randn(Ndof,Nens) )
     Xa = Xa + pert
+
+    # re-center the ensemble about initial true state
+    xam = np.mean(Xa,axis=1)
+    Xap = np.transpose(np.transpose(Xa) - xam)
+    Xa  = np.transpose(xt + np.transpose(Xap))
+
     xam = np.mean(Xa,axis=1)
     Xb = Xa.copy()
     xbm = xam.copy()
 
-    print 'using climatological covariance ...'
+    print 'load climatological covariance ...'
     nc = Dataset('L96_climo_B.nc4','r')
     Bs = nc.variables['B'][:]
     nc.close()
@@ -108,16 +130,24 @@ def main():
 
     # initialize arrays for statistics before cycling
     evstats = np.zeros(nassim) * np.NaN
-    itstats = np.zeros(nassim) * np.NaN
     xbrmse  = np.zeros(nassim) * np.NaN
     xarmse  = np.zeros(nassim) * np.NaN
     xyrmse  = np.zeros(nassim) * np.NaN
+    if ( do_hybrid ):
+        itstats = np.zeros(nassim) * np.NaN
 
     hist_ver       = np.zeros((Ndof,nassim)) * np.NaN
     hist_obs       = np.zeros((Ndof,nassim)) * np.NaN
     hist_xbm       = np.zeros((Ndof,nassim)) * np.NaN
     hist_xam       = np.zeros((Ndof,nassim)) * np.NaN
     hist_obs_truth = np.zeros((Ndof,(nassim+1)*(len(ts)-1)+1)) * np.NaN
+
+    # create diagnostic file
+    create_diag(diag_fname, diag_fattr, Ndof, nens=Nens, hybrid=do_hybrid)
+    if ( do_hybrid ):
+        write_diag(diag_fname, 0, xt, Xb, Xa, np.dot(H,xt), np.diag(R), prior_emean=xbm, posterior_emean=xam)
+    else:
+        write_diag(diag_fname, 0, xt, Xb, Xa, np.dot(H,xt), np.diag(R))
 
     for k in range(0, nassim):
 
@@ -147,7 +177,7 @@ def main():
         xbm = np.mean(Xb,axis=1)
         Xbp = np.transpose(np.transpose(Xb) - xbm)
 
-        # compute background error covariance
+        # compute background error covariance from the ensemble
         B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1)
 
         # update ensemble (mean and perturbations)
@@ -156,6 +186,10 @@ def main():
         Xap = np.transpose(np.transpose(Xa) - xam)
 
         if ( do_hybrid ):
+            # save a copy of the ensemble mean background and analysis
+            xbm_ens = xbm.copy()
+            xam_ens = xam.copy()
+
             # blend covariance from flow-dependent (ensemble) and static (climatology)
             Bc = (1.0 - hybrid_wght) * Bs + hybrid_wght * B
 
@@ -165,6 +199,10 @@ def main():
             # replace ensemble mean analysis with central analysis
             xam = xac.copy()
             Xa = np.transpose(xam + np.transpose(Xap))
+
+            # replace ensemble mean background with central background
+            xbm = xbc.copy()
+            Xb = np.transpose(xbm + np.transpose(Xbp))
 
         # error statistics for ensemble mean
         xbrmse[k] = np.sqrt( np.sum( (ver - xbm)**2 ) / Ndof )
@@ -178,14 +216,21 @@ def main():
         hist_xam[:,k] = xam
         hist_obs_truth[:,(k+1)*(len(ts)-1)+1] = y
 
+        # write diagnostics to disk
+        if ( do_hybrid ):
+            write_diag(diag_fname, k+1, ver, Xb, Xa, np.dot(H,xt), np.diag(R), prior_emean=xbm_ens, posterior_emean=xam_ens)
+        else:
+            write_diag(diag_fname, k+1, ver, Xb, Xa, np.dot(H,xt), np.diag(R))
+
         plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
         pyplot.pause(0.1)
 
     # make some plots
     plot_trace(obs=hist_obs, ver=hist_ver, xb=hist_xbm, xa=hist_xam, label=lab, N=5)
     plot_rmse(xbrmse, xarmse, yscale='linear')
-    plot_iteration_stats(itstats)
     plot_error_variance_stats(evstats)
+    if ( do_hybrid ):
+        plot_iteration_stats(itstats)
 
     pyplot.show()
 ###############################################################

@@ -218,9 +218,9 @@ def main():
 
         # write diagnostics to disk
         if ( do_hybrid ):
-            write_diag(diag_fname, k+1, ver, Xb, Xa, np.dot(H,xt), np.diag(R), prior_emean=xbm_ens, posterior_emean=xam_ens)
+            write_diag(diag_fname, k+1, ver, Xb, Xa, y, np.diag(R), prior_emean=xbm_ens, posterior_emean=xam_ens)
         else:
-            write_diag(diag_fname, k+1, ver, Xb, Xa, np.dot(H,xt), np.diag(R))
+            write_diag(diag_fname, k+1, ver, Xb, Xa, y, np.diag(R))
 
         plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
         pyplot.pause(0.1)

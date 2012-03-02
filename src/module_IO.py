@@ -28,6 +28,10 @@ from   netCDF4 import Dataset
 ###############################################################
 
 ###############################################################
+module = 'module_IO.py'
+###############################################################
+
+###############################################################
 def create_diag(fname, fattr, ndof, nobs=None, nens=None, hybrid=False):
 # {{{
     '''
@@ -42,6 +46,8 @@ def create_diag(fname, fattr, ndof, nobs=None, nens=None, hybrid=False):
      nens - number of ensemble members (None)
    hybrid - flag for hybrid DA (False)
     '''
+
+    source = 'create_diag'
 
     if ( nobs == None ):
         nobs = ndof
@@ -84,7 +90,8 @@ def create_diag(fname, fattr, ndof, nobs=None, nens=None, hybrid=False):
 
     except Exception as Instance:
 
-        print 'Exception occured during creating ' + fname
+        print 'Exception occured in %s of %s' % (source, module)
+        print 'Exception occured during creating  %s' % (fname)
         print type(Instance)
         print Instance.args
         print Instance
@@ -112,6 +119,8 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_err_var, prior_eme
         prior_emean - observation error variance (None)
     posterior_emean - observation error variance (None)
     '''
+
+    source = 'write_diag'
 
     if not os.path.isfile(fname):
         print 'file does not exist ' + fname
@@ -146,7 +155,8 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_err_var, prior_eme
 
     except Exception as Instance:
 
-        print 'Exception occured during writing to ' + fname
+        print 'Exception occured in %s of %s' % (source, module)
+        print 'Exception occured during writing to %s' % (fname)
         print type(Instance)
         print Instance.args
         print Instance
@@ -175,6 +185,8 @@ def read_diag(fname, time):
     posterior_emean - observation error variance ( if doing hybrid )
     '''
 
+    source = 'read_diag'
+
     if not os.path.isfile(fname):
         print 'file does not exist ' + fname
         sys.exit(2)
@@ -202,7 +214,8 @@ def read_diag(fname, time):
 
     except Exception as Instance:
 
-        print 'Exception occured during reading of ' + fname
+        print 'Exception occured in %s of %s' % (source, module)
+        print 'Exception occured during reading of %s' % (fname)
         print type(Instance)
         print Instance.args
         print Instance

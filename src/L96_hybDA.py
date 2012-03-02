@@ -51,7 +51,7 @@ Q = np.eye(Ndof)*0.0            # model error variance (covariance model is whit
 H = np.eye(Ndof)                # obs operator ( eye(Ndof) gives identity obs )
 R = np.eye(Ndof)*(4.0**2)       # observation error covariance
 
-nassim = 160                    # no. of assimilation cycles
+nassim = 200                    # no. of assimilation cycles
 ntimes = 0.05                   # do assimilation every ntimes non-dimensional time units
 dt     = 1.0e-4                 # time-step
 t0     = 0.0                    # initial time
@@ -72,7 +72,7 @@ alpha   = 4e-3                  # size of step in direction of normalized J
 cg      = True                  # True = Use conjugate gradient; False = Perform line search
 minimization = [maxiter, alpha, cg]
 
-hybrid_wght = 0.5               # weight for hybrid (0.0= varDA; 1.0= ensDA)
+hybrid_wght = 0.75              # weight for hybrid (0.0= varDA; 1.0= ensDA)
 do_hybrid   = True              # True= re-center ensemble about varDA, False= only ensDA
 
 diag_fname = 'L96_hybDA_diag.nc4' # name of output diagnostic file

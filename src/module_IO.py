@@ -109,7 +109,6 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_err_var, prior_eme
           posterior - posterior state
                 obs - observations
         obs_err_var - observation error variance
-        obs_err_var - observation error variance
         prior_emean - observation error variance (None)
     posterior_emean - observation error variance (None)
     '''
@@ -154,5 +153,64 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_err_var, prior_eme
         sys.exit(1)
 
     return
+# }}}
+###############################################################
+
+###############################################################
+def read_diag(fname, time):
+# {{{
+    '''
+    read the diagnostics from an output file given name and time index
+
+    read_diag(fname, time)
+
+              fname - name of the file to read from, must already exist
+               time - time index to read diagnostics
+              truth - truth
+              prior - prior state
+          posterior - posterior state
+                obs - observations
+        obs_err_var - observation error variance
+        prior_emean - observation error variance ( if doing hybrid )
+    posterior_emean - observation error variance ( if doing hybrid )
+    '''
+
+    if not os.path.isfile(fname):
+        print 'file does not exist ' + fname
+        sys.exit(2)
+
+    try:
+
+        nc = Dataset(fname, mode='r', format='NETCDF4')
+
+        truth       = nc.variables['truth'][time,]
+        prior       = np.transpose(nc.variables['prior'][time,])
+        posterior   = np.transpose(nc.variables['posterior'][time,])
+        obs         = nc.variables['obs'][time,:]
+        obs_err_var = nc.variables['obs_err_var'][time,:]
+
+        if 'do_hybrid' in nc.ncattrs():
+            hybrid = nc.do_hybrid
+        else:
+            hybrid = False
+
+        if ( hybrid ):
+            prior_mean     = nc.variables['prior_emean'][time,]
+            posterior_mean = nc.variables['posterior_emean'][time,]
+
+        nc.close()
+
+    except Exception as Instance:
+
+        print 'Exception occured during reading of ' + fname
+        print type(Instance)
+        print Instance.args
+        print Instance
+        sys.exit(1)
+
+    if ( hybrid ):
+        return truth, prior, posterior, obs, obs_err_var, prior_mean, posterior_mean
+    else:
+        return truth, prior, posterior, obs, obs_err_var
 # }}}
 ###############################################################

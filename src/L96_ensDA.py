@@ -66,7 +66,9 @@ inflation    = [infl_meth, infl_fac]
 
 use_climo  = False                # option to use climatological covariance (False = flow dependent)
 diag_fname = 'L96_ensDA_diag.nc4' # name of output diagnostic file
-diag_fattr = {'ntimes'      : str(ntimes),
+diag_fattr = {'F'           : str(F),
+              'dF'          : str(dF),
+              'ntimes'      : str(ntimes),
               'dt'          : str(dt),
               'Eupdate'     : str(Eupdate),
               'localize'    : str(int(localize)),
@@ -126,7 +128,7 @@ def main():
 
     # create diagnostic file
     create_diag(diag_fname, diag_fattr, Ndof, nens=Nens)
-    write_diag(diag_fname, 0, xt, Xb, Xa, np.dot(H,xt), np.diag(R))
+    write_diag(diag_fname, 0, xt, Xb, Xa, np.dot(H,xt), H, np.diag(R))
 
     for k in range(0, nassim):
 
@@ -174,7 +176,7 @@ def main():
         hist_obs_truth[:,(k+1)*(len(ts)-1)+1] = y
 
         # write diagnostics to disk
-        write_diag(diag_fname, k+1, ver, Xb, Xa, y, np.diag(R))
+        write_diag(diag_fname, k+1, ver, Xb, Xa, y, H, np.diag(R))
 
         plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
         pyplot.pause(0.1)

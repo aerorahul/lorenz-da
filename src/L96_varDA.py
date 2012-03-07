@@ -62,7 +62,9 @@ cg      = True               # True = Use conjugate gradient; False = Perform li
 minimization = [maxiter, alpha, cg]
 
 diag_fname = 'L96_varDA_diag.nc4' # name of output diagnostic file
-diag_fattr = {'ntimes'      : str(ntimes),
+diag_fattr = {'F'           : str(F),
+              'dF'          : str(dF),
+              'ntimes'      : str(ntimes),
               'dt'          : str(dt),
               'Vupdate'     : str(Vupdate),
               'maxiter'     : str(maxiter),
@@ -113,7 +115,7 @@ def main():
 
     # create diagnostic file
     create_diag(diag_fname, diag_fattr, Ndof)
-    write_diag(diag_fname, 0, xt, xb, xa, np.dot(H,xt), np.diag(R))
+    write_diag(diag_fname, 0, xt, xb, xa, np.dot(H,xt), H, np.diag(R))
 
     for k in range(0, nassim):
 
@@ -147,7 +149,7 @@ def main():
         hist_xa[:,k]  = xa
 
         # write diagnostics to disk
-        write_diag(diag_fname, k+1, ver, xb, xa, y, np.diag(R))
+        write_diag(diag_fname, k+1, ver, xb, xa, y, H, np.diag(R))
 
         plot_L96(obs=y, ver=ver, xa=xa, xb=xb, t=k+1, N=Ndof, figNum=1)
         pyplot.pause(0.1)

@@ -76,8 +76,9 @@ def create_diag(fname, fattr, ndof, nobs=None, nens=None, hybrid=False):
             Var = nc.createVariable('prior',    'f8',('ntime','ncopy','ndof',))
             Var = nc.createVariable('posterior','f8',('ntime','ncopy','ndof',))
 
-        Var = nc.createVariable('obs',        'f8',('ntime','nobs',))
-        Var = nc.createVariable('obs_err_var','f8',('ntime','nobs',))
+        Var = nc.createVariable('obs',         'f8',('ntime','nobs',))
+        Var = nc.createVariable('obs_operator','f8',('ntime','nobs','ndof',))
+        Var = nc.createVariable('obs_err_var', 'f8',('ntime','nobs',))
 
         if ( hybrid ):
             Var = nc.createVariable('prior_emean',    'f8',('ntime','ndof',))
@@ -102,7 +103,7 @@ def create_diag(fname, fattr, ndof, nobs=None, nens=None, hybrid=False):
 ###############################################################
 
 ###############################################################
-def write_diag(fname, time, truth, prior, posterior, obs, obs_err_var, prior_emean=None, posterior_emean=None):
+def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_var, prior_emean=None, posterior_emean=None):
 # {{{
     '''
     write the diagnostics to an output file
@@ -115,6 +116,7 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_err_var, prior_eme
               prior - prior state
           posterior - posterior state
                 obs - observations
+       obs_operator - forward observation operator
         obs_err_var - observation error variance
         prior_emean - observation error variance (None)
     posterior_emean - observation error variance (None)
@@ -142,8 +144,9 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_err_var, prior_eme
         else:
             nc.variables['posterior'][time,:,:] = np.transpose(posterior.copy())
 
-        nc.variables['obs'][time,:]         = obs.copy()
-        nc.variables['obs_err_var'][time,:] = obs_err_var.copy()
+        nc.variables['obs'][time,:]          = obs.copy()
+        nc.variables['obs_operator'][time,:] = obs_operator.copy()
+        nc.variables['obs_err_var'][time,:]  = obs_err_var.copy()
 
         if not ( prior_emean == None ):
             nc.variables['prior_emean'][time,:] = prior_emean.copy()
@@ -180,6 +183,7 @@ def read_diag(fname, time):
               prior - prior state
           posterior - posterior state
                 obs - observations
+       obs_operator - forward observation operator
         obs_err_var - observation error variance
         prior_emean - observation error variance ( if doing hybrid )
     posterior_emean - observation error variance ( if doing hybrid )
@@ -195,11 +199,12 @@ def read_diag(fname, time):
 
         nc = Dataset(fname, mode='r', format='NETCDF4')
 
-        truth       = nc.variables['truth'][time,]
-        prior       = np.transpose(nc.variables['prior'][time,])
-        posterior   = np.transpose(nc.variables['posterior'][time,])
-        obs         = nc.variables['obs'][time,:]
-        obs_err_var = nc.variables['obs_err_var'][time,:]
+        truth        = nc.variables['truth'][time,]
+        prior        = np.transpose(nc.variables['prior'][time,])
+        posterior    = np.transpose(nc.variables['posterior'][time,])
+        obs          = nc.variables['obs'][time,:]
+        obs_operator = nc.variables['obs_operator'][time,:]
+        obs_err_var  = np.diag(nc.variables['obs_err_var'][time,:])
 
         if 'do_hybrid' in nc.ncattrs():
             hybrid = nc.do_hybrid
@@ -222,8 +227,8 @@ def read_diag(fname, time):
         sys.exit(1)
 
     if ( hybrid ):
-        return truth, prior, posterior, obs, obs_err_var, prior_mean, posterior_mean
+        return truth, prior, posterior, obs, obs_operator, obs_err_var, prior_mean, posterior_mean
     else:
-        return truth, prior, posterior, obs, obs_err_var
+        return truth, prior, posterior, obs, obs_operator, obs_err_var
 # }}}
 ###############################################################

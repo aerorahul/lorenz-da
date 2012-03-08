@@ -70,7 +70,7 @@ def check_ensDA(Eupdate, inflation, localization):
         fail = True
 
     if   ( localization[0] == True ):
-        print 'Localizing using Gaspar-Cohn with a covariance cutoff of %f' % localization[1]
+        print 'Localizing using Gaspari-Cohn with a covariance cutoff of %f' % localization[1]
     else:
         print 'No localization'
 
@@ -321,7 +321,7 @@ def state_increment(obs_inc, pr, pr_obs_est):
     '''
     compute state increment by regressing an observation increment on the state
 
-    state_inc = state_increment(obs_inc, pr_obs_est, pr)
+    state_inc = state_increment(obs_inc, pr, pr_obs_est)
 
         obs_inc - observation increment
              pr - prior
@@ -425,7 +425,10 @@ minimization - minimization parameters [maxiter=1000, alpha=4e-3, cg=True]
     if ( cg      == None ): cg      = True
     minimization = [maxiter, alpha, cg]
 
-    if ( Vupdate == 1 ):
+    if   ( Vupdate == 0 ):
+        xa, A, niters = xb, B, 0
+
+    elif ( Vupdate == 1 ):
         xa, A, niters = ThreeDvar(xb, B, y, R, H, minimization)
 
     elif ( Vupdate == 2 ):

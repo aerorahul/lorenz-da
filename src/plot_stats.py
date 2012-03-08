@@ -190,9 +190,11 @@ def plot_error_variance_stats(evratio):
 
 ###############################################################
 def plot_ObImpact(dJa=None, dJe=None):
-    if ( dJa.all() == dJe.all() == None ):
-        print 'dJa == dJe == None, nothing to plot.'
+    if ( (dJa == None) and (dJe == None) ):
+        print 'dJa == dJe == None, nothing to plot'
         return None
+    if ( (dJa != None) and (dJe != None) ): width = 0.5
+    if ( (dJa != None) or  (dJe != None) ): width = 1.0
     fig = pyplot.figure()
     pyplot.clf()
     pyplot.hold(True)
@@ -203,12 +205,15 @@ def plot_ObImpact(dJa=None, dJe=None):
         yoff = yl[0] + 15
         stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(dJa), np.std(dJa,ddof=1))
         pyplot.text(1,yoff,stra,fontsize=10)
+        zeroline = np.zeros(len(dJa))
     if ( dJe != None ):
-        pyplot.plot(dJe,'r.-',label='Ensemble',linewidth=2)
+        pyplot.plot(dJe,'ro-',label='Ensemble',linewidth=2)
         pyplot.plot(np.ones(len(dJe))*np.mean(dJe),'r:')
         stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(dJe), np.std(dJe,ddof=1))
         yoff = yoff + 10
         pyplot.text(1,yoff,stre,fontsize=10)
+        zeroline = np.zeros(len(dJe))
+    pyplot.plot(zeroline,'k:')
     pyplot.xlabel('Assimilation Step', fontweight='bold',fontsize=12)
     pyplot.ylabel('delta J',           fontweight='bold',fontsize=12)
     pyplot.title('Observation Impact',fontweight='bold',fontsize=14)

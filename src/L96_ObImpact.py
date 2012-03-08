@@ -23,14 +23,13 @@ __status__    = "Prototype"
 
 ###############################################################
 import sys
-import numpy      as     np
-from   matplotlib import pyplot
-from   netCDF4    import Dataset
-from   scipy      import integrate, io
-from   lorenz     import L96, L96_tlm, plot_L96
-from   ensDA      import *
-from   varDA      import *
-from   plot_stats import *
+import numpy         as     np
+from   matplotlib    import pyplot
+from   netCDF4       import Dataset
+from   scipy         import integrate, io
+from   module_Lorenz import L96, L96_tlm, plot_L96
+from   module_DA     import *
+from   plot_stats    import *
 ###############################################################
 
 ###############################################################
@@ -87,6 +86,10 @@ def main():
 
     # insure the same sequence of random numbers EVERY TIME
     np.random.seed(0)
+
+    # check for valid ensemble and variational data assimilation options
+    check_ensDA(Eupdate, inflation, localization)
+    check_varDA(Vupdate)
 
     # initial setup from LE1998
     x0    = np.ones(Ndof) * F

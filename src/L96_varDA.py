@@ -38,6 +38,7 @@ global A, Q, H, R
 global nassim, ntimes, dt, t0
 global Vupdate, minimization
 global diag_fname, diag_fattr
+global plots_Show, plots_Save
 
 Ndof = 40
 F    = 8.0
@@ -70,6 +71,10 @@ diag_fattr = {'F'           : str(F),
               'maxiter'     : str(maxiter),
               'alpha'       : str(alpha),
               'cg'          : str(int(cg))}
+
+
+plots_Show = True              # plotting options to show figures
+plots_Save = True              # plotting options to save figures
 ###############################################################
 
 ###############################################################
@@ -77,6 +82,9 @@ def main():
 
     # insure the same sequence of random numbers EVERY TIME
     np.random.seed(0)
+
+    # check for valid variational data assimilation options
+    check_varDA(Vupdate)
 
     # initial setup from LE1998
     x0    = np.ones(Ndof) * F
@@ -151,17 +159,21 @@ def main():
         # write diagnostics to disk
         write_diag(diag_fname, k+1, ver, xb, xa, y, H, np.diag(R))
 
-        plot_L96(obs=y, ver=ver, xa=xa, xb=xb, t=k+1, N=Ndof, figNum=1)
-        pyplot.pause(0.1)
+        if ( plots_Show ):
+            fig1 = plot_L96(obs=y, ver=ver, xa=xa, xb=xb, t=k+1, N=Ndof, figNum=1)
+            pyplot.pause(0.1)
 
     print 'mean, max and min number of iterations : %d %d %d' %(np.int(np.mean(itstats)), np.max(itstats), np.min(itstats))
 
     # make some plots
-    plot_trace(obs=hist_obs, ver=hist_ver, xb=hist_xb, xa=hist_xa,label=lab,N=5)
-    plot_rmse(xbrmse, xarmse, yscale='linear')
-    plot_iteration_stats(itstats)
+    fig2 = plot_rmse(xbrmse, xarmse, yscale='linear')
+    fig3 = plot_iteration_stats(itstats)
 
-    pyplot.show()
+    if plots_Save:
+        fig2.savefig('L96_varRMSE.png',dpi=100,orientation='landscape',format='png')
+        fig3.savefig('L96_varItStats.png',dpi=100,orientation='landscape',format='png')
+
+    if ( plots_Show ): pyplot.show()
 ###############################################################
 
 ###############################################################

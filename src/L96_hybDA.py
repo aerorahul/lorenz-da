@@ -40,6 +40,7 @@ global Eupdate, Nens, inflation, localization
 global Vupdate, minimization
 global hybrid_wght, do_hybrid
 global diag_fname, diag_fattr
+global plots_Show, plots_Save
 
 Ndof = 40
 F    = 8.0
@@ -91,6 +92,9 @@ diag_fattr = {'F'           : str(F),
               'cg'          : str(int(cg)),
               'do_hybrid'   : str(int(do_hybrid)),
               'hybrid_wght' : str(hybrid_wght)}
+
+plots_Show = True              # plotting options to show figures
+plots_Save = True              # plotting options to save figures
 ###############################################################
 
 ###############################################################
@@ -98,6 +102,10 @@ def main():
 
     # insure the same sequence of random numbers EVERY TIME
     np.random.seed(0)
+
+    # check for valid ensemble and variational data assimilation options
+    check_ensDA(Eupdate, inflation, localization)
+    check_varDA(Vupdate)
 
     # initial setup from LE1998
     x0    = np.ones(Ndof) * F
@@ -183,7 +191,7 @@ def main():
         B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1)
 
         # update ensemble (mean and perturbations)
-        Xa, A, evstats[k] = update_ensDA(Xb, B, y, R, H, Eupdate=Eupdate, inflation=inflation, localization=localization)
+        Xa, evstats[k] = update_ensDA(Xb, y, R, H, Eupdate=Eupdate, inflation=inflation, localization=localization)
         xam = np.mean(Xa,axis=1)
         Xap = np.transpose(np.transpose(Xa) - xam)
 
@@ -224,17 +232,22 @@ def main():
         else:
             write_diag(diag_fname, k+1, ver, Xb, Xa, y, H, np.diag(R))
 
-        plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
-        pyplot.pause(0.1)
+        if ( plots_Show ):
+            fig1 = plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
+            pyplot.pause(0.1)
 
     # make some plots
-    plot_trace(obs=hist_obs, ver=hist_ver, xb=hist_xbm, xa=hist_xam, label=lab, N=5)
-    plot_rmse(xbrmse, xarmse, yscale='linear')
-    plot_error_variance_stats(evstats)
+    fig2 = plot_rmse(xbrmse, xarmse, yscale='linear')
+    fig3 = plot_error_variance_stats(evstats)
     if ( do_hybrid ):
-        plot_iteration_stats(itstats)
+        fig4 = plot_iteration_stats(itstats)
 
-    pyplot.show()
+    if plots_Save:
+        fig2.savefig('L96_hybRMSE.png',dpi=100,orientation='landscape',format='png')
+        fig3.savefig('L96_hybEVRatio.png',dpi=100,orientation='landscape',format='png')
+        fig4.savefig('L96_hybItStats.png',dpi=100,orientation='landscape',format='png')
+
+    if ( plots_Show ): pyplot.show()
 ###############################################################
 
 ###############################################################

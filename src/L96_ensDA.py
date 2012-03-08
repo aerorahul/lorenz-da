@@ -37,34 +37,34 @@ global Ndof, F, dF, lab
 global Q, H, R
 global nassim, ntimes, dt, t0
 global Eupdate, Nens, inflation, localization
-global use_climo, diag_fname, diag_fattr
+global diag_fname, diag_fattr
+global plots_Show, plots_Save
 
 Ndof = 40
 F    = 8.0
-dF   = 0.1
+dF   = 0.4
 lab  = []
 for j in range(0,Ndof): lab.append( 'x' + str(j+1) )
 
 Q = np.eye(Ndof)*0.0            # model error variance (covariance model is white for now)
 H = np.eye(Ndof)                # obs operator ( eye(Ndof) gives identity obs )
-R = np.eye(Ndof)*(4.0**2)       # observation error covariance
+R = np.eye(Ndof)*(0.2**2)       # observation error covariance
 
-nassim = 200                    # no. of assimilation cycles
+nassim = 2000                   # no. of assimilation cycles
 ntimes = 0.05                   # do assimilation every ntimes non-dimensional time units
 dt     = 1.0e-4                 # time-step
 t0     = 0.0                    # initial time
 
 Eupdate      = 2                # DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
-Nens         = 20               # number of ensemble members
+Nens         = 40               # number of ensemble members
 localize     = True             # do localization
 cov_cutoff   = 1.0              # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
 localization = [localize, cov_cutoff]
 infl_meth    = 1                # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
                                 # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
-infl_fac     = 1.02             # Depends on inflation method (see values in [] above)
+infl_fac     = 1.2              # Depends on inflation method (see values in [] above)
 inflation    = [infl_meth, infl_fac]
 
-use_climo  = False                # option to use climatological covariance (False = flow dependent)
 diag_fname = 'L96_ensDA_diag.nc4' # name of output diagnostic file
 diag_fattr = {'F'           : str(F),
               'dF'          : str(dF),
@@ -75,6 +75,9 @@ diag_fattr = {'F'           : str(F),
               'cov_cutoff'  : str(cov_cutoff),
               'infl_meth'   : str(infl_meth),
               'infl_fac'    : str(infl_fac)}
+
+plots_Show = True              # plotting options to show figures
+plots_Save = True              # plotting options to save figures
 ###############################################################
 
 ###############################################################
@@ -82,6 +85,9 @@ def main():
 
     # insure the same sequence of random numbers EVERY TIME
     np.random.seed(0)
+
+    # check for valid ensemble data assimilation options
+    check_ensDA(Eupdate, inflation, localization)
 
     # initial setup from LE1998
     x0    = np.ones(Ndof) * F
@@ -103,12 +109,6 @@ def main():
 
     xam = np.mean(Xa,axis=1)
     Xb = Xa.copy()
-
-    if ( use_climo ):
-        print 'using climatological covariance ...'
-        nc = Dataset('L96_climo_B.nc4','r')
-        Bc = nc.variables['B'][:]
-        nc.close()
 
     print 'Cycling ON the attractor ...'
 
@@ -149,18 +149,11 @@ def main():
             xs = integrate.odeint(L96, xa, ts, (F+dF,0.0))
             Xb[:,m] = xs[-1,:].copy()
 
-        # compute background ensemble mean and perturbations from the mean
-        xbm = np.mean(Xb,axis=1)
-        Xbp = np.transpose(np.transpose(Xb) - xbm)
-
-        # compute background error covariance; optionally, add model error covariance
-        if ( use_climo ):
-            B = Bc.copy()
-        else:
-            B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1) + Q
-
         # update ensemble (mean and perturbations)
-        Xa, A, evstats[k] = update_ensDA(Xb, B, y, R, H, Eupdate=Eupdate, inflation=inflation, localization=localization)
+        Xa, evstats[k] = update_ensDA(Xb, y, R, H, Eupdate=Eupdate, inflation=inflation, localization=localization)
+
+        # compute background and analysis ensemble mean
+        xbm = np.mean(Xb,axis=1)
         xam = np.mean(Xa,axis=1)
 
         # error statistics for ensemble mean
@@ -178,15 +171,19 @@ def main():
         # write diagnostics to disk
         write_diag(diag_fname, k+1, ver, Xb, Xa, y, H, np.diag(R))
 
-        plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
-        pyplot.pause(0.1)
+        if plots_Show:
+            plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
+            pyplot.pause(0.1)
 
     # make some plots
-    plot_trace(obs=hist_obs, ver=hist_ver, xb=hist_xbm, xa=hist_xam, label=lab, N=5)
-    plot_rmse(xbrmse, xarmse, yscale='linear')
-    plot_error_variance_stats(evstats)
+    fig1 = plot_rmse(xbrmse, xarmse, yscale='linear')
+    fig2 = plot_error_variance_stats(evstats)
 
-    pyplot.show()
+    if plots_Save:
+        fig1.savefig('L96_ensRMSE.png',dpi=100,orientation='landscape',format='png')
+        fig2.savefig('L96_ensEVRatio.png',dpi=100,orientation='landscape',format='png')
+
+    if plots_Show: pyplot.show()
 ###############################################################
 
 ###############################################################

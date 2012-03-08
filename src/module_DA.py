@@ -27,7 +27,63 @@ import numpy as np
 ###############################################################
 
 ###############################################################
-def update_ensDA(Xb, B, y, R, H, Eupdate=None, inflation=[None, None], localization=[None,
+def check_ensDA(Eupdate, inflation, localization):
+# {{{
+    '''
+    Check for valid ensemble DA algorithms and methods
+
+      Eupdate - ensemble data assimilation algorithms
+    inflation - inflation
+ localization - localization
+    '''
+
+    print '==========================================='
+
+    fail = False
+
+    if   ( Eupdate == 0 ):
+        print 'Running "No Assimilation"'
+    elif ( Eupdate == 1 ):
+        print 'Assimilate observations using the EnKF'
+    elif ( Eupdate == 2 ):
+        print 'Assimilate observations using the EnSRF'
+    elif ( Eupdate == 3 ):
+        print 'Assimilate observations using the EAKF'
+    else:
+        print 'Invalid assimilation algorithm'
+        print 'Eupdate must be one of : 0 | 1 | 2 | 3'
+        print 'No Assimilation | EnKF | EnSRF | EAKF'
+        fail = True
+
+    if   ( inflation[0] == 1 ):
+        print 'Inflating the Prior using multiplicative inflation with a factor of %f' % inflation[1]
+    elif ( inflation[0] == 2 ):
+        print 'Inflating the Prior by adding white-noise with zero-mean and %f spread' % inflation[1]
+    elif ( inflation[0] == 3 ):
+        print 'Inflating the Posterior by covariance relaxation method with weight %f to the prior' % inflation[1]
+    elif ( inflation[0] == 4 ):
+        print 'Inflating the Posterior by spread restoration method with a factor of %f' % inflation[1]
+    else:
+        print 'Invalid inflation method'
+        print 'inflation[0] must be one of : 1 | 2 | 3 | 4'
+        print 'Multiplicative | Additive | Covariance Relaxation | Spread Restoration'
+        fail = True
+
+    if   ( localization[0] == True ):
+        print 'Localizing using Gaspar-Cohn with a covariance cutoff of %f' % localization[1]
+    else:
+        print 'No localization'
+
+    print '==========================================='
+
+    if ( fail ): sys.exit(1)
+
+    return
+# }}}
+###############################################################
+
+###############################################################
+def update_ensDA(Xb, y, R, H, Eupdate=None, inflation=[None, None], localization=[None,
         None]):
 # {{{
     '''
@@ -36,7 +92,6 @@ def update_ensDA(Xb, B, y, R, H, Eupdate=None, inflation=[None, None], localizat
     Xa, A, error_variance_ratio = update_ensDA(Xb, B, y, R, H, Eupdate=3, inflation=[1, 1.02], localization=[True, 1.0])
 
           Xb - prior ensemble
-           B - background error covariance
            y - observations
            R - observation error covariance
            H - forward operator
@@ -44,7 +99,6 @@ def update_ensDA(Xb, B, y, R, H, Eupdate=None, inflation=[None, None], localizat
    inflation - inflation settings [method, factor = 1, 1.02]
 localization - localization settings [localize, cutoff = True, 1.0]
           Xa - posterior ensemble
-           A - analysis error covariance
      evratio - ratio of innovation variance to total variance
     '''
 
@@ -61,6 +115,20 @@ localization - localization settings [localize, cutoff = True, 1.0]
 
     innov  = np.zeros(Nobs) * np.NaN
     totvar = np.zeros(Nobs) * np.NaN
+
+    # prior inflation
+    if ( (inflation[0] == 1) or (inflation[0] == 2) ):
+
+        xbm = np.mean(Xb,axis=1)
+        Xbp = np.transpose(np.transpose(Xb) - xbm)
+
+        if   ( inflation[0] == 1 ): # multiplicative inflation
+            Xbp = inflation[1] * Xbp
+
+        elif ( inflation[0] == 2 ): # additive white model error (mean:zero, spread:inflation[1])
+            Xbp = Xbp + inflation[1] * np.random.randn(Ndof,Nens)
+
+        Xb = np.transpose(np.transpose(Xbp) + xbm)
 
     temp_ens = Xb.copy()
 
@@ -103,14 +171,10 @@ localization - localization settings [localize, cutoff = True, 1.0]
     xam = np.mean(Xa,axis=1)
     Xap = np.transpose(np.transpose(Xa) - xam)
 
-    # inflation
-    if   ( inflation[0] == 1 ): # multiplicative inflation
-        Xap = inflation[1] * Xap
-
-    elif ( inflation[0] == 2 ): # additive white model error (mean:zero, spread:inflation[1])
-        Xap = Xap + inflation[1] * np.random.randn(Ndof,Nens)
-
-    elif ( inflation[0] == 3 ): # covariance relaxation (Zhang, Snyder)
+    # posterior inflation
+    if   ( inflation[0] == 3 ): # covariance relaxation (Zhang & Snyder)
+        xbm = np.mean(Xb,axis=1)
+        Xbp = np.transpose(np.transpose(Xb) - xbm)
         Xap = Xbp * inflation[1] + Xap * (1.0 - inflation[1])
 
     elif ( inflation[0] == 4 ): # posterior spread restoration (Whitaker & Hammill)
@@ -119,15 +183,8 @@ localization - localization settings [localize, cutoff = True, 1.0]
         for i in np.arange(0,Ndof):
             Xap[i,:] =  np.sqrt((inflation[1] * (xbs[i] - xas[dof])/xas[i]) + 1.0) * Xap[i,:]
 
-    else:
-        print 'invalid inflation algorithm ...'
-        sys.exit(2)
-
     # add inflated perturbations back to analysis mean
     Xa = np.transpose(np.transpose(Xap) + xam)
-
-    # compute analysis error covariance matrix
-    A = np.dot(Xap,np.transpose(Xap)) / (Nens - 1)
 
     # check for filter divergence
     error_variance_ratio = np.sum(innov**2) / np.sum(totvar)
@@ -135,7 +192,7 @@ localization - localization settings [localize, cutoff = True, 1.0]
         print 'FILTER DIVERGENCE : ERROR / TOTAL VARIANCE = %f' % (error_variance_ratio)
         #break
 
-    return Xa, A, error_variance_ratio
+    return Xa, error_variance_ratio
 # }}}
 ###############################################################
 
@@ -304,6 +361,39 @@ def compute_cov_factor(dist, cov_cutoff):
         cov_factor = ( ( ( ( r/12 - 0.5 )*r +0.625 )*r + 5.0/3.0 )*r -5.0 )*r + 4.0 - 2.0 / (3.0 * r)
 
     return cov_factor
+# }}}
+###############################################################
+
+###############################################################
+def check_varDA(Vupdate):
+# {{{
+    '''
+    Check for valid variational DA algorithms
+
+    Vupdate - variational data assimilation algorithms
+    '''
+
+    print '==========================================='
+
+    fail = False
+
+    if   ( Vupdate == 0 ):
+        print 'Running "No Assimilation"'
+    elif ( Vupdate == 1 ):
+        print 'Assimilate observations using 3DVar'
+    elif ( Vupdate == 2 ):
+        print 'Assimilate observations using 4DVar'
+    else:
+        print 'Invalid assimilation algorithm'
+        print 'Vupdate must be one of : 0 | 1 | 2'
+        print 'No Assimilation | 3DVar | 4DVar'
+        fail = True
+
+    print '==========================================='
+
+    if ( fail ): sys.exit(1)
+
+    return
 # }}}
 ###############################################################
 

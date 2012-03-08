@@ -178,8 +178,8 @@ localization - localization settings [localize, cutoff = True, 1.0]
         Xap = Xbp * inflation[1] + Xap * (1.0 - inflation[1])
 
     elif ( inflation[0] == 4 ): # posterior spread restoration (Whitaker & Hammill)
-        xbs = np.std(Xb,axis=1)
-        xas = np.std(Xa,axis=1)
+        xbs = np.std(Xb,axis=1,ddof=1)
+        xas = np.std(Xa,axis=1,ddof=1)
         for i in np.arange(0,Ndof):
             Xap[i,:] =  np.sqrt((inflation[1] * (xbs[i] - xas[dof])/xas[i]) + 1.0) * Xap[i,:]
 
@@ -467,6 +467,7 @@ minimization - minimization parameters [maxiter, alpha, cg]
     Jold    = 1e6
     J       = 0
     Binv    = np.linalg.inv(B)
+    Rinv    = np.linalg.inv(R)
 
     while ( np.abs(Jold -J) > 1e-5 ):
 
@@ -477,15 +478,17 @@ minimization - minimization parameters [maxiter, alpha, cg]
         Jold = J
 
         # cost function : 2J(x) = Jb + Jo | Jb = [x-xb]^T B^(-1) [x-xb] | Jo = [y-Hx]^T R^(-1) [y-Hx]
-        Jb = 0.5 * np.dot(np.transpose((x - xb)), np.dot(Binv,(x-xb)))
-        Jo = 0.5 * np.dot(np.transpose((y - np.dot(H,x))), np.dot(np.linalg.inv(R),(y - np.dot(H,x))))
+        dx = x - xb
+        dy = y - np.dot(H,x)
+        Jb = 0.5 * np.dot(np.transpose(dx),np.dot(Binv,dx))
+        Jo = 0.5 * np.dot(np.transpose(dy),np.dot(Rinv,dy))
         J = Jb + Jo
+
+        # cost function gradient : dJ/dx
+        gJ = np.dot(Binv,dx) - np.dot(Rinv,dy)
 
         if ( niters == 0 ): print "initial cost = %10.5f" % J
         #print "cost = %10.5f" % J
-
-        # cost function gradient : dJ/dx
-        gJ = np.dot(Binv,(x - xb)) - np.dot(np.linalg.inv(R),(y-np.dot(H,x)))
 
         if ( cg ):
             if ( niters == 0 ):
@@ -509,7 +512,7 @@ minimization - minimization parameters [maxiter, alpha, cg]
     xa = x.copy()
 
     # analysis error covariance from Hessian
-    A = np.linalg.inv( Binv + np.linalg.inv(R) )
+    A = np.linalg.inv(Binv + Rinv)
 
     return xa, A, niters
 # }}}

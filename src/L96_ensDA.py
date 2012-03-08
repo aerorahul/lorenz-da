@@ -172,16 +172,16 @@ def main():
         write_diag(diag_fname, k+1, ver, Xb, Xa, y, H, np.diag(R))
 
         if plots_Show:
-            plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
+            fig1 = plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
             pyplot.pause(0.1)
 
     # make some plots
-    fig1 = plot_rmse(xbrmse, xarmse, yscale='linear')
-    fig2 = plot_error_variance_stats(evstats)
+    fig2 = plot_rmse(xbrmse, xarmse, yscale='linear')
+    fig3 = plot_error_variance_stats(evstats)
 
     if plots_Save:
-        fig1.savefig('L96_ensRMSE.png',dpi=100,orientation='landscape',format='png')
-        fig2.savefig('L96_ensEVRatio.png',dpi=100,orientation='landscape',format='png')
+        fig2.savefig('L96_ensRMSE.png',   dpi=100,orientation='landscape',format='png')
+        fig3.savefig('L96_ensEVRatio.png',dpi=100,orientation='landscape',format='png')
 
     if plots_Show: pyplot.show()
 ###############################################################

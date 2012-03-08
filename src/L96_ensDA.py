@@ -38,7 +38,7 @@ global Q, H, R
 global nassim, ntimes, dt, t0
 global Eupdate, Nens, inflation, localization
 global diag_fname, diag_fattr
-global plots_Show, plots_Save
+global plots_Show, plots_Save, plots_Freq
 
 Ndof = 40
 F    = 8.0
@@ -62,7 +62,7 @@ cov_cutoff   = 1.0              # normalized covariance cutoff = cutoff / ( 2*no
 localization = [localize, cov_cutoff]
 infl_meth    = 1                # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
                                 # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
-infl_fac     = 1.2              # Depends on inflation method (see values in [] above)
+infl_fac     = 1.22             # Depends on inflation method (see values in [] above)
 inflation    = [infl_meth, infl_fac]
 
 diag_fname = 'L96_ensDA_diag.nc4' # name of output diagnostic file
@@ -76,8 +76,9 @@ diag_fattr = {'F'           : str(F),
               'infl_meth'   : str(infl_meth),
               'infl_fac'    : str(infl_fac)}
 
-plots_Show = True              # plotting options to show figures
-plots_Save = True              # plotting options to save figures
+plots_Show = True               # plotting options to show figures
+plots_Save = True               # plotting options to save figures
+plots_Freq = 25                 # show plots every "?" assimilations
 ###############################################################
 
 ###############################################################
@@ -132,7 +133,7 @@ def main():
 
     for k in range(0, nassim):
 
-        print '========== assimilation time = %d ========== ' % (k+1)
+        print '========== assimilation time = %5d ========== ' % (k+1)
 
         # advance truth with the full nonlinear model
         xs = integrate.odeint(L96, xt, ts, (F,0.0))
@@ -171,17 +172,25 @@ def main():
         # write diagnostics to disk
         write_diag(diag_fname, k+1, ver, Xb, Xa, y, H, np.diag(R))
 
-        if plots_Show:
+        # show plots every plots_Freq assimilations if desired
+        if ( ( plots_Show ) and ( not np.mod(k,plots_Freq) ) ):
             fig1 = plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
-            pyplot.pause(0.1)
+            pyplot.draw()
+            fig2 = plot_rmse(xbrmse, xarmse, yscale='linear', figNum=2)
+            pyplot.draw()
+            fig3 = plot_error_variance_stats(evstats, figNum=3)
+            pyplot.draw()
+            if ( k == 0 ): pyplot.pause(0.01)
 
     # make some plots
-    fig2 = plot_rmse(xbrmse, xarmse, yscale='linear')
-    fig3 = plot_error_variance_stats(evstats)
+    fig2 = plot_rmse(xbrmse, xarmse, yscale='linear', figNum=2)
+    fig3 = plot_error_variance_stats(evstats, figNum=3)
 
     if plots_Save:
         fig2.savefig('L96_ensRMSE.png',   dpi=100,orientation='landscape',format='png')
         fig3.savefig('L96_ensEVRatio.png',dpi=100,orientation='landscape',format='png')
+
+    print '... all done ...'
 
     if plots_Show: pyplot.show()
 ###############################################################

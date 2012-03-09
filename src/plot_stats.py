@@ -221,7 +221,7 @@ def plot_error_variance_stats(evratio, figNum=None):
 ###############################################################
 
 ###############################################################
-def plot_ObImpact(dJa=None, dJe=None, figNum=None):
+def plot_ObImpact(dJa=None, dJe=None, figNum=None, startxIndex=0):
 
     if ( (dJa == None) and (dJe == None) ):
         print 'dJa == dJe == None, nothing to plot'
@@ -247,7 +247,12 @@ def plot_ObImpact(dJa=None, dJe=None, figNum=None):
         stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(dJe), np.std(dJe,ddof=1))
         zeroline = np.zeros(len(dJe))
 
-    pyplot.plot(zeroline,'k-')
+    pyplot.plot(zeroline,'k-',linewidth=1)
+
+    if ( startxIndex != 0 ):
+        locs, labels = pyplot.xticks()
+        newlabels = np.arange(startxIndex,startxIndex+len(zeroline))
+        pyplot.xticks(locs, newlabels)
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     yoff = yl[1] - 0.1 * (yl[1] - yl[0])

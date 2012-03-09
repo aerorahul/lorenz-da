@@ -62,7 +62,7 @@ cov_cutoff   = 1.0              # normalized covariance cutoff = cutoff / ( 2*no
 localization = [localize, cov_cutoff]
 infl_meth    = 1                # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
                                 # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
-infl_fac     = 1.22             # Depends on inflation method (see values in [] above)
+infl_fac     = 1.21             # Depends on inflation method (see values in [] above)
 inflation    = [infl_meth, infl_fac]
 
 diag_fname = 'L96_ensDA_diag.nc4' # name of output diagnostic file
@@ -78,7 +78,7 @@ diag_fattr = {'F'           : str(F),
 
 plots_Show = True               # plotting options to show figures
 plots_Save = True               # plotting options to save figures
-plots_Freq = 25                 # show plots every "?" assimilations
+plots_Freq = 50                 # show plots every "?" assimilations
 ###############################################################
 
 ###############################################################

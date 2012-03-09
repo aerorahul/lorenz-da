@@ -173,14 +173,11 @@ def main():
         write_diag(diag_fname, k+1, ver, Xb, Xa, y, H, np.diag(R))
 
         # show plots every plots_Freq assimilations if desired
-        if ( ( plots_Show ) and ( not np.mod(k,plots_Freq) ) ):
+        if ( (plots_Show) and (not np.mod(k,plots_Freq)) ):
             fig1 = plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
-            pyplot.draw()
             fig2 = plot_rmse(xbrmse, xarmse, yscale='linear', figNum=2)
-            pyplot.draw()
             fig3 = plot_error_variance_stats(evstats, figNum=3)
-            pyplot.draw()
-            if ( k == 0 ): pyplot.pause(0.01)
+            pyplot.pause(0.0001)
 
     # make some plots
     fig2 = plot_rmse(xbrmse, xarmse, yscale='linear', figNum=2)

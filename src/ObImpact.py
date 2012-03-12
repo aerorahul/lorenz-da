@@ -47,7 +47,7 @@ def main():
     # name of output diagnostic file
     dir_data       = '../data/' + model + '/ensDA_N=40/inf=1.21/'
     fname_diag     = dir_data + model + '_ensDA_diag.nc4'
-    fname_ObImpact = dir_data + model + '_ensDA_ObImpact_new'
+    fname_ObImpact = dir_data + model + '_ensDA_ObImpact'
 
     # read dimensions and necessary attributes from the diagnostic file
     try:
@@ -101,9 +101,16 @@ def main():
         print '========== assimilation time = %d ========== ' % (k)
 
         if ( do_hybrid ):
-            xti, Xbi, Xai, y, H, R, xami, xbmi = read_diag(fname_diag, k)
+            xti, Xbi, Xai, y, H, R, xbmi, xami, niter, evratio = read_diag(fname_diag, k)
         else:
-            xti, Xbi, Xai, y, H, R             = read_diag(fname_diag, k)
+            if ( nens == 0 ):
+                xti, Xbi, Xai, y, H, R, niter   = read_diag(fname_diag, k)
+            else:
+                xti, Xbi, Xai, y, H, R, evratio = read_diag(fname_diag, k)
+
+        # transpose required because of the way data is written to disk
+        Xbi = np.transpose(Xbi)
+        Xai = np.transpose(Xai)
 
         if ( nens != 0 ):
             if ( not do_hybrid ):

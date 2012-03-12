@@ -45,7 +45,7 @@ def main():
     edJb = object['ens_dJb']
 
     sOI = 500
-    eOI = 1000
+    eOI = 700
 
     fig = plot_ObImpact(dJa=adJ[sOI:eOI], dJe=edJ[sOI:eOI], startxIndex=sOI)
     #fig.savefig('ObImpact200.eps',dpi=300,orientation='landscape',format='eps')
@@ -55,8 +55,8 @@ def main():
     pyplot.plot(adJa[sOI:eOI],'b-')
     pyplot.plot(edJa[sOI:eOI],'r-')
     pyplot.plot(np.zeros(eOI-sOI+1),'k-')
-    stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJa), np.std(adJa,ddof=1))
-    stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJa), np.std(edJa,ddof=1))
+    stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJa[sOI:eOI]), np.std(adJa[sOI:eOI],ddof=1))
+    stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJa[sOI:eOI]), np.std(edJa[sOI:eOI],ddof=1))
     yl = pyplot.get(pyplot.gca(),'ylim')
     yoff = yl[0] + 0.4
     pyplot.text(5,yoff,stra,fontsize=10)
@@ -70,8 +70,8 @@ def main():
     pyplot.plot(adJb[sOI:eOI],'b-')
     pyplot.plot(edJb[sOI:eOI],'r-')
     pyplot.plot(np.zeros(eOI-sOI+1),'k-')
-    stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJb), np.std(adJb,ddof=1))
-    stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJb), np.std(edJb,ddof=1))
+    stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJb[sOI:eOI]), np.std(adJb[sOI:eOI],ddof=1))
+    stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJb[sOI:eOI]), np.std(edJb[sOI:eOI],ddof=1))
     yl = pyplot.get(pyplot.gca(),'ylim')
     yoff = yl[0] + 0.4
     pyplot.text(5,yoff,stra,fontsize=10)

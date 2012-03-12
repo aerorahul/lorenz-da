@@ -38,7 +38,6 @@ global Q, H, R
 global nassim, ntimes, dt, t0
 global Eupdate, Nens, inflation, localization
 global diag_fname, diag_fattr
-global plots_Show, plots_Save, plots_Freq
 
 Ndof = 40
 F    = 8.0
@@ -65,7 +64,7 @@ infl_meth    = 1                # inflation (1= Multiplicative [1.01], 2= Additi
 infl_fac     = 1.21             # Depends on inflation method (see values in [] above)
 inflation    = [infl_meth, infl_fac]
 
-diag_fname = 'L96_ensDA_diag.nc4' # name of output diagnostic file
+diag_fname = '../data/L96/ensDA_N=40/inf=1.21/L96_ensDA_diag.nc4' # name of output diagnostic file
 diag_fattr = {'F'           : str(F),
               'dF'          : str(dF),
               'ntimes'      : str(ntimes),
@@ -75,10 +74,6 @@ diag_fattr = {'F'           : str(F),
               'cov_cutoff'  : str(cov_cutoff),
               'infl_meth'   : str(infl_meth),
               'infl_fac'    : str(infl_fac)}
-
-plots_Show = True               # plotting options to show figures
-plots_Save = True               # plotting options to save figures
-plots_Freq = 50                 # show plots every "?" assimilations
 ###############################################################
 
 ###############################################################
@@ -108,28 +103,15 @@ def main():
     Xap = np.transpose(np.transpose(Xa) - xam)
     Xa  = np.transpose(xt + np.transpose(Xap))
 
-    xam = np.mean(Xa,axis=1)
     Xb = Xa.copy()
 
     print 'Cycling ON the attractor ...'
 
     ts = np.arange(t0,ntimes+dt,dt)     # time between assimilations
 
-    # initialize arrays for statistics before cycling
-    evstats = np.zeros(nassim) * np.NaN
-    xbrmse  = np.zeros(nassim) * np.NaN
-    xarmse  = np.zeros(nassim) * np.NaN
-    xyrmse  = np.zeros(nassim) * np.NaN
-
-    hist_ver       = np.zeros((Ndof,nassim)) * np.NaN
-    hist_obs       = np.zeros((Ndof,nassim)) * np.NaN
-    hist_xbm       = np.zeros((Ndof,nassim)) * np.NaN
-    hist_xam       = np.zeros((Ndof,nassim)) * np.NaN
-    hist_obs_truth = np.zeros((Ndof,(nassim+1)*(len(ts)-1)+1)) * np.NaN
-
     # create diagnostic file
     create_diag(diag_fname, diag_fattr, Ndof, nens=Nens)
-    write_diag(diag_fname, 0, xt, Xb, Xa, np.dot(H,xt), H, np.diag(R))
+    write_diag(diag_fname, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), evratio = np.NaN)
 
     for k in range(0, nassim):
 
@@ -151,45 +133,13 @@ def main():
             Xb[:,m] = xs[-1,:].copy()
 
         # update ensemble (mean and perturbations)
-        Xa, evstats[k] = update_ensDA(Xb, y, R, H, Eupdate=Eupdate, inflation=inflation, localization=localization)
-
-        # compute background and analysis ensemble mean
-        xbm = np.mean(Xb,axis=1)
-        xam = np.mean(Xa,axis=1)
-
-        # error statistics for ensemble mean
-        xbrmse[k] = np.sqrt( np.sum( (ver - xbm)**2 ) / Ndof )
-        xarmse[k] = np.sqrt( np.sum( (ver - xam)**2 ) / Ndof )
-        xyrmse[k] = np.sqrt( np.sum( (ver -   y)**2 ) / Ndof )
-
-        # history (for plotting)
-        hist_ver[:,k] = ver
-        hist_obs[:,k] = y
-        hist_xbm[:,k] = xbm
-        hist_xam[:,k] = xam
-        hist_obs_truth[:,(k+1)*(len(ts)-1)+1] = y
+        Xa, evratio = update_ensDA(Xb, y, R, H, Eupdate=Eupdate, inflation=inflation, localization=localization)
 
         # write diagnostics to disk
-        write_diag(diag_fname, k+1, ver, Xb, Xa, y, H, np.diag(R))
-
-        # show plots every plots_Freq assimilations if desired
-        if ( (plots_Show) and (not np.mod(k,plots_Freq)) ):
-            fig1 = plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
-            fig2 = plot_rmse(xbrmse, xarmse, yscale='linear', figNum=2)
-            fig3 = plot_error_variance_stats(evstats, figNum=3)
-            pyplot.pause(0.0001)
-
-    # make some plots
-    fig2 = plot_rmse(xbrmse, xarmse, yscale='linear', figNum=2)
-    fig3 = plot_error_variance_stats(evstats, figNum=3)
-
-    if plots_Save:
-        fig2.savefig('L96_ensRMSE.png',   dpi=100,orientation='landscape',format='png')
-        fig3.savefig('L96_ensEVRatio.png',dpi=100,orientation='landscape',format='png')
+        write_diag(diag_fname, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, H, np.diag(R), evratio = evratio)
 
     print '... all done ...'
-
-    if plots_Show: pyplot.show()
+    sys.exit(0)
 ###############################################################
 
 ###############################################################

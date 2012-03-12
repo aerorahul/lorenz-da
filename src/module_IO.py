@@ -72,9 +72,11 @@ def create_diag(fname, fattr, ndof, nobs=None, nens=None, hybrid=False):
         if ( nens == None ):
             Var = nc.createVariable('prior',    'f8',('ntime','ndof',))
             Var = nc.createVariable('posterior','f8',('ntime','ndof',))
+            Var = nc.createVariable('niters',   'f8',('ntime',))
         else:
             Var = nc.createVariable('prior',    'f8',('ntime','ncopy','ndof',))
             Var = nc.createVariable('posterior','f8',('ntime','ncopy','ndof',))
+            Var = nc.createVariable('evratio',  'f8',('ntime',))
 
         Var = nc.createVariable('obs',         'f8',('ntime','nobs',))
         Var = nc.createVariable('obs_operator','f8',('ntime','nobs','ndof',))
@@ -83,6 +85,7 @@ def create_diag(fname, fattr, ndof, nobs=None, nens=None, hybrid=False):
         if ( hybrid ):
             Var = nc.createVariable('prior_emean',    'f8',('ntime','ndof',))
             Var = nc.createVariable('posterior_emean','f8',('ntime','ndof',))
+            Var = nc.createVariable('niters',         'f8',('ntime',))
 
         for (key,value) in fattr.iteritems():
             exec( 'nc.%s = %s' % (key,value) )
@@ -103,7 +106,7 @@ def create_diag(fname, fattr, ndof, nobs=None, nens=None, hybrid=False):
 ###############################################################
 
 ###############################################################
-def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_var, prior_emean=None, posterior_emean=None):
+def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_var, prior_emean=None, posterior_emean=None, niters=None, evratio=None):
 # {{{
     '''
     write the diagnostics to an output file
@@ -118,8 +121,10 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_
                 obs - observations
        obs_operator - forward observation operator
         obs_err_var - observation error variance
-        prior_emean - observation error variance (None)
-    posterior_emean - observation error variance (None)
+        prior_emean - prior ensemble mean (None)
+    posterior_emean - posterior ensemble mean (None)
+             niters - no. of iterations for 3/4DVar to converge (None)
+            evratio - error-to-variance ration (None)
     '''
 
     source = 'write_diag'
@@ -137,12 +142,12 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_
         if ( len(np.shape(prior)) == 1 ):
             nc.variables['prior'][time,:]   = prior.copy()
         else:
-            nc.variables['prior'][time,:,:] = np.transpose(prior.copy())
+            nc.variables['prior'][time,:,:] = prior.copy()
 
         if ( len(np.shape(posterior)) == 1 ):
             nc.variables['posterior'][time,:]   = posterior.copy()
         else:
-            nc.variables['posterior'][time,:,:] = np.transpose(posterior.copy())
+            nc.variables['posterior'][time,:,:] = posterior.copy()
 
         nc.variables['obs'][time,:]          = obs.copy()
         nc.variables['obs_operator'][time,:] = obs_operator.copy()
@@ -153,6 +158,12 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_
 
         if not ( posterior_emean == None ):
             nc.variables['posterior_emean'][time,:] = posterior_emean.copy()
+
+        if not ( niters == None ):
+            nc.variables['niters'][time] = niters
+
+        if not ( evratio == None ):
+            nc.variables['evratio'][time] = evratio
 
         nc.close()
 
@@ -170,15 +181,16 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_
 ###############################################################
 
 ###############################################################
-def read_diag(fname, time):
+def read_diag(fname, time, end_time=None):
 # {{{
     '''
     read the diagnostics from an output file given name and time index
 
-    read_diag(fname, time)
+    read_diag(fname, time, end_time=None)
 
               fname - name of the file to read from, must already exist
                time - time index to read diagnostics
+           end_time - return chunk of data from time to end_time (None)
               truth - truth
               prior - prior state
           posterior - posterior state
@@ -195,16 +207,18 @@ def read_diag(fname, time):
         print 'file does not exist ' + fname
         sys.exit(2)
 
+    if ( end_time == None ): end_time = time + 1
+
     try:
 
         nc = Dataset(fname, mode='r', format='NETCDF4')
 
-        truth        = nc.variables['truth'][time,]
-        prior        = np.transpose(nc.variables['prior'][time,])
-        posterior    = np.transpose(nc.variables['posterior'][time,])
-        obs          = nc.variables['obs'][time,:]
-        obs_operator = nc.variables['obs_operator'][time,:]
-        obs_err_var  = np.diag(nc.variables['obs_err_var'][time,:])
+        truth        = np.squeeze(nc.variables['truth'][time:end_time,])
+        prior        = np.squeeze(nc.variables['prior'][time:end_time,])
+        posterior    = np.squeeze(nc.variables['posterior'][time:end_time,])
+        obs          = np.squeeze(nc.variables['obs'][time:end_time,])
+        obs_operator = np.squeeze(nc.variables['obs_operator'][time:end_time,])
+        obs_err_var  = np.squeeze(np.diag(nc.variables['obs_err_var'][time:end_time,]))
 
         if 'do_hybrid' in nc.ncattrs():
             hybrid = nc.do_hybrid
@@ -212,8 +226,14 @@ def read_diag(fname, time):
             hybrid = False
 
         if ( hybrid ):
-            prior_mean     = nc.variables['prior_emean'][time,]
-            posterior_mean = nc.variables['posterior_emean'][time,]
+            prior_mean     = np.squeeze(nc.variables['prior_emean'][time:end_time,])
+            posterior_mean = np.squeeze(nc.variables['posterior_emean'][time:end_time,])
+
+        if 'niters' in nc.variables.keys():
+            niters = np.squeeze(nc.variables['niters'][time:end_time])
+
+        if 'evratio' in nc.variables.keys():
+            evratio = np.squeeze(nc.variables['evratio'][time:end_time])
 
         nc.close()
 
@@ -227,8 +247,13 @@ def read_diag(fname, time):
         sys.exit(1)
 
     if ( hybrid ):
-        return truth, prior, posterior, obs, obs_operator, obs_err_var, prior_mean, posterior_mean
+        return truth, prior, posterior, obs, obs_operator, obs_err_var, prior_mean, posterior_mean, niters, evratio
     else:
-        return truth, prior, posterior, obs, obs_operator, obs_err_var
+        if   ( 'niters' in nc.variables.keys() ):
+            return truth, prior, posterior, obs, obs_operator, obs_err_var, niters
+        elif ( 'evratio' in nc.variables.keys() ):
+            return truth, prior, posterior, obs, obs_operator, obs_err_var, evratio
+        else:
+            return truth, prior, posterior, obs, obs_operator, obs_err_var
 # }}}
 ###############################################################

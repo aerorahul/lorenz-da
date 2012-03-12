@@ -249,21 +249,28 @@ def plot_ObImpact(dJa=None, dJe=None, figNum=None, startxIndex=0):
 
     pyplot.plot(zeroline,'k-',linewidth=1)
 
-    if ( startxIndex != 0 ):
-        locs, labels = pyplot.xticks()
-        newlabels = np.arange(startxIndex,startxIndex+len(zeroline))
-        pyplot.xticks(locs, newlabels)
+    if   ( len(zeroline) >= 200 ):
+        inc = 200
+    elif ( len(zeroline) >= 20 ):
+        inc = 20
+    else:
+        inc = 2
+
+    locs, labels = pyplot.xticks()
+    newlocs   = np.arange(startxIndex,startxIndex+len(zeroline)+1,inc) - startxIndex
+    newlabels = np.arange(startxIndex,startxIndex+len(zeroline)+1,inc)
+    pyplot.xticks(newlocs, newlabels)
 
     yl = pyplot.get(pyplot.gca(),'ylim')
-    yoff = yl[1] - 0.1 * (yl[1] - yl[0])
+    yoff = yl[0] + 0.4
     pyplot.text(5,yoff,stra,fontsize=10)
-    yoff = yl[1] - 0.2 * (yl[1] - yl[0])
+    yoff = yl[0] + 0.2
     pyplot.text(5,yoff,stre,fontsize=10)
 
     pyplot.xlabel('Assimilation Step', fontweight='bold',fontsize=12)
     pyplot.ylabel('delta J',           fontweight='bold',fontsize=12)
     pyplot.title('Observation Impact',fontweight='bold',fontsize=14)
-    pyplot.legend(loc=4,ncol=2)
+    pyplot.legend(loc=0,ncol=2)
     pyplot.hold(False)
     return fig
 ###############################################################

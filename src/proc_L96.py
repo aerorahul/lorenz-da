@@ -35,7 +35,7 @@ from   plot_stats    import *
 def main():
 
     # name of output diagnostic file to read
-    fname_diag = '../data/L96/ensDA_N=40/inf=1.21/L96_ensDA_diag_LONG.nc4'
+    fname_diag = '../data/L96/ensDA_N=40/inf=1.21/L96_ensDA_diag.nc4'
 
     # read dimensions and necessary attributes from the diagnostic file
     try:
@@ -73,8 +73,8 @@ def main():
     else:
         if ( nens == 0 ):
             xt, Xb, Xa, y, tmp, tmp, niters = read_diag(fname_diag, 0, end_time = nassim+1)
-            xbm = xb.copy()
-            xam = xa.copy()
+            xbm = Xb.copy()
+            xam = Xa.copy()
         else:
             xt, Xb, Xa, y, tmp, tmp, evratio = read_diag(fname_diag, 0, end_time = nassim+1)
             xbm = np.mean(Xb, axis=1)

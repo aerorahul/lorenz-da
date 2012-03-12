@@ -91,7 +91,6 @@ def main():
 
     # Make a copy of truth for plotting later
     xt    = x0.copy()
-    truth = x0.copy()
 
     # populate initial ensemble analysis by perturbing true state
     [tmp, Xa] = np.meshgrid(np.ones(Nens),xt)
@@ -119,7 +118,6 @@ def main():
 
         # advance truth with the full nonlinear model
         xs = integrate.odeint(L96, xt, ts, (F,0.0))
-        truth = np.vstack([truth, xs[1:,:]])
         xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values

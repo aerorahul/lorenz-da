@@ -40,31 +40,30 @@ global Eupdate, Nens, inflation, localization
 global Vupdate, minimization
 global hybrid_wght, do_hybrid
 global diag_fname, diag_fattr
-global plots_Show, plots_Save
 
 Ndof = 40
 F    = 8.0
-dF   = 0.1
+dF   = 0.4
 lab  = []
 for j in range(0,Ndof): lab.append( 'x' + str(j+1) )
 
 Q = np.eye(Ndof)*0.0            # model error variance (covariance model is white for now)
 H = np.eye(Ndof)                # obs operator ( eye(Ndof) gives identity obs )
-R = np.eye(Ndof)*(4.0**2)       # observation error covariance
+R = np.eye(Ndof)*(0.2**2)       # observation error covariance
 
-nassim = 200                    # no. of assimilation cycles
+nassim = 2000                   # no. of assimilation cycles
 ntimes = 0.05                   # do assimilation every ntimes non-dimensional time units
 dt     = 1.0e-4                 # time-step
 t0     = 0.0                    # initial time
 
 Eupdate      = 2                # ensemble-based DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
-Nens         = 20               # number of ensemble members
+Nens         = 40               # number of ensemble members
 localize     = True             # do localization
 cov_cutoff   = 1.0              # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
 localization = [localize, cov_cutoff]
 infl_meth    = 1                # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
                                 # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
-infl_fac     = 1.02             # Depends on inflation method (see values in [] above)
+infl_fac     = 1.45             # Depends on inflation method (see values in [] above)
 inflation    = [infl_meth, infl_fac]
 
 Vupdate = 1                     # variational-based DA method (1= 3Dvar; 2= 4Dvar)
@@ -73,10 +72,11 @@ alpha   = 4e-3                  # size of step in direction of normalized J
 cg      = True                  # True = Use conjugate gradient; False = Perform line search
 minimization = [maxiter, alpha, cg]
 
-hybrid_wght = 0.75              # weight for hybrid (0.0= varDA; 1.0= ensDA)
+hybrid_wght = 0.0               # weight for hybrid (0.0= varDA; 1.0= ensDA)
 do_hybrid   = True              # True= re-center ensemble about varDA, False= only ensDA
 
-diag_fname = 'L96_hybDA_diag.nc4' # name of output diagnostic file
+# name and attributes of/in the output diagnostic file
+diag_fname = 'L96_hybDA_diag.nc4'
 diag_fattr = {'F'           : str(F),
               'dF'          : str(dF),
               'ntimes'      : str(ntimes),
@@ -92,9 +92,6 @@ diag_fattr = {'F'           : str(F),
               'cg'          : str(int(cg)),
               'do_hybrid'   : str(int(do_hybrid)),
               'hybrid_wght' : str(hybrid_wght)}
-
-plots_Show = True              # plotting options to show figures
-plots_Save = True              # plotting options to save figures
 ###############################################################
 
 ###############################################################
@@ -112,8 +109,7 @@ def main():
     x0[0] = 1.001 * F
 
     # Make a copy of truth for plotting later
-    xt    = x0.copy()
-    truth = x0.copy()
+    xt = x0.copy()
 
     # populate initial ensemble analysis by perturbing true state
     [tmp, Xa] = np.meshgrid(np.ones(Nens),xt)
@@ -125,47 +121,33 @@ def main():
     Xap = np.transpose(np.transpose(Xa) - xam)
     Xa  = np.transpose(xt + np.transpose(Xap))
 
-    xam = np.mean(Xa,axis=1)
     Xb = Xa.copy()
+    xam = xt.copy()
     xbm = xam.copy()
 
-    print 'load climatological covariance ...'
-    nc = Dataset('L96_climo_B.nc4','r')
-    Bs = nc.variables['B'][:]
-    nc.close()
+    if ( do_hybrid ):
+        print 'load climatological covariance ...'
+        nc = Dataset('L96_climo_B.nc4','r')
+        Bs = nc.variables['B'][:]
+        nc.close()
 
     print 'Cycling ON the attractor ...'
 
     ts = np.arange(t0,ntimes+dt,dt)     # time between assimilations
 
-    # initialize arrays for statistics before cycling
-    evstats = np.zeros(nassim) * np.NaN
-    xbrmse  = np.zeros(nassim) * np.NaN
-    xarmse  = np.zeros(nassim) * np.NaN
-    xyrmse  = np.zeros(nassim) * np.NaN
-    if ( do_hybrid ):
-        itstats = np.zeros(nassim) * np.NaN
-
-    hist_ver       = np.zeros((Ndof,nassim)) * np.NaN
-    hist_obs       = np.zeros((Ndof,nassim)) * np.NaN
-    hist_xbm       = np.zeros((Ndof,nassim)) * np.NaN
-    hist_xam       = np.zeros((Ndof,nassim)) * np.NaN
-    hist_obs_truth = np.zeros((Ndof,(nassim+1)*(len(ts)-1)+1)) * np.NaN
-
     # create diagnostic file
     create_diag(diag_fname, diag_fattr, Ndof, nens=Nens, hybrid=do_hybrid)
     if ( do_hybrid ):
-        write_diag(diag_fname, 0, xt, Xb, Xa, np.dot(H,xt), H, np.diag(R), prior_emean=xbm, posterior_emean=xam)
+        write_diag(diag_fname, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), prior_emean=xbm, posterior_emean=xam, evratio=np.NaN, niters=np.NaN)
     else:
-        write_diag(diag_fname, 0, xt, Xb, Xa, np.dot(H,xt), H, np.diag(R))
+        write_diag(diag_fname, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), evratio=np.NaN)
 
     for k in range(0, nassim):
 
-        print '========== assimilation time = %d ========== ' % (k+1)
+        print '========== assimilation time = %5d ========== ' % (k+1)
 
         # advance truth with the full nonlinear model
         xs = integrate.odeint(L96, xt, ts, (F,0.0))
-        truth = np.vstack([truth, xs[1:,:]])
         xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values
@@ -191,7 +173,7 @@ def main():
         B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1)
 
         # update ensemble (mean and perturbations)
-        Xa, evstats[k] = update_ensDA(Xb, y, R, H, Eupdate=Eupdate, inflation=inflation, localization=localization)
+        Xa, evratio = update_ensDA(Xb, y, R, H, Eupdate=Eupdate, inflation=inflation, localization=localization)
         xam = np.mean(Xa,axis=1)
         Xap = np.transpose(np.transpose(Xa) - xam)
 
@@ -204,7 +186,7 @@ def main():
             Bc = (1.0 - hybrid_wght) * Bs + hybrid_wght * B
 
             # update the central trajectory
-            xac, Ac, itstats[k] = update_varDA(xbc, Bc, y, R, H, Vupdate=Vupdate, minimization=minimization)
+            xac, Ac, niters = update_varDA(xbc, Bc, y, R, H, Vupdate=Vupdate, minimization=minimization)
 
             # replace ensemble mean analysis with central analysis
             xam = xac.copy()
@@ -214,40 +196,14 @@ def main():
             xbm = xbc.copy()
             Xb = np.transpose(xbm + np.transpose(Xbp))
 
-        # error statistics for ensemble mean
-        xbrmse[k] = np.sqrt( np.sum( (ver - xbm)**2 ) / Ndof )
-        xarmse[k] = np.sqrt( np.sum( (ver - xam)**2 ) / Ndof )
-        xyrmse[k] = np.sqrt( np.sum( (ver -   y)**2 ) / Ndof )
-
-        # history (for plotting)
-        hist_ver[:,k] = ver
-        hist_obs[:,k] = y
-        hist_xbm[:,k] = xbm
-        hist_xam[:,k] = xam
-        hist_obs_truth[:,(k+1)*(len(ts)-1)+1] = y
-
         # write diagnostics to disk
         if ( do_hybrid ):
-            write_diag(diag_fname, k+1, ver, Xb, Xa, y, H, np.diag(R), prior_emean=xbm_ens, posterior_emean=xam_ens)
+            write_diag(diag_fname, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, H, np.diag(R), prior_emean=xbm_ens, posterior_emean=xam_ens, evratio=evratio, niters=niters)
         else:
-            write_diag(diag_fname, k+1, ver, Xb, Xa, y, H, np.diag(R))
+            write_diag(diag_fname, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, H, np.diag(R), evratio=evratio)
 
-        if ( plots_Show ):
-            fig1 = plot_L96(obs=y, ver=ver, xa=Xa, t=k+1, N=Ndof, figNum=1)
-            pyplot.pause(0.1)
-
-    # make some plots
-    fig2 = plot_rmse(xbrmse, xarmse, yscale='linear')
-    fig3 = plot_error_variance_stats(evstats)
-    if ( do_hybrid ):
-        fig4 = plot_iteration_stats(itstats)
-
-    if plots_Save:
-        fig2.savefig('L96_hybRMSE.png',dpi=100,orientation='landscape',format='png')
-        fig3.savefig('L96_hybEVRatio.png',dpi=100,orientation='landscape',format='png')
-        fig4.savefig('L96_hybItStats.png',dpi=100,orientation='landscape',format='png')
-
-    if ( plots_Show ): pyplot.show()
+    print '... all done ...'
+    sys.exit(0)
 ###############################################################
 
 ###############################################################

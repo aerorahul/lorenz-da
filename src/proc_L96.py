@@ -34,7 +34,9 @@ from   plot_stats    import *
 def main():
 
     # name of output diagnostic file to read
-    fname_diag = '../data/L96/ensDA_N=40/inf=1.21/L96_ensDA_diag.nc4'
+    fname_diag = 'L96_varDA_diag.nc4'
+    fname_diag = 'L96_ensDA_diag.nc4'
+    fname_diag = 'L96_hybDA_diag.nc4'
 
     # read dimensions and necessary attributes from the diagnostic file
     try:
@@ -75,19 +77,23 @@ def main():
         Xa      = np.squeeze(nc.variables['posterior'][:,])
         y       = np.squeeze(nc.variables['obs'][:,])
         if ( do_hybrid ):
-            xbm     = np.squeeze(nc.variables['prior_mean'][:,])
-            xam     = np.squeeze(nc.variables['posterior_mean'][:,])
+            Xb      = np.transpose(Xb, (0,2,1))
+            Xa      = np.transpose(Xa, (0,2,1))
+            xbm     = np.squeeze(nc.variables['prior_emean'][:,])
+            xam     = np.squeeze(nc.variables['posterior_emean'][:,])
             niters  = np.squeeze(nc.variables['niters'][:])
             evratio = np.squeeze(nc.variables['evratio'][:])
         else:
             if ( nens == 0 ):
-                niters = np.squeeze(nc.variables['niters'][:])
                 xbm    = Xb.copy()
                 xam    = Xa.copy()
+                niters = np.squeeze(nc.variables['niters'][:])
             else:
-                evratio = np.squeeze(nc.variables['evratio'][:])
+                Xb      = np.transpose(Xb, (0,2,1))
+                Xa      = np.transpose(Xa, (0,2,1))
                 xbm     = np.mean(Xb, axis=1)
                 xam     = np.mean(Xa, axis=1)
+                evratio = np.squeeze(nc.variables['evratio'][:])
 
         nc.close()
     except Exception as Instance:
@@ -103,7 +109,7 @@ def main():
     xyrmse = np.sqrt( np.sum( (xt -   y)**2          ) / ndof )
 
     # plot the last state
-    fig = plot_L96(obs=y[-1,], ver=xt[-1,], xb=np.transpose(Xb[-1,]), xa=np.transpose(Xa[-1,]), t=nassim, N=ndof, figNum = 1)
+    fig = plot_L96(obs=y[-1,], ver=xt[-1,], xb=Xb[-1,], xa=Xa[-1,], t=nassim, N=ndof, figNum = 1)
 
     # plot the RMSE
     fig = plot_rmse(xbrmse, xarmse, yscale='linear')

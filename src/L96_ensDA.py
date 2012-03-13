@@ -64,7 +64,8 @@ infl_meth    = 1                # inflation (1= Multiplicative [1.01], 2= Additi
 infl_fac     = 1.21             # Depends on inflation method (see values in [] above)
 inflation    = [infl_meth, infl_fac]
 
-diag_fname = '../data/L96/ensDA_N=40/inf=1.21/L96_ensDA_diag.nc4' # name of output diagnostic file
+# name and attributes of/in the output diagnostic file
+diag_fname = 'L96_ensDA_diag.nc4'
 diag_fattr = {'F'           : str(F),
               'dF'          : str(dF),
               'ntimes'      : str(ntimes),
@@ -90,7 +91,7 @@ def main():
     x0[0] = 1.001 * F
 
     # Make a copy of truth for plotting later
-    xt    = x0.copy()
+    xt = x0.copy()
 
     # populate initial ensemble analysis by perturbing true state
     [tmp, Xa] = np.meshgrid(np.ones(Nens),xt)
@@ -124,7 +125,7 @@ def main():
         y   = np.dot(H,xt) + np.random.randn(Ndof) * np.sqrt(np.diag(R))
         ver = xt.copy()
 
-        # advance background ensemble with the full nonlinear model
+        # advance analysis ensemble with the full nonlinear model
         for m in range(0,Nens):
             xa = Xa[:,m].copy()
             xs = integrate.odeint(L96, xa, ts, (F+dF,0.0))

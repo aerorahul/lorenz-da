@@ -176,13 +176,13 @@ def plot_iteration_stats(itstats, figNum=None):
     pyplot.plot(itstats,'k-',linewidth=2)
     yl = pyplot.get(pyplot.gca(),'ylim')
     yoff = yl[0] + 0.25 * (yl[1] - yl[0])
-    str = 'min  iterations : %d' % (np.min(itstats))
+    str = 'min  iterations : %d' % (np.min(itstats[1:]))
     pyplot.text(2,yoff,str,fontsize=10)
     yoff = yoff - 2
-    str = 'mean iterations : %d' % (np.int(np.mean(itstats)))
+    str = 'mean iterations : %d' % (np.int(np.mean(itstats[1:])))
     pyplot.text(2,yoff,str,fontsize=10)
     yoff = yoff - 2
-    str = 'max  iterations : %d' % (np.max(itstats))
+    str = 'max  iterations : %d' % (np.max(itstats[1:]))
     pyplot.text(2,yoff,str,fontsize=10)
     pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
     pyplot.ylabel('# Iterations',     fontweight='bold',fontsize=12)
@@ -249,12 +249,14 @@ def plot_ObImpact(dJa=None, dJe=None, figNum=None, startxIndex=0):
 
     pyplot.plot(zeroline,'k-',linewidth=1)
 
-    if   ( len(zeroline) >= 200 ):
-        inc = 200
-    elif ( len(zeroline) >= 20 ):
-        inc = 20
+    if   ( len(zeroline) >= 1000 ):
+        inc = 1000
+    elif ( len(zeroline) >= 100 ):
+        inc = 100
+    elif ( len(zeroline) >= 10 ):
+        inc = 10
     else:
-        inc = 2
+        inc = 1
 
     locs, labels = pyplot.xticks()
     newlocs   = np.arange(startxIndex,startxIndex+len(zeroline)+1,inc) - startxIndex

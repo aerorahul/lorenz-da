@@ -41,7 +41,7 @@ def main():
 
     # Ob. Impact parameters
     nf  =  4         # length of the extended forecast
-    sOI = -1         # start doing ob. impact at sOI
+    sOI = 501        # start doing ob. impact at sOI
     eOI = -1         # stop  doing ob. impact at eOI
 
     # name of output diagnostic file
@@ -104,7 +104,7 @@ def main():
             xti, Xbi, Xai, y, H, R, xbmi, xami, niter, evratio = read_diag(fname_diag, k)
         else:
             if ( nens == 0 ):
-                xti, Xbi, Xai, y, H, R, niter   = read_diag(fname_diag, k)
+                xti, Xbi, Xai, y, H, R, niters  = read_diag(fname_diag, k)
             else:
                 xti, Xbi, Xai, y, H, R, evratio = read_diag(fname_diag, k)
 
@@ -197,6 +197,7 @@ def main():
 
     fig = plot_ObImpact(dJa=a_dJ, dJe=e_dJ, startxIndex=sOI)
     fig.savefig(fname_ObImpact+'.png',dpi=100,orientation='landscape',format='png')
+    fig.savefig(fname_ObImpact+'.eps',dpi=300,orientation='landscape',format='eps')
     pyplot.show()
 ###############################################################
 

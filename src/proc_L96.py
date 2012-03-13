@@ -91,8 +91,8 @@ def main():
             else:
                 Xb      = np.transpose(Xb, (0,2,1))
                 Xa      = np.transpose(Xa, (0,2,1))
-                xbm     = np.mean(Xb, axis=1)
-                xam     = np.mean(Xa, axis=1)
+                xbm     = np.mean(Xb, axis=2)
+                xam     = np.mean(Xa, axis=2)
                 evratio = np.squeeze(nc.variables['evratio'][:])
 
         nc.close()

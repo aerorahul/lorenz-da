@@ -33,14 +33,12 @@ from   plot_stats    import *
 ###############################################################
 def main():
 
-    # name of output diagnostic file to read
-    fname_diag = 'L96_varDA_diag.nc4'
-    fname_diag = 'L96_ensDA_diag.nc4'
-    fname_diag = 'L96_hybDA_diag.nc4'
+    # get the name of output diagnostic file to read
+    [fname] = get_input_arguments()
 
     # read dimensions and necessary attributes from the diagnostic file
     try:
-        nc = Dataset(fname_diag, mode='r', format='NETCDF4')
+        nc = Dataset(fname, mode='r', format='NETCDF4')
         ndof   = len(nc.dimensions['ndof'])
         nassim = len(nc.dimensions['ntime'])
         nobs   = len(nc.dimensions['nobs'])
@@ -62,7 +60,7 @@ def main():
 
         nc.close()
     except Exception as Instance:
-        print 'Exception occurred during read of ' + fname_diag
+        print 'Exception occurred during read of ' + fname
         print type(Instance)
         print Instance.args
         print Instance
@@ -70,7 +68,7 @@ def main():
 
     # read the diag file
     try:
-        nc = Dataset(fname_diag, mode='r', format='NETCDF4')
+        nc = Dataset(fname, mode='r', format='NETCDF4')
 
         xt      = np.squeeze(nc.variables['truth'][:,])
         Xb      = np.squeeze(nc.variables['prior'][:,])
@@ -97,7 +95,7 @@ def main():
 
         nc.close()
     except Exception as Instance:
-        print 'Exception occurred during read of ' + fname_diag
+        print 'Exception occurred during read of ' + fname
         print type(Instance)
         print Instance.args
         print Instance

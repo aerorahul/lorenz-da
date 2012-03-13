@@ -23,6 +23,7 @@ __status__    = "Prototype"
 ###############################################################
 import os
 import sys
+import getopt
 import numpy   as     np
 from   netCDF4 import Dataset
 ###############################################################
@@ -262,5 +263,47 @@ def read_diag(fname, time, end_time=None):
             return truth, prior, posterior, obs, obs_operator, obs_err_var, evratio
         else:
             return truth, prior, posterior, obs, obs_operator, obs_err_var
+# }}}
+###############################################################
+
+###############################################################
+def get_input_arguments():
+# {{{
+    '''
+    get input arguments from command line
+
+    [filename] = get_input_arguments()
+    filename - file name to read
+    '''
+
+    source = 'get_input_arguments'
+
+    filename = []
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:],'f:h',['filename=','help'])
+    except Exception as Instance:
+        print 'Exception occured in %s of %s' % (source, module)
+        print 'Exception occured during reading arguments'
+        print type(Instance)
+        print Instance.args
+        print Instance
+        sys.exit(1)
+
+    for a, o, in opts:
+        if a in ('-h', '--help'):
+            print 'no help has been written for %s in %s' % (source, module)
+            print 'see code for details'
+            sys.exit(0)
+        elif a in ('-f','--filename'):
+            filename = o
+        else:
+            assert False, 'unhandled option in %s of %s' % (source, module)
+            sys.exit(0)
+
+    returned_args = [filename]
+
+    return returned_args
+
 # }}}
 ###############################################################

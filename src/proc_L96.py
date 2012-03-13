@@ -23,7 +23,6 @@ __status__    = "Prototype"
 ###############################################################
 import sys
 import numpy         as     np
-import cPickle       as     cPickle
 from   matplotlib    import pyplot
 from   netCDF4       import Dataset
 from   module_Lorenz import *
@@ -67,22 +66,40 @@ def main():
         print Instance
         sys.exit(1)
 
-    # read in the entire diag file
-    if ( do_hybrid ):
-        xt, Xb, Xa, y, tmp, tmp, xbm, xam, niters, evstats = read_diag(fname_diag, 0, end_time = nassim+1)
-    else:
-        if ( nens == 0 ):
-            xt, Xb, Xa, y, tmp, tmp, niters = read_diag(fname_diag, 0, end_time = nassim+1)
-            xbm = Xb.copy()
-            xam = Xa.copy()
+    # read the diag file
+    try:
+        nc = Dataset(fname_diag, mode='r', format='NETCDF4')
+
+        xt      = np.squeeze(nc.variables['truth'][:,])
+        Xb      = np.squeeze(nc.variables['prior'][:,])
+        Xa      = np.squeeze(nc.variables['posterior'][:,])
+        y       = np.squeeze(nc.variables['obs'][:,])
+        if ( do_hybrid ):
+            xbm     = np.squeeze(nc.variables['prior_mean'][:,])
+            xam     = np.squeeze(nc.variables['posterior_mean'][:,])
+            niters  = np.squeeze(nc.variables['niters'][:])
+            evratio = np.squeeze(nc.variables['evratio'][:])
         else:
-            xt, Xb, Xa, y, tmp, tmp, evratio = read_diag(fname_diag, 0, end_time = nassim+1)
-            xbm = np.mean(Xb, axis=1)
-            xam = np.mean(Xa, axis=1)
+            if ( nens == 0 ):
+                niters = np.squeeze(nc.variables['niters'][:])
+                xbm    = Xb.copy()
+                xam    = Xa.copy()
+            else:
+                evratio = np.squeeze(nc.variables['evratio'][:])
+                xbm     = np.mean(Xb, axis=1)
+                xam     = np.mean(Xa, axis=1)
+
+        nc.close()
+    except Exception as Instance:
+        print 'Exception occurred during read of ' + fname_diag
+        print type(Instance)
+        print Instance.args
+        print Instance
+        sys.exit(1)
 
     # compute RMSE in prior, posterior and observations
-    xbrmse = np.sqrt( np.sum( (xt - xbm)**2 ,axis = 1) / ndof )
-    xarmse = np.sqrt( np.sum( (xt - xam)**2 ,axis = 1) / ndof )
+    xbrmse = np.sqrt( np.sum( (xt - xbm)**2, axis = 1) / ndof )
+    xarmse = np.sqrt( np.sum( (xt - xam)**2, axis = 1) / ndof )
     xyrmse = np.sqrt( np.sum( (xt -   y)**2          ) / ndof )
 
     # plot the last state

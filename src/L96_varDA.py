@@ -38,27 +38,26 @@ global A, Q, H, R
 global nassim, ntimes, dt, t0
 global Vupdate, minimization
 global diag_fname, diag_fattr
-global plots_Show, plots_Save
 
 Ndof = 40
 F    = 8.0
-dF   = 0.1
+dF   = 0.4
 lab  = []
 for j in range(0,Ndof): lab.append( 'x' + str(j+1) )
 
 A = np.eye(Ndof)             # initial analysis error covariance
 Q = np.eye(Ndof)*0.0         # model error covariance ( covariance model is white for now)
 H = np.eye(Ndof)             # obs operator ( eye(Ndof) gives identity obs )
-R = np.eye(Ndof)*(0.2**2)    # observation error covariance
+R = np.eye(Ndof)*(1.0**2)    # observation error covariance
 
-nassim = 200                 # no. of assimilation cycles
+nassim = 2000                # no. of assimilation cycles
 dt     = 1.0e-4              # time-step
 ntimes = 0.05                # do assimilation every ntimes non-dimensional time units
 t0     = 0.0                 # initial time
 
 Vupdate = 1                  # DA method (1= 3Dvar; 2= 4Dvar)
 maxiter = 1000               # maximum iterations
-alpha   = 4e-3               # size of step in direction of normalized J
+alpha   = 4e-4               # size of step in direction of normalized J
 cg      = True               # True = Use conjugate gradient; False = Perform line search
 minimization = [maxiter, alpha, cg]
 

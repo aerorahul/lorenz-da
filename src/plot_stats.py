@@ -88,42 +88,45 @@ def plot_abs_error(xbe, xae, label=['x'], N=1, yscale='semilog', figNum=None):
 ###############################################################
 
 ###############################################################
-def plot_rmse(xbrmse, xarmse, xyrmse=None, yscale='semilog', figNum=None):
+def plot_rmse(xbrmse=None, xarmse=None, xyrmse=None, yscale='semilog', figNum=None, title=None):
 
     if ( (yscale != 'linear') and (yscale != 'semilog') ): yscale = 'semilog'
-
     if ( figNum == None ): fig = pyplot.figure()
     else: fig = pyplot.figure(figNum)
-
-    validLen = np.sum(np.isfinite(xbrmse))
+    if ( title == None ): title = 'Root Mean Squared Error'
 
     pyplot.clf()
     pyplot.hold(True)
     if ( yscale == 'linear' ):
-        pyplot.plot(xbrmse,'b-',label='prior',    linewidth=2)
-        pyplot.plot(xarmse,'r-',label='posterior',linewidth=2)
-        if ( xyrmse != None ):
-            pyplot.plot(xyrmse,'k-',label='observation',linewidth=2)
+        if ( xbrmse != None ): pyplot.plot(xbrmse,'b-',label='prior',      linewidth=2)
+        if ( xarmse != None ): pyplot.plot(xarmse,'r-',label='posterior',  linewidth=2)
+        if ( xyrmse != None ): pyplot.plot(xyrmse,'k-',label='observation',linewidth=2)
     elif ( yscale == 'semilog' ):
-        pyplot.semilogy(xbrmse,'b-',label='prior',    linewidth=2)
-        pyplot.semilogy(xarmse,'r-',label='posterior',linewidth=2)
-        if ( xyrmse != None ):
-            pyplot.semilogy(xyrmse,'k-',label='observation',linewidth=2)
+        if ( xbrmse != None ): pyplot.semilogy(xbrmse,'b-',label='prior',      linewidth=2)
+        if ( xarmse != None ): pyplot.semilogy(xarmse,'r-',label='posterior',  linewidth=2)
+        if ( xyrmse != None ): pyplot.semilogy(xyrmse,'k-',label='observation',linewidth=2)
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     pyplot.ylim(0.0, yl[1])
-    strb = 'mean prior rmse : %5.4f +/- %5.4f' % (np.mean(xbrmse[100:validLen]), np.std(xbrmse[100:validLen],ddof=1))
-    stra = 'mean posterior rmse : %5.4f +/- %5.4f' % (np.mean(xarmse[100:validLen]), np.std(xarmse[100:validLen],ddof=1))
-    pyplot.text(5,0.05,strb,fontsize=10)
-    pyplot.text(5,0.03,stra,fontsize=10)
+    dyl = yl[1]
+
+    if ( xbrmse != None ):
+        validLen = np.sum(np.isfinite(xbrmse))
+        strb = 'mean prior rmse : %5.4f +/- %5.4f' % (np.mean(xbrmse[100:validLen]), np.std(xbrmse[100:validLen],ddof=1))
+        pyplot.text(0.05*validLen,0.2*dyl,strb,fontsize=10)
+    if ( xbrmse != None ):
+        validLen = np.sum(np.isfinite(xarmse))
+        stra = 'mean posterior rmse : %5.4f +/- %5.4f' % (np.mean(xarmse[100:validLen]), np.std(xarmse[100:validLen],ddof=1))
+        pyplot.text(0.05*validLen,0.15*dyl,stra,fontsize=10)
     if ( xyrmse != None ):
+        validLen = np.sum(np.isfinite(xyrmse))
         stro = 'mean observation rmse : %5.4f +/- %5.4f' % (np.mean(xyrmse[100:validLen]), np.std(xyrmse[100:validLen],ddof=1))
-        pyplot.text(5,0.01,stro,fontsize=10)
+        pyplot.text(0.05*validLen,0.1*dyl,stro,fontsize=10)
 
     pyplot.xlabel('Assimilation Cycle',fontweight='bold',fontsize=12)
     pyplot.ylabel('RMSE',fontweight='bold',fontsize=12)
-    pyplot.title('Root Mean Squared Error',fontweight='bold',fontsize=14)
-    pyplot.legend(loc=0)
+    pyplot.title(title,fontweight='bold',fontsize=14)
+    pyplot.legend(loc=4,ncol=1)
     pyplot.hold(False)
     return fig
 ###############################################################

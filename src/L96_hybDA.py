@@ -49,7 +49,7 @@ for j in range(0,Ndof): lab.append( 'x' + str(j+1) )
 
 Q = np.eye(Ndof)*0.0            # model error variance (covariance model is white for now)
 H = np.eye(Ndof)                # obs operator ( eye(Ndof) gives identity obs )
-R = np.eye(Ndof)*(0.2**2)       # observation error covariance
+R = np.eye(Ndof)*(1.0**2)       # observation error covariance
 
 nassim = 2000                   # no. of assimilation cycles
 ntimes = 0.05                   # do assimilation every ntimes non-dimensional time units
@@ -57,18 +57,18 @@ dt     = 1.0e-4                 # time-step
 t0     = 0.0                    # initial time
 
 Eupdate      = 2                # ensemble-based DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
-Nens         = 40               # number of ensemble members
+Nens         = 30               # number of ensemble members
 localize     = True             # do localization
 cov_cutoff   = 1.0              # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
 localization = [localize, cov_cutoff]
 infl_meth    = 1                # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
                                 # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
-infl_fac     = 1.45             # Depends on inflation method (see values in [] above)
+infl_fac     = 1.55             # Depends on inflation method (see values in [] above)
 inflation    = [infl_meth, infl_fac]
 
 Vupdate = 1                     # variational-based DA method (1= 3Dvar; 2= 4Dvar)
 maxiter = 1000                  # maximum iterations for minimization
-alpha   = 4e-3                  # size of step in direction of normalized J
+alpha   = 4e-4                  # size of step in direction of normalized J
 cg      = True                  # True = Use conjugate gradient; False = Perform line search
 minimization = [maxiter, alpha, cg]
 

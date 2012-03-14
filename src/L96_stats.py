@@ -20,19 +20,22 @@ __license__   = "GPL"
 __status__    = "Prototype"
 
 import os
-import numpy      as     np
-from   lorenz     import L96
-from   netCDF4    import Dataset
-from   scipy      import integrate, io
-from   matplotlib import pyplot
+import sys
+import numpy         as     np
+from   netCDF4       import Dataset
+from   scipy         import integrate
+from   module_Lorenz import L96
 
-dt = 1.0e-3   # time-step
-ts = 100.0    # time for spin-up
-tc = 1000.0   # time for climatology
+dt = 1.0e-4    # time-step
+ts = 10.0      # time for spin-up  (50 days)
+tf = 0.05      # time for forecast (6 hours)
+Ne = 500       # no. of samples to estimate B
+pscale = 0.001 # scale of perturbations to add
 
 # initial setup from LE1998
 Ndof  = 40
 F     = 8.0
+dF    = 0.0
 x0    = np.ones(Ndof) * F
 x0[0] = 1.001 * F
 
@@ -41,32 +44,37 @@ print 'spinning-up onto the attractor ...'
 ts = np.arange(0.0,ts+dt,dt)       # how long to run onto the attractor
 xs = integrate.odeint(L96, x0, ts, (F,0.0))
 
-# use the end state to run ON the attractor
+# use the end state as IC
 xt = xs[-1,:]
 
+# allocate space upfront
+X = np.zeros((Ndof,Ne))
+
 print 'running ON the attractor ...'
-ts = np.arange(0.0,tc+dt,dt)
-X = integrate.odeint(L96, xt, ts, (F,0.0))
 
-nsamp = np.shape(X)[0]
-print 'number of samples : %d' % nsamp
+tf0 = np.arange(0.0,1*tf+dt,dt)
+tf1 = np.arange(0.0,3*tf+dt,dt)
+tf2 = np.arange(0.0,4*tf+dt,dt)
 
-# calculate sample mean
-xm = np.mean(X,axis=0)
+for i in range(0,Ne):
+    xs = integrate.odeint(L96, xt, tf0, (F+dF,0.0))
+    xt = xs[-1,:].copy()
 
-# remove the sample mean from the sample
-Xp = X - xm
+    xs = integrate.odeint(L96, xt, tf1, (F+dF,0.0))
+    x24 = xs[-1,:].copy()
+
+    xs = integrate.odeint(L96, x24, tf2, (F+dF,0.0))
+    x48 = xs[-1,:].copy()
+
+    X[:,i] = x48 - x24
+
+    xt = xt + pscale * np.random.randn(Ndof)
 
 # compute climatological covariance matrix
-B = np.cov(np.transpose(Xp),ddof=1)
+B = np.dot(X,np.transpose(X)) / (Ne - 1)
 
-# save B to disk for use with DA experiments (both MatLAB and netCDF)
+# save B to disk for use with DA experiments
 print 'save B to disk ...'
-os.system('rm -f L96_climo_B.mat L96_climo_B.nc4')
-data      = {}
-data['B'] = B
-io.savemat('L96_climo_B.mat',data)
-
 nc       = Dataset('L96_climo_B.nc4',mode='w',clobber=True,format='NETCDF4')
 Dim      = nc.createDimension('xyz',Ndof)
 Var      = nc.createVariable('B', 'f8', ('xyz','xyz',))

@@ -70,19 +70,24 @@ def main():
         print Instance
         sys.exit(1)
 
+    # print some info so the user knows the script is doing something
+    print 'no. of assimilation cycles = %d' % nassim
+
     # read the diag file
     try:
         nc = Dataset(fname, mode='r', format='NETCDF4')
 
-        xt      = np.squeeze(nc.variables['truth'][:,])
-        Xb      = np.squeeze(nc.variables['prior'][:,])
-        Xa      = np.squeeze(nc.variables['posterior'][:,])
-        y       = np.squeeze(nc.variables['obs'][:,])
+        xt = np.squeeze(nc.variables['truth'][:,])
+        Xb = np.squeeze(nc.variables['prior'][:,])
+        Xa = np.squeeze(nc.variables['posterior'][:,])
+        y  = np.squeeze(nc.variables['obs'][:,])
         if ( do_hybrid ):
             Xb      = np.transpose(Xb, (0,2,1))
             Xa      = np.transpose(Xa, (0,2,1))
-            xbm     = np.squeeze(nc.variables['prior_emean'][:,])
-            xam     = np.squeeze(nc.variables['posterior_emean'][:,])
+            xbm     = np.mean(Xb, axis=2)
+            xam     = np.mean(Xa, axis=2)
+            xbm_ens = np.squeeze(nc.variables['prior_emean'][:,])
+            xam_ens = np.squeeze(nc.variables['posterior_emean'][:,])
             niters  = np.squeeze(nc.variables['niters'][:])
             evratio = np.squeeze(nc.variables['evratio'][:])
         else:
@@ -114,10 +119,14 @@ def main():
     fig = plot_L96(obs=y[-1,], ver=xt[-1,], xb=Xb[-1,], xa=Xa[-1,], t=nassim, N=ndof, figNum = 1)
 
     # plot the RMSE
-    fig = plot_rmse(xbrmse, xarmse, yscale='linear')
+    fig = plot_rmse(xbrmse = xbrmse, xarmse = xarmse, yscale='linear')
 
     # plot the iteration statistics and/or error-to-variance ratio
     if ( do_hybrid ):
+        xbrmse = np.sqrt( np.sum( (xt - xbm_ens)**2, axis = 1) / ndof )
+        xarmse = np.sqrt( np.sum( (xt - xam_ens)**2, axis = 1) / ndof )
+        xyrmse = np.sqrt( np.sum( (xt -   y)**2              ) / ndof )
+        fig = plot_rmse(xbrmse = xbrmse, xarmse = xarmse, yscale='linear', title = 'RMSE - Ensemble mean')
         fig = plot_iteration_stats(niters)
         fig = plot_error_variance_stats(evratio)
     else:
@@ -127,8 +136,7 @@ def main():
             fig = plot_error_variance_stats(evratio)
 
     pyplot.show()
-    sys.exit()
-
+    sys.exit(0)
 ###############################################################
 
 ###############################################################

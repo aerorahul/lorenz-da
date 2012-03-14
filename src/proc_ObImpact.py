@@ -22,20 +22,34 @@ __status__    = "Prototype"
 ###############################################################
 
 ###############################################################
+import os
+import sys
 import numpy         as     np
 import cPickle       as     cPickle
 from   matplotlib    import pyplot
 from   plot_stats    import *
+from   module_IO     import *
 ###############################################################
 
 ###############################################################
 def main():
 
-    model = 'L96'
+    # get the name of .dat file to read
+    [fname] = get_input_arguments()
+    if ( not os.path.isfile(fname) ):
+        print '%s does not exist' % fname
+        sys.exit(1)
 
-    fh = open('../data/' + model + '/ensDA_N=40/inf=1.21/L96_ensDA_ObImpact.dat','rb')
-    object = cPickle.load(fh)
-    fh.close()
+    try:
+        fh = open(fname,'rb')
+        object = cPickle.load(fh)
+        fh.close()
+    except Exception as Instance:
+        print 'Exception occured during read of %s' % fname
+        print type(Instance)
+        print Instance.args
+        print Instance
+        sys.exit(1)
 
     adJ  = object['adj_dJ']
     edJ  = object['ens_dJ']

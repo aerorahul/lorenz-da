@@ -21,6 +21,7 @@ __status__    = "Prototype"
 ###############################################################
 
 ###############################################################
+import os
 import sys
 import numpy         as     np
 from   matplotlib    import pyplot
@@ -35,6 +36,9 @@ def main():
 
     # get the name of output diagnostic file to read
     [fname] = get_input_arguments()
+    if ( not os.path.isfile(fname) ):
+        print '%s does not exist' % fname
+        sys.exit(1)
 
     # read dimensions and necessary attributes from the diagnostic file
     try:

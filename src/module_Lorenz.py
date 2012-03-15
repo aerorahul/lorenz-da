@@ -217,12 +217,12 @@ def plot_L63(attractor,xdim=0,ydim=2,segment=None):
 ###############################################################
 
 ###############################################################
-def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=100):
+def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None):
 # {{{
     '''
     Plot the Lorenz 1996 attractor in polar coordinates
 
-    plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=100)
+    plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None)
 
          obs - observations [None]
          ver - truth [None]
@@ -230,12 +230,15 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=100):
           xa - posterior ensemble or ensemble mean [None]
            t - assimilation time [0]
            N - degrees of freedom to plot [1]
-      figNum - figure handle [100]
+      figNum - figure handle [None]
     '''
 
-    mean_dist = 35.0
-    fig = pyplot.figure(figNum)
+    if ( figNum == None ):
+        fig = pyplot.figure()
+    else:
+        fig = pyplot.figure(figNum)
     pyplot.clf()
+    mean_dist = 35.0
     ax = fig.add_axes([0.1, 0.1, 0.8, 0.8], polar=True)
     theta = np.linspace(0.0,2*np.pi,N+1)
     pyplot.hold(True)

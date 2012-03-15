@@ -116,17 +116,18 @@ def main():
     xyrmse = np.sqrt( np.sum( (xt -   y)**2          ) / ndof )
 
     # plot the last state
-    fig = plot_L96(obs=y[-1,], ver=xt[-1,], xb=Xb[-1,], xa=Xa[-1,], t=nassim, N=ndof, figNum = 1)
+    fig = plot_L96(obs=y[-1,], ver=xt[-1,], xb=Xb[-1,], xa=Xa[-1,], t=nassim, N=ndof)
 
     # plot the RMSE
-    fig = plot_rmse(xbrmse = xbrmse, xarmse = xarmse, yscale='linear')
+    fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, yscale='linear')
 
     # plot the iteration statistics and/or error-to-variance ratio
     if ( do_hybrid ):
         xbrmse = np.sqrt( np.sum( (xt - xbc)**2, axis = 1) / ndof )
         xarmse = np.sqrt( np.sum( (xt - xac)**2, axis = 1) / ndof )
         xyrmse = np.sqrt( np.sum( (xt -   y)**2          ) / ndof )
-        fig = plot_rmse(xbrmse = xbrmse, xarmse = xarmse, yscale='linear', title = 'RMSE - Central')
+        fig = plot_L96(obs=y[-1,], ver=xt[-1,], xb=xbc[-1,], xa=xac[-1,], t=nassim, N=ndof)
+        fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, yscale='linear', title='RMSE-Central')
         fig = plot_iteration_stats(niters)
         fig = plot_error_variance_stats(evratio)
     else:

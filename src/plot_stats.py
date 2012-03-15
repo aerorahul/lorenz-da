@@ -111,22 +111,19 @@ def plot_rmse(xbrmse=None, xarmse=None, xyrmse=None, yscale='semilog', figNum=No
     dyl = yl[1]
 
     if ( xbrmse != None ):
-        validLen = np.sum(np.isfinite(xbrmse))
-        strb = 'mean prior rmse : %5.4f +/- %5.4f' % (np.mean(xbrmse[100:validLen]), np.std(xbrmse[100:validLen],ddof=1))
-        pyplot.text(0.05*validLen,0.2*dyl,strb,fontsize=10)
+        strb = 'mean prior rmse : %5.4f +/- %5.4f' % (np.mean(xbrmse[100:]), np.std(xbrmse[100:],ddof=1))
+        pyplot.text(0.05*len(xbrmse),yl[1]-0.1*dyl,strb,fontsize=10)
     if ( xarmse != None ):
-        validLen = np.sum(np.isfinite(xarmse))
-        stra = 'mean posterior rmse : %5.4f +/- %5.4f' % (np.mean(xarmse[100:validLen]), np.std(xarmse[100:validLen],ddof=1))
-        pyplot.text(0.05*validLen,0.15*dyl,stra,fontsize=10)
+        stra = 'mean posterior rmse : %5.4f +/- %5.4f' % (np.mean(xarmse[100:]), np.std(xarmse[100:],ddof=1))
+        pyplot.text(0.05*len(xarmse),yl[1]-0.15*dyl,stra,fontsize=10)
     if ( xyrmse != None ):
-        validLen = np.sum(np.isfinite(xyrmse))
-        stro = 'mean observation rmse : %5.4f +/- %5.4f' % (np.mean(xyrmse[100:validLen]), np.std(xyrmse[100:validLen],ddof=1))
-        pyplot.text(0.05*validLen,0.1*dyl,stro,fontsize=10)
+        stro = 'mean observation rmse : %5.4f +/- %5.4f' % (np.mean(xyrmse[100:]), np.std(xyrmse[100:],ddof=1))
+        pyplot.text(0.05*len(xyrmse),yl[1]-0.2*dyl,stro,fontsize=10)
 
     pyplot.xlabel('Assimilation Cycle',fontweight='bold',fontsize=12)
     pyplot.ylabel('RMSE',fontweight='bold',fontsize=12)
     pyplot.title(title,fontweight='bold',fontsize=14)
-    pyplot.legend(loc=4,ncol=1)
+    pyplot.legend(loc=0,ncol=2)
     pyplot.hold(False)
     return fig
 ###############################################################
@@ -172,21 +169,26 @@ def plot_abs_error_var(xbev, xaev, label=['x'], N=1, yscale='semilog', figNum=No
 
 ###############################################################
 def plot_iteration_stats(itstats, figNum=None):
+
     if ( figNum == None ): fig = pyplot.figure()
     else: fig = pyplot.figure(figNum)
+
     pyplot.clf()
     pyplot.hold(True)
     pyplot.plot(itstats,'k-',linewidth=2)
+
     yl = pyplot.get(pyplot.gca(),'ylim')
-    yoff = yl[0] + 0.25 * (yl[1] - yl[0])
+    dyl = yl[1] - yl[0]
+
+    yoff = yl[0] + 0.1 * dyl
     str = 'min  iterations : %d' % (np.min(itstats[1:]))
-    pyplot.text(2,yoff,str,fontsize=10)
-    yoff = yoff - 2
+    pyplot.text(0.05*len(itstats),yoff,str,fontsize=10)
+    yoff = yoff + dyl / 20
     str = 'mean iterations : %d' % (np.int(np.mean(itstats[1:])))
-    pyplot.text(2,yoff,str,fontsize=10)
-    yoff = yoff - 2
+    pyplot.text(0.05*len(itstats),yoff,str,fontsize=10)
+    yoff = yoff + dyl / 20
     str = 'max  iterations : %d' % (np.max(itstats[1:]))
-    pyplot.text(2,yoff,str,fontsize=10)
+    pyplot.text(0.05*len(itstats),yoff,str,fontsize=10)
     pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
     pyplot.ylabel('# Iterations',     fontweight='bold',fontsize=12)
     pyplot.title('# Iterations for cost function',fontweight='bold',fontsize=14)
@@ -200,20 +202,18 @@ def plot_error_variance_stats(evratio, figNum=None):
     if ( figNum == None ): fig = pyplot.figure()
     else: fig = pyplot.figure(figNum)
 
-    validLen = np.sum(np.isfinite(evratio))
-
     pyplot.clf()
     pyplot.hold(True)
 
     pyplot.plot(evratio,'k-',linewidth=2)
-    pyplot.plot(np.ones(validLen)*0.5,'r:',linewidth=1)
-    pyplot.plot(np.ones(validLen)*1.0,'r-',linewidth=1)
-    pyplot.plot(np.ones(validLen)*2.0,'r:',linewidth=1)
-    pyplot.plot(np.ones(validLen)*np.mean(evratio[100:validLen]),'g-',linewidth=1)
+    pyplot.plot(np.ones(len(evratio)-1)*0.5,'r:',linewidth=1)
+    pyplot.plot(np.ones(len(evratio)-1)*1.0,'r-',linewidth=1)
+    pyplot.plot(np.ones(len(evratio)-1)*2.0,'r:',linewidth=1)
+    pyplot.plot(np.ones(len(evratio)-1)*np.mean(evratio[100:]),'g-',linewidth=1)
 
     pyplot.ylim(0.0,3.0)
-    str = 'mean E/V  : %5.4f +/- %5.4f' % (np.mean(evratio[100:validLen]), np.std(evratio[100:validLen],ddof=1))
-    pyplot.text(5,0.2,str,fontsize=10)
+    str = 'mean E/V  : %5.4f +/- %5.4f' % (np.mean(evratio[100:]), np.std(evratio[100:],ddof=1))
+    pyplot.text(0.05*len(evratio),0.2,str,fontsize=10)
 
     pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
     pyplot.ylabel('Innovation Variance / Total Variance',fontweight='bold',fontsize=12)

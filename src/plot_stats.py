@@ -114,7 +114,7 @@ def plot_rmse(xbrmse=None, xarmse=None, xyrmse=None, yscale='semilog', figNum=No
         validLen = np.sum(np.isfinite(xbrmse))
         strb = 'mean prior rmse : %5.4f +/- %5.4f' % (np.mean(xbrmse[100:validLen]), np.std(xbrmse[100:validLen],ddof=1))
         pyplot.text(0.05*validLen,0.2*dyl,strb,fontsize=10)
-    if ( xbrmse != None ):
+    if ( xarmse != None ):
         validLen = np.sum(np.isfinite(xarmse))
         stra = 'mean posterior rmse : %5.4f +/- %5.4f' % (np.mean(xarmse[100:validLen]), np.std(xarmse[100:validLen],ddof=1))
         pyplot.text(0.05*validLen,0.15*dyl,stra,fontsize=10)

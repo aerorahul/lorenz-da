@@ -86,8 +86,8 @@ def main():
             Xa      = np.transpose(Xa, (0,2,1))
             xbm     = np.mean(Xb, axis=2)
             xam     = np.mean(Xa, axis=2)
-            xbm_ens = np.squeeze(nc.variables['prior_emean'][:,])
-            xam_ens = np.squeeze(nc.variables['posterior_emean'][:,])
+            xbc     = np.squeeze(nc.variables['central_prior'][:,])
+            xac     = np.squeeze(nc.variables['central_posterior'][:,])
             niters  = np.squeeze(nc.variables['niters'][:])
             evratio = np.squeeze(nc.variables['evratio'][:])
         else:
@@ -123,10 +123,10 @@ def main():
 
     # plot the iteration statistics and/or error-to-variance ratio
     if ( do_hybrid ):
-        xbrmse = np.sqrt( np.sum( (xt - xbm_ens)**2, axis = 1) / ndof )
-        xarmse = np.sqrt( np.sum( (xt - xam_ens)**2, axis = 1) / ndof )
-        xyrmse = np.sqrt( np.sum( (xt -   y)**2              ) / ndof )
-        fig = plot_rmse(xbrmse = xbrmse, xarmse = xarmse, yscale='linear', title = 'RMSE - Ensemble mean')
+        xbrmse = np.sqrt( np.sum( (xt - xbc)**2, axis = 1) / ndof )
+        xarmse = np.sqrt( np.sum( (xt - xac)**2, axis = 1) / ndof )
+        xyrmse = np.sqrt( np.sum( (xt -   y)**2          ) / ndof )
+        fig = plot_rmse(xbrmse = xbrmse, xarmse = xarmse, yscale='linear', title = 'RMSE - Central')
         fig = plot_iteration_stats(niters)
         fig = plot_error_variance_stats(evratio)
     else:

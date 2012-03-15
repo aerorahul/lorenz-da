@@ -84,9 +84,9 @@ def create_diag(fname, fattr, ndof, nobs=None, nens=None, hybrid=False):
         Var = nc.createVariable('obs_err_var', 'f8',('ntime','nobs',))
 
         if ( hybrid ):
-            Var = nc.createVariable('prior_emean',    'f8',('ntime','ndof',))
-            Var = nc.createVariable('posterior_emean','f8',('ntime','ndof',))
-            Var = nc.createVariable('niters',         'f8',('ntime',))
+            Var = nc.createVariable('central_prior',    'f8',('ntime','ndof',))
+            Var = nc.createVariable('central_posterior','f8',('ntime','ndof',))
+            Var = nc.createVariable('niters',           'f8',('ntime',))
 
         for (key,value) in fattr.iteritems():
             exec( 'nc.%s = %s' % (key,value) )
@@ -107,7 +107,7 @@ def create_diag(fname, fattr, ndof, nobs=None, nens=None, hybrid=False):
 ###############################################################
 
 ###############################################################
-def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_var, prior_emean=None, posterior_emean=None, niters=None, evratio=None):
+def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_var, central_prior=None, central_posterior=None, niters=None, evratio=None):
 # {{{
     '''
     write the diagnostics to an output file
@@ -122,8 +122,8 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_
                 obs - observations
        obs_operator - forward observation operator
         obs_err_var - observation error variance
-        prior_emean - prior ensemble mean (None)
-    posterior_emean - posterior ensemble mean (None)
+      central_prior - central prior (None)
+  central_posterior - central posterior (None)
              niters - no. of iterations for 3/4DVar to converge (None)
             evratio - error-to-variance ration (None)
     '''
@@ -154,11 +154,11 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_
         nc.variables['obs_operator'][time,:] = obs_operator.copy()
         nc.variables['obs_err_var'][time,:]  = obs_err_var.copy()
 
-        if not ( prior_emean == None ):
-            nc.variables['prior_emean'][time,:] = prior_emean.copy()
+        if not ( central_prior == None ):
+            nc.variables['central_prior'][time,:] = central_prior.copy()
 
-        if not ( posterior_emean == None ):
-            nc.variables['posterior_emean'][time,:] = posterior_emean.copy()
+        if not ( central_posterior == None ):
+            nc.variables['central_posterior'][time,:] = central_posterior.copy()
 
         if not ( niters == None ):
             nc.variables['niters'][time] = niters
@@ -198,8 +198,8 @@ def read_diag(fname, time, end_time=None):
                 obs - observations
        obs_operator - forward observation operator
         obs_err_var - observation error variance
-        prior_emean - observation error variance ( if doing hybrid )
-    posterior_emean - observation error variance ( if doing hybrid )
+      central_prior - central prior     ( if doing hybrid )
+  central_posterior - central posterior ( if doing hybrid )
     '''
 
     source = 'read_diag'
@@ -230,12 +230,13 @@ def read_diag(fname, time, end_time=None):
 
         if 'do_hybrid' in nc.ncattrs():
             hybrid = nc.do_hybrid
+            hybrid_rcnt = nc.hybrid_rcnt
         else:
             hybrid = False
 
         if ( hybrid ):
-            prior_mean     = np.squeeze(nc.variables['prior_emean'][time:end_time,])
-            posterior_mean = np.squeeze(nc.variables['posterior_emean'][time:end_time,])
+            central_prior     = np.squeeze(nc.variables['central_prior'][time:end_time,])
+            central_posterior = np.squeeze(nc.variables['central_posterior'][time:end_time,])
 
         if 'niters' in nc.variables.keys():
             niters = np.squeeze(nc.variables['niters'][time:end_time])
@@ -255,7 +256,7 @@ def read_diag(fname, time, end_time=None):
         sys.exit(1)
 
     if ( hybrid ):
-        return truth, prior, posterior, obs, obs_operator, obs_err_var, prior_mean, posterior_mean, niters, evratio
+        return truth, prior, posterior, obs, obs_operator, obs_err_var, central_prior, central_posterior, niters, evratio
     else:
         if   ( 'niters' in nc.variables.keys() ):
             return truth, prior, posterior, obs, obs_operator, obs_err_var, niters

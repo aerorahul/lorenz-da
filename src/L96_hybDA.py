@@ -38,7 +38,7 @@ global Q, H, R
 global nassim, ntimes, dt, t0
 global Eupdate, Nens, inflation, localization
 global Vupdate, minimization
-global hybrid_wght, do_hybrid
+global do_hybrid, hybrid_wght, hybrid_rcnt
 global diag_fname, diag_fattr
 
 Ndof = 40
@@ -63,7 +63,7 @@ cov_cutoff   = 1.0              # normalized covariance cutoff = cutoff / ( 2*no
 localization = [localize, cov_cutoff]
 infl_meth    = 1                # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
                                 # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
-infl_fac     = 1.55             # Depends on inflation method (see values in [] above)
+infl_fac     = 1.06             # Depends on inflation method (see values in [] above)
 inflation    = [infl_meth, infl_fac]
 
 Vupdate = 1                     # variational-based DA method (1= 3Dvar; 2= 4Dvar)
@@ -72,8 +72,9 @@ alpha   = 4e-4                  # size of step in direction of normalized J
 cg      = True                  # True = Use conjugate gradient; False = Perform line search
 minimization = [maxiter, alpha, cg]
 
+do_hybrid   = True              # True= run hybrid (varDA + ensDA) mode, False= run ensDA mode
 hybrid_wght = 0.0               # weight for hybrid (0.0= varDA; 1.0= ensDA)
-do_hybrid   = True              # True= re-center ensemble about varDA, False= only ensDA
+hybrid_rcnt = False             # True= re-center ensemble about varDA, False= free ensDA
 
 # name and attributes of/in the output diagnostic file
 diag_fname = 'L96_hybDA_diag.nc4'
@@ -91,7 +92,8 @@ diag_fattr = {'F'           : str(F),
               'alpha'       : str(alpha),
               'cg'          : str(int(cg)),
               'do_hybrid'   : str(int(do_hybrid)),
-              'hybrid_wght' : str(hybrid_wght)}
+              'hybrid_wght' : str(hybrid_wght),
+              'hybrid_rcnt' : str(int(hybrid_rcnt))}
 ###############################################################
 
 ###############################################################
@@ -138,7 +140,7 @@ def main():
     # create diagnostic file
     create_diag(diag_fname, diag_fattr, Ndof, nens=Nens, hybrid=do_hybrid)
     if ( do_hybrid ):
-        write_diag(diag_fname, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), prior_emean=xbm, posterior_emean=xam, evratio=np.NaN, niters=np.NaN)
+        write_diag(diag_fname, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), central_prior=xbm, central_posterior=xam, evratio=np.NaN, niters=np.NaN)
     else:
         write_diag(diag_fname, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), evratio=np.NaN)
 
@@ -160,8 +162,8 @@ def main():
             xs = integrate.odeint(L96, xa, ts, (F+dF,0.0))
             Xb[:,m] = xs[-1,:].copy()
 
+        # advance central analysis with the full nonlinear model
         if ( do_hybrid ):
-            # advance central analysis with the full nonlinear model
             xs = integrate.odeint(L96, xam, ts, (F+dF,0.0))
             xbc = xs[-1,:].copy()
 
@@ -178,29 +180,22 @@ def main():
         Xap = np.transpose(np.transpose(Xa) - xam)
 
         if ( do_hybrid ):
-            # save a copy of the ensemble mean background and analysis
-            xbm_ens = xbm.copy()
-            xam_ens = xam.copy()
-
             # blend covariance from flow-dependent (ensemble) and static (climatology)
             Bc = (1.0 - hybrid_wght) * Bs + hybrid_wght * B
 
-            # update the central trajectory
+            # update the central background
             xac, Ac, niters = update_varDA(xbc, Bc, y, R, H, Vupdate=Vupdate, minimization=minimization)
 
-            # replace ensemble mean analysis with central analysis
-            xam = xac.copy()
-            Xa = np.transpose(xam + np.transpose(Xap))
-
-            # replace ensemble mean background with central background
-            xbm = xbc.copy()
-            Xb = np.transpose(xbm + np.transpose(Xbp))
-
-        # write diagnostics to disk
+        # write diagnostics to disk before recentering
         if ( do_hybrid ):
-            write_diag(diag_fname, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, H, np.diag(R), prior_emean=xbm_ens, posterior_emean=xam_ens, evratio=evratio, niters=niters)
+            write_diag(diag_fname, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, H, np.diag(R), central_prior=xbc, central_posterior=xac, evratio=evratio, niters=niters)
         else:
             write_diag(diag_fname, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, H, np.diag(R), evratio=evratio)
+
+        # recenter ensemble about central analysis
+        if ( do_hybrid ):
+            xam = xac.copy()
+            if ( hybrid_rcnt ): Xa = np.transpose(xac + np.transpose(Xap))
 
     print '... all done ...'
     sys.exit(0)

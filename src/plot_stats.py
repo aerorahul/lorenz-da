@@ -180,13 +180,13 @@ def plot_iteration_stats(itstats, figNum=None):
     yl = pyplot.get(pyplot.gca(),'ylim')
     dyl = yl[1] - yl[0]
 
-    yoff = yl[0] + 0.1 * dyl
+    yoff = yl[1] - 0.1 * dyl
     str = 'min  iterations : %d' % (np.min(itstats[1:]))
     pyplot.text(0.05*len(itstats),yoff,str,fontsize=10)
-    yoff = yoff + dyl / 20
+    yoff = yoff - dyl / 20
     str = 'mean iterations : %d' % (np.int(np.mean(itstats[1:])))
     pyplot.text(0.05*len(itstats),yoff,str,fontsize=10)
-    yoff = yoff + dyl / 20
+    yoff = yoff - dyl / 20
     str = 'max  iterations : %d' % (np.max(itstats[1:]))
     pyplot.text(0.05*len(itstats),yoff,str,fontsize=10)
     pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)

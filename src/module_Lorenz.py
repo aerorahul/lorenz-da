@@ -254,13 +254,13 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None):
             tmp = np.zeros((N,1)) ; tmp[:,0] = xa ; xa = tmp
         for M in np.arange(0, xa.shape[1]):
             tmp = np.zeros(N+1) ; tmp[1:] = xa[:,M] ; tmp[0] = xa[-1,M]
-            ax.plot(theta, tmp+mean_dist, 'g-')
+            ax.plot(theta, tmp+mean_dist, 'r-')
     if ( ver != None ):
         tmp = np.zeros(N+1) ; tmp[1:] = ver ; tmp[0]= ver[-1]
-        ax.plot(theta, tmp+mean_dist, 'k-')
+        ax.plot(theta, tmp+mean_dist, 'k-', linewidth=2)
     if ( obs != None ):
         tmp = np.zeros(N+1) ; tmp[1:] = obs ; tmp[0] = obs[-1]
-        ax.plot(theta, tmp+mean_dist, 'ro')
+        ax.plot(theta, tmp+mean_dist, 'yo')
 
     ax.set_rmin(0.0)
     ax.set_rmax(mean_dist+25.0)

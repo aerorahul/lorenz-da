@@ -22,9 +22,14 @@ __status__    = "Prototype"
 ###############################################################
 
 ###############################################################
+import os
+import sys
 import numpy      as     np
 from   matplotlib import pyplot
+from   netCDF4    import Dataset
 ###############################################################
+
+module = 'module_Lorenz.py'
 
 ###############################################################
 def L63(x0, t, par, dummy):
@@ -279,5 +284,79 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None):
     ax.set_title(title_str,fontweight='bold',fontsize=14)
 
     return
+# }}}
+###############################################################
+
+###############################################################
+def get_IC(model, restart_state=-2, restart_file=None, Nens=None):
+# {{{
+    '''
+    Get initial conditions based on model and restart conditions
+
+    [xt, xa] = get_IC(model, restart_state, restart_file=None, Nens=None)
+
+        model - model Class (see below)
+restart_state - IC from : <-1 rest state | -1 last restart state | >-1 restart_state [-2]
+ restart_file - file to read restart state from [None]
+         Nens - no. of ensemble members [None]
+           xt - truth
+           xa - analysis or analysis ensemble
+
+   model.Name - name of the model               :     L63 | L96
+   model.Ndof - degrees of freedom in the model :       3 | 40
+    model.Par - parameters of the model         : [p,r,b] | [F, dF]
+    '''
+
+    source = 'get_initial_state'
+
+    print 'Generating ICs for %s' % model.Name
+
+    # insure the same sequence of random numbers EVERY TIME
+    np.random.seed(0)
+
+    if ( model.Name == 'L63' ):
+        print 'L63 ICs have not been programmed yet'
+        xt = None
+        xa = None
+
+    if ( model.Name == 'L96' ):
+
+        if ( restart_state < -1 ):
+            print '... from LE 1998'
+
+            # initial setup from LE1998
+            xt    = np.ones(model.Ndof) * model.Par[0]
+            xt[0] = 1.001 * model.Par[0]
+
+            if ( Nens != None ):
+                # populate initial ensemble analysis by perturbing true state and recentering
+                pert = 0.001 * ( np.random.randn(model.Ndof,Nens) )
+                xa = np.transpose(xt + np.transpose(pert))
+                xa = np.transpose(np.transpose(xa) - np.mean(xa,axis=1) + xt)
+            else:
+                pert = 0.001 * ( np.random.randn(model.Ndof) )
+                xa = xt + pert
+
+        elif ( restart_state >= -1 ):
+            print '... from t = %d in %s' % (restart_state, restart_file)
+
+            if not os.path.isfile(restart_file):
+                print 'ERROR : %s does not exist ' % restart_file
+                sys.exit(2)
+
+            try:
+                nc = Dataset(restart_file, mode='r', format='NETCDF4')
+                xt = np.squeeze(nc.variables['truth'][restart_state,])
+                xa = np.transpose(np.squeeze(nc.variables['posterior'][restart_state,]))
+                nc.close()
+            except Exception as Instance:
+                print 'Exception occured in %s of %s' % (source, module)
+                print 'Exception occured during reading of %s' % (restart_file)
+                print type(Instance)
+                print Instance.args
+                print Instance
+                sys.exit(1)
+
+    return [xt, xa]
 # }}}
 ###############################################################

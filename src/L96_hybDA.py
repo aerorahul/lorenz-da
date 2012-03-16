@@ -26,30 +26,30 @@ import numpy         as     np
 from   scipy         import integrate, io
 from   matplotlib    import pyplot
 from   netCDF4       import Dataset
-from   module_Lorenz import L96, plot_L96
+from   module_Lorenz import L96, plot_L96, get_IC
 from   module_DA     import *
 from   module_IO     import *
 from   plot_stats    import *
 ###############################################################
 
 ###############################################################
-global Ndof, F, dF, lab
+global model
 global Q, H, R
 global nassim, ntimes, dt, t0
 global Eupdate, Nens, inflation, localization
 global Vupdate, minimization
 global do_hybrid, hybrid_wght, hybrid_rcnt
 global diag_fname, diag_fattr
+global restart_state, restart_file
 
-Ndof = 40
-F    = 8.0
-dF   = 0.4
-lab  = []
-for j in range(0,Ndof): lab.append( 'x' + str(j+1) )
+model      = type('', (), {})   # model Class
+model.Name = 'L96'              # model name
+model.Ndof = 40                 # model degrees of freedom
+model.Par  = [8.0, 0.4]         # model parameters F, dF
 
-Q = np.eye(Ndof)*0.0            # model error variance (covariance model is white for now)
-H = np.eye(Ndof)                # obs operator ( eye(Ndof) gives identity obs )
-R = np.eye(Ndof)*(1.0**2)       # observation error covariance
+Q = np.eye(model.Ndof)*0.0      # model error variance (covariance model is white for now)
+H = np.eye(model.Ndof)          # obs operator ( eye(Ndof) gives identity obs )
+R = np.eye(model.Ndof)*(1.0**2) # observation error covariance
 
 nassim = 2000                   # no. of assimilation cycles
 ntimes = 0.05                   # do assimilation every ntimes non-dimensional time units
@@ -59,7 +59,7 @@ t0     = 0.0                    # initial time
 Eupdate      = 2                # ensemble-based DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
 Nens         = 30               # number of ensemble members
 localize     = True             # do localization
-cov_cutoff   = 1.0              # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
+cov_cutoff   = 1.0              # cov_cutoff = cutoff_dist / ( 2 * (normalization_dist==Ndof) )
 localization = [localize, cov_cutoff]
 infl_meth    = 1                # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
                                 # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
@@ -73,13 +73,13 @@ cg      = True                  # True = Use conjugate gradient; False = Perform
 minimization = [maxiter, alpha, cg]
 
 do_hybrid   = True              # True= run hybrid (varDA + ensDA) mode, False= run ensDA mode
-hybrid_wght = 0.0               # weight for hybrid (0.0= varDA; 1.0= ensDA)
-hybrid_rcnt = False             # True= re-center ensemble about varDA, False= free ensDA
+hybrid_wght = 0.0               # weight for hybrid (0.0= Bstatic; 1.0= Bensemble)
+hybrid_rcnt = False              # True= re-center ensemble about varDA, False= free ensDA
 
 # name and attributes of/in the output diagnostic file
 diag_fname = 'L96_hybDA_diag.nc4'
-diag_fattr = {'F'           : str(F),
-              'dF'          : str(dF),
+diag_fattr = {'F'           : str(model.Par[0]),
+              'dF'          : str(model.Par[1]),
               'ntimes'      : str(ntimes),
               'dt'          : str(dt),
               'Eupdate'     : str(Eupdate),
@@ -94,6 +94,10 @@ diag_fattr = {'F'           : str(F),
               'do_hybrid'   : str(int(do_hybrid)),
               'hybrid_wght' : str(hybrid_wght),
               'hybrid_rcnt' : str(int(hybrid_rcnt))}
+
+# restart conditions ( state [< -1 | == -1 | > -1], filename)
+restart_state = -1
+restart_file  = 'L96_hybDA_diag.nc4'
 ###############################################################
 
 ###############################################################
@@ -106,24 +110,9 @@ def main():
     check_ensDA(Eupdate, inflation, localization)
     check_varDA(Vupdate)
 
-    # initial setup from LE1998
-    x0    = np.ones(Ndof) * F
-    x0[0] = 1.001 * F
-
-    # Make a copy of truth for plotting later
-    xt = x0.copy()
-
-    # populate initial ensemble analysis by perturbing true state
-    [tmp, Xa] = np.meshgrid(np.ones(Nens),xt)
-    pert = 0.001 * ( np.random.randn(Ndof,Nens) )
-    Xa = Xa + pert
-
-    # re-center the ensemble about initial true state
-    xam = np.mean(Xa,axis=1)
-    Xap = np.transpose(np.transpose(Xa) - xam)
-    Xa  = np.transpose(xt + np.transpose(Xap))
-
-    Xb = Xa.copy()
+    # get IC's
+    [xt, Xa] = get_IC(model=model, restart_state=restart_state, restart_file=restart_file, Nens=Nens)
+    Xb  = Xa.copy()
     xam = xt.copy()
     xbm = xam.copy()
 
@@ -138,7 +127,7 @@ def main():
     ts = np.arange(t0,ntimes+dt,dt)     # time between assimilations
 
     # create diagnostic file
-    create_diag(diag_fname, diag_fattr, Ndof, nens=Nens, hybrid=do_hybrid)
+    create_diag(diag_fname, diag_fattr, model.Ndof, nens=Nens, hybrid=do_hybrid)
     if ( do_hybrid ):
         write_diag(diag_fname, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), central_prior=xbm, central_posterior=xam, evratio=np.NaN, niters=np.NaN)
     else:
@@ -149,22 +138,22 @@ def main():
         print '========== assimilation time = %5d ========== ' % (k+1)
 
         # advance truth with the full nonlinear model
-        xs = integrate.odeint(L96, xt, ts, (F,0.0))
+        xs = integrate.odeint(L96, xt, ts, (model.Par[0],0.0))
         xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values
-        y   = np.dot(H,xt) + np.random.randn(Ndof) * np.sqrt(np.diag(R))
+        y   = np.dot(H,xt) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
         ver = xt.copy()
 
         # advance analysis ensemble with the full nonlinear model
         for m in range(0,Nens):
             xa = Xa[:,m].copy()
-            xs = integrate.odeint(L96, xa, ts, (F+dF,0.0))
+            xs = integrate.odeint(L96, xa, ts, (model.Par[0]+model.Par[1],0.0))
             Xb[:,m] = xs[-1,:].copy()
 
         # advance central analysis with the full nonlinear model
         if ( do_hybrid ):
-            xs = integrate.odeint(L96, xam, ts, (F+dF,0.0))
+            xs = integrate.odeint(L96, xam, ts, (model.Par[0]+model.Par[1],0.0))
             xbc = xs[-1,:].copy()
 
         # compute background ensemble mean and perturbations from the mean

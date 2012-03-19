@@ -109,7 +109,6 @@ def main():
             Nens = len(nc.dimensions['ncopy'])
             Ntim = len(nc.dimensions['ntime'])
             Xb   = np.transpose(np.squeeze(nc.variables['prior'][:,]),(0,2,1))
-            xbm  = np.mean(Xb, axis=2)
             nc.close()
         except Exception as Instance:
             print 'Exception occurred during read of ' + fname
@@ -118,12 +117,13 @@ def main():
             print Instance
             sys.exit(1)
 
+        print 'no. of samples ... %d' % Ntim
+
         Bi = np.zeros((Ntim,Ndof,Ndof))
         for i in range(0,Ntim):
-            Xbp = np.transpose(np.transpose(np.squeeze(Xb[i,])) - np.squeeze(xbm[i,]))
-            Bi[i,] = np.dot(Xbp, np.transpose(Xbp)) / (Nens - 1)
+            Bi[i,] = np.cov(np.squeeze(Xb[i,]),ddof=1)
 
-        B = np.mean(Bi[100:,],axis=0)
+        B = np.mean(Bi,axis=0)
         print np.diag(B)
 
     # save B to disk for use with DA experiments

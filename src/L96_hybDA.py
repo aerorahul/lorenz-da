@@ -74,7 +74,7 @@ minimization = [maxiter, alpha, cg]
 
 do_hybrid   = True              # True= run hybrid (varDA + ensDA) mode, False= run ensDA mode
 hybrid_wght = 0.0               # weight for hybrid (0.0= Bstatic; 1.0= Bensemble)
-hybrid_rcnt = False              # True= re-center ensemble about varDA, False= free ensDA
+hybrid_rcnt = False             # True= re-center ensemble about varDA, False= free ensDA
 
 # name and attributes of/in the output diagnostic file
 diag_fname = 'L96_hybDA_diag.nc4'
@@ -112,9 +112,10 @@ def main():
 
     # get IC's
     [xt, Xa] = get_IC(model=model, restart_state=restart_state, restart_file=restart_file, Nens=Nens)
-    Xb  = Xa.copy()
-    xam = xt.copy()
-    xbm = xam.copy()
+    Xb = Xa.copy()
+    if ( do_hybrid ):
+        xac = np.mean(Xa,axis=1)
+        xbc = np.mean(Xb,axis=1)
 
     if ( do_hybrid ):
         print 'load climatological covariance ...'
@@ -129,7 +130,7 @@ def main():
     # create diagnostic file
     create_diag(diag_fname, diag_fattr, model.Ndof, nens=Nens, hybrid=do_hybrid)
     if ( do_hybrid ):
-        write_diag(diag_fname, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), central_prior=xbm, central_posterior=xam, evratio=np.NaN, niters=np.NaN)
+        write_diag(diag_fname, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), central_prior=xbc, central_posterior=xac, evratio=np.NaN, niters=np.NaN)
     else:
         write_diag(diag_fname, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), evratio=np.NaN)
 
@@ -153,20 +154,14 @@ def main():
 
         # advance central analysis with the full nonlinear model
         if ( do_hybrid ):
-            xs = integrate.odeint(L96, xam, ts, (model.Par[0]+model.Par[1],0.0))
+            xs = integrate.odeint(L96, xac, ts, (model.Par[0]+model.Par[1],0.0))
             xbc = xs[-1,:].copy()
 
-        # compute background ensemble mean and perturbations from the mean
-        xbm = np.mean(Xb,axis=1)
-        Xbp = np.transpose(np.transpose(Xb) - xbm)
-
         # compute background error covariance from the ensemble
-        B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1)
+        B = np.cov(Xb, ddof=1)
 
         # update ensemble (mean and perturbations)
         Xa, evratio = update_ensDA(Xb, y, R, H, Eupdate=Eupdate, inflation=inflation, localization=localization)
-        xam = np.mean(Xa,axis=1)
-        Xap = np.transpose(np.transpose(Xa) - xam)
 
         if ( do_hybrid ):
             # blend covariance from flow-dependent (ensemble) and static (climatology)
@@ -183,8 +178,7 @@ def main():
 
         # recenter ensemble about central analysis
         if ( do_hybrid ):
-            xam = xac.copy()
-            if ( hybrid_rcnt ): Xa = np.transpose(xac + np.transpose(Xap))
+            if ( hybrid_rcnt ): Xa = np.transpose(np.transpose(Xa) - np.mean(Xa,axis=1) + xac)
 
     print '... all done ...'
     sys.exit(0)

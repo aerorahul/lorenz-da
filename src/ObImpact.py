@@ -118,7 +118,7 @@ def main():
 
         # construct covariances
         B = np.cov(Xbi,ddof=1)
-        if ( do_hybrid ): Bs = (1 - hybrid_wght) * Bc + hybrid_wght * B
+        if ( do_hybrid ): Bs = (1.0 - hybrid_wght) * Bc + hybrid_wght * B
 
         # compute the Kalman gain
         if ( do_hybrid ):

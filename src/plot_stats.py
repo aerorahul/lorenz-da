@@ -267,9 +267,10 @@ def plot_ObImpact(dJa=None, dJe=None, figNum=None, startxIndex=0):
     pyplot.xticks(newlocs, newlabels)
 
     yl = pyplot.get(pyplot.gca(),'ylim')
-    yoff = yl[0] + 0.4
+    dyl = yl[1] - yl[0]
+    yoff = yl[0] + 0.1 * dyl
     pyplot.text(5,yoff,stra,fontsize=10)
-    yoff = yl[0] + 0.2
+    yoff = yl[0] + 0.2 * dyl
     pyplot.text(5,yoff,stre,fontsize=10)
 
     pyplot.xlabel('Assimilation Step', fontweight='bold',fontsize=12)

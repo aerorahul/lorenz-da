@@ -62,7 +62,23 @@ def main():
     if sOI < 0: sOI = 0
     if eOI < 0: eOI = len(adJ)
 
-    fig = plot_ObImpact(dJa=adJ[sOI:eOI], dJe=edJ[sOI:eOI], startxIndex=sOI)
+    fig = pyplot.figure()
+    pyplot.hold(True)
+    pyplot.plot(adJ[sOI:eOI],'b-')
+    pyplot.plot(edJ[sOI:eOI],'r-')
+    pyplot.plot(np.zeros(eOI-sOI+1),'k-')
+    stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJ[sOI:eOI]), np.std(adJ[sOI:eOI],ddof=1))
+    stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJ[sOI:eOI]), np.std(edJ[sOI:eOI],ddof=1))
+    yl = pyplot.get(pyplot.gca(),'ylim')
+    dyl = yl[1] - yl[0]
+    yoff = yl[0] + 0.1 * dyl
+    pyplot.text(5,yoff,stra,fontsize=10)
+    yoff = yl[0] + 0.2 * dyl
+    pyplot.text(5,yoff,stre,fontsize=10)
+    pyplot.title('dJ = dJa + dJb')
+    pyplot.xlabel('Assimilation Step')
+    pyplot.ylabel('delta J')
+    pyplot.hold(False)
 
     fig = pyplot.figure()
     pyplot.hold(True)
@@ -72,11 +88,14 @@ def main():
     stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJa[sOI:eOI]), np.std(adJa[sOI:eOI],ddof=1))
     stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJa[sOI:eOI]), np.std(edJa[sOI:eOI],ddof=1))
     yl = pyplot.get(pyplot.gca(),'ylim')
-    yoff = yl[0] + 0.4
+    dyl = yl[1] - yl[0]
+    yoff = yl[0] + 0.1 * dyl
     pyplot.text(5,yoff,stra,fontsize=10)
-    yoff = yl[0] + 0.2
+    yoff = yl[0] + 0.2 * dyl
     pyplot.text(5,yoff,stre,fontsize=10)
-    pyplot.title('a-component')
+    pyplot.title('dJa')
+    pyplot.xlabel('Assimilation Step')
+    pyplot.ylabel('delta Ja')
     pyplot.hold(False)
 
     fig = pyplot.figure()
@@ -87,11 +106,14 @@ def main():
     stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJb[sOI:eOI]), np.std(adJb[sOI:eOI],ddof=1))
     stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJb[sOI:eOI]), np.std(edJb[sOI:eOI],ddof=1))
     yl = pyplot.get(pyplot.gca(),'ylim')
-    yoff = yl[0] + 0.4
+    dyl = yl[1] - yl[0]
+    yoff = yl[0] + 0.1 * dyl
     pyplot.text(5,yoff,stra,fontsize=10)
-    yoff = yl[0] + 0.2
+    yoff = yl[0] + 0.2 * dyl
     pyplot.text(5,yoff,stre,fontsize=10)
-    pyplot.title('b-component')
+    pyplot.title('dJb')
+    pyplot.xlabel('Assimilation Step')
+    pyplot.ylabel('delta Jb')
     pyplot.hold(False)
 
     pyplot.show()

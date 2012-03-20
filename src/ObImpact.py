@@ -43,7 +43,7 @@ def main():
     fname = str(sys.argv[5])
 
     fname_ObImpact = fname.replace('.nc4','.dat')
-    fname_ObImpact = fname_ObImpact.replace('diag','ObImpact-tmp3')
+    fname_ObImpact = fname_ObImpact.replace('diag','ObImpact')
 
     # read dimensions and necessary attributes from the diagnostic file
     try:

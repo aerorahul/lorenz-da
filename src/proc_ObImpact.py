@@ -34,22 +34,23 @@ from   module_IO     import *
 ###############################################################
 def main():
 
-    # get the name of .dat file to read
-    [fname] = get_input_arguments()
+    # get the name of .dat file to read and the start and end indices
+    [fname, sOI, eOI] = get_input_arguments()
+
     if ( not os.path.isfile(fname) ):
         print '%s does not exist' % fname
         sys.exit(1)
-
-    try:
-        fh = open(fname,'rb')
-        object = cPickle.load(fh)
-        fh.close()
-    except Exception as Instance:
-        print 'Exception occured during read of %s' % fname
-        print type(Instance)
-        print Instance.args
-        print Instance
-        sys.exit(1)
+    else:
+        try:
+            fh = open(fname,'rb')
+            object = cPickle.load(fh)
+            fh.close()
+        except Exception as Instance:
+            print 'Exception occured during read of %s' % fname
+            print type(Instance)
+            print Instance.args
+            print Instance
+            sys.exit(1)
 
     adJ  = object['adj_dJ']
     edJ  = object['ens_dJ']
@@ -58,11 +59,10 @@ def main():
     edJa = object['ens_dJa']
     edJb = object['ens_dJb']
 
-    sOI = 500
-    eOI = 700
+    if sOI < 0: sOI = 0
+    if eOI < 0: eOI = len(adJ)
 
     fig = plot_ObImpact(dJa=adJ[sOI:eOI], dJe=edJ[sOI:eOI], startxIndex=sOI)
-    #fig.savefig('ObImpact200.eps',dpi=300,orientation='landscape',format='eps')
 
     fig = pyplot.figure()
     pyplot.hold(True)

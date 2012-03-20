@@ -273,16 +273,20 @@ def get_input_arguments():
     '''
     get input arguments from command line
 
-    [filename] = get_input_arguments()
-    filename - file name to read
+    [filename, start, end] = get_input_arguments()
+    filename - file name to read []
+    start    - starting index [-1]
+    end      - ending index [-1]
     '''
 
     source = 'get_input_arguments'
 
     filename = []
+    start    = -1
+    end      = -1
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:],'f:h',['filename=','help'])
+        opts, args = getopt.getopt(sys.argv[1:],'f:s:e:h',['filename=','start=','end=','help'])
     except Exception as Instance:
         print 'Exception occured in %s of %s' % (source, module)
         print 'Exception occured during reading arguments'
@@ -298,11 +302,15 @@ def get_input_arguments():
             sys.exit(0)
         elif a in ('-f','--filename'):
             filename = o
+        elif a in ('-s','--start'):
+            start = int(o)
+        elif a in ('-e','--end'):
+            end = int(o)
         else:
             assert False, 'unhandled option in %s of %s' % (source, module)
             sys.exit(0)
 
-    returned_args = [filename]
+    returned_args = [filename, start, end]
 
     return returned_args
 

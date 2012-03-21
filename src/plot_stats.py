@@ -224,31 +224,27 @@ def plot_error_variance_stats(evratio, figNum=None):
 ###############################################################
 
 ###############################################################
-def plot_ObImpact(dJa=None, dJe=None, figNum=None, startxIndex=0):
-
-    if ( (dJa == None) and (dJe == None) ):
-        print 'dJa == dJe == None, nothing to plot'
-        return None
-    if ( (dJa != None) and (dJe != None) ): width = 0.5
-    if ( (dJa != None) or  (dJe != None) ): width = 1.0
+def plot_ObImpact(dJa, dJe, figNum=None, sOI=0, eOI=None):
 
     if ( figNum == None ): fig = pyplot.figure()
     else: fig = pyplot.figure(figNum)
-
     pyplot.clf()
     pyplot.hold(True)
 
-    if ( dJa != None ):
-        pyplot.plot(dJa,'bo-',label='Adjoint', linewidth=2)
-        pyplot.plot(np.ones(len(dJa))*np.mean(dJa),'b:')
-        stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(dJa), np.std(dJa,ddof=1))
-        zeroline = np.zeros(len(dJa))
+    color_adj = 'b'
+    color_ens = 'r'
 
-    if ( dJe != None ):
-        pyplot.plot(dJe,'ro-',label='Ensemble',linewidth=2)
-        pyplot.plot(np.ones(len(dJe))*np.mean(dJe),'r:')
-        stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(dJe), np.std(dJe,ddof=1))
-        zeroline = np.zeros(len(dJe))
+    if eOI == None: eOI = len(dJa)
+    if eOI == -1:   eOI = len(dJa)
+    index = np.arange(eOI-sOI)
+    width = 0.49
+    zeroline = np.zeros(len(dJa[sOI:eOI+1]))
+
+    ra = pyplot.bar(index, dJa[sOI:eOI], width, color=color_adj, edgecolor=color_adj, label='ASA')
+    stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(dJa), np.std(dJa,ddof=1))
+
+    re = pyplot.bar(index+width, dJe[sOI:eOI], width, color=color_ens, edgecolor=color_ens, label='ESA')
+    stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(dJe), np.std(dJe,ddof=1))
 
     pyplot.plot(zeroline,'k-',linewidth=1)
 
@@ -262,19 +258,20 @@ def plot_ObImpact(dJa=None, dJe=None, figNum=None, startxIndex=0):
         inc = 1
 
     locs, labels = pyplot.xticks()
-    newlocs   = np.arange(startxIndex,startxIndex+len(zeroline)+1,inc) - startxIndex
-    newlabels = np.arange(startxIndex,startxIndex+len(zeroline)+1,inc)
+    newlocs   = np.arange(sOI,sOI+len(zeroline)+1,inc) - sOI
+    newlabels = np.arange(sOI,sOI+len(zeroline)+1,inc)
     pyplot.xticks(newlocs, newlabels)
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     dyl = yl[1] - yl[0]
     yoff = yl[0] + 0.1 * dyl
-    pyplot.text(5,yoff,stra,fontsize=10)
+    pyplot.text(5,yoff,stra,fontsize=10,color=color_adj)
     yoff = yl[0] + 0.2 * dyl
-    pyplot.text(5,yoff,stre,fontsize=10)
+    pyplot.text(5,yoff,stre,fontsize=10,color=color_ens)
+    pyplot.xlim(newlabels[0], len(zeroline))
 
     pyplot.xlabel('Assimilation Step', fontweight='bold',fontsize=12)
-    pyplot.ylabel('delta J',           fontweight='bold',fontsize=12)
+    pyplot.ylabel(r'$\delta J$',       fontweight='bold',fontsize=12)
     pyplot.title('Observation Impact',fontweight='bold',fontsize=14)
     pyplot.legend(loc=0,ncol=2)
     pyplot.hold(False)

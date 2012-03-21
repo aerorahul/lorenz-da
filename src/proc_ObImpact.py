@@ -27,7 +27,6 @@ import sys
 import numpy         as     np
 import cPickle       as     cPickle
 from   matplotlib    import pyplot
-from   plot_stats    import *
 from   module_IO     import *
 ###############################################################
 
@@ -62,58 +61,63 @@ def main():
     if sOI < 0: sOI = 0
     if eOI < 0: eOI = len(adJ)
 
+    index = np.arange(eOI-sOI)
+    width = 0.35
+    color_adj = 'c'
+    color_ens = 'm'
+
     fig = pyplot.figure()
     pyplot.hold(True)
-    pyplot.plot(adJ[sOI:eOI],'b-')
-    pyplot.plot(edJ[sOI:eOI],'r-')
+    r1 = pyplot.bar(index,       adJ[sOI:eOI], width, color=color_adj, edgecolor=color_adj)
+    r2 = pyplot.bar(index+width, edJ[sOI:eOI], width, color=color_ens, edgecolor=color_ens)
     pyplot.plot(np.zeros(eOI-sOI+1),'k-')
     stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJ[sOI:eOI]), np.std(adJ[sOI:eOI],ddof=1))
     stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJ[sOI:eOI]), np.std(edJ[sOI:eOI],ddof=1))
     yl = pyplot.get(pyplot.gca(),'ylim')
     dyl = yl[1] - yl[0]
     yoff = yl[0] + 0.1 * dyl
-    pyplot.text(5,yoff,stra,fontsize=10)
+    pyplot.text(5,yoff,stra,fontsize=10,color=color_adj)
     yoff = yl[0] + 0.2 * dyl
-    pyplot.text(5,yoff,stre,fontsize=10)
-    pyplot.title('dJ = dJa + dJb')
-    pyplot.xlabel('Assimilation Step')
-    pyplot.ylabel('delta J')
+    pyplot.text(5,yoff,stre,fontsize=10,color=color_ens)
+    pyplot.title(r'$\delta J$ = $\delta J_a$ + $\delta J_b$', fontsize=14)
+    pyplot.xlabel('Assimilation Step', fontsize=12)
+    pyplot.ylabel(r'$\delta J$', fontsize=12)
     pyplot.hold(False)
 
     fig = pyplot.figure()
     pyplot.hold(True)
-    pyplot.plot(adJa[sOI:eOI],'b-')
-    pyplot.plot(edJa[sOI:eOI],'r-')
+    r1 = pyplot.bar(index,       adJa[sOI:eOI], width, color=color_adj, edgecolor=color_adj)
+    r2 = pyplot.bar(index+width, edJa[sOI:eOI], width, color=color_ens, edgecolor=color_ens)
     pyplot.plot(np.zeros(eOI-sOI+1),'k-')
     stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJa[sOI:eOI]), np.std(adJa[sOI:eOI],ddof=1))
     stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJa[sOI:eOI]), np.std(edJa[sOI:eOI],ddof=1))
     yl = pyplot.get(pyplot.gca(),'ylim')
     dyl = yl[1] - yl[0]
     yoff = yl[0] + 0.1 * dyl
-    pyplot.text(5,yoff,stra,fontsize=10)
+    pyplot.text(5,yoff,stra,fontsize=10,color=color_adj)
     yoff = yl[0] + 0.2 * dyl
-    pyplot.text(5,yoff,stre,fontsize=10)
-    pyplot.title('dJa')
-    pyplot.xlabel('Assimilation Step')
-    pyplot.ylabel('delta Ja')
+    pyplot.text(5,yoff,stre,fontsize=10,color=color_ens)
+    pyplot.title(r'$\delta J_a$', fontsize=14)
+    pyplot.xlabel('Assimilation Step', fontsize=12)
+    pyplot.ylabel(r'$\delta J_a$', fontsize=12)
     pyplot.hold(False)
 
     fig = pyplot.figure()
     pyplot.hold(True)
-    pyplot.plot(adJb[sOI:eOI],'b-')
-    pyplot.plot(edJb[sOI:eOI],'r-')
+    r1 = pyplot.bar(index,       adJa[sOI:eOI], width, color=color_adj, edgecolor=color_adj)
+    r2 = pyplot.bar(index+width, edJa[sOI:eOI], width, color=color_ens, edgecolor=color_ens)
     pyplot.plot(np.zeros(eOI-sOI+1),'k-')
     stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJb[sOI:eOI]), np.std(adJb[sOI:eOI],ddof=1))
     stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJb[sOI:eOI]), np.std(edJb[sOI:eOI],ddof=1))
     yl = pyplot.get(pyplot.gca(),'ylim')
     dyl = yl[1] - yl[0]
     yoff = yl[0] + 0.1 * dyl
-    pyplot.text(5,yoff,stra,fontsize=10)
+    pyplot.text(5,yoff,stra,fontsize=10,color=color_adj)
     yoff = yl[0] + 0.2 * dyl
-    pyplot.text(5,yoff,stre,fontsize=10)
-    pyplot.title('dJb')
-    pyplot.xlabel('Assimilation Step')
-    pyplot.ylabel('delta Jb')
+    pyplot.text(5,yoff,stre,fontsize=10,color=color_ens)
+    pyplot.title(r'$\delta J_b$', fontsize=14)
+    pyplot.xlabel('Assimilation Step', fontsize=12)
+    pyplot.ylabel(r'$\delta J_b$', fontsize=12)
     pyplot.hold(False)
 
     pyplot.show()

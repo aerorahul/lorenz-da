@@ -273,7 +273,8 @@ def get_input_arguments():
     '''
     get input arguments from command line
 
-    [filename, start, end] = get_input_arguments()
+    [model, filename, start, end] = get_input_arguments()
+    model    - name of the model []
     filename - file name to read []
     start    - starting index [-1]
     end      - ending index [-1]
@@ -281,12 +282,13 @@ def get_input_arguments():
 
     source = 'get_input_arguments'
 
+    model    = []
     filename = []
     start    = -1
     end      = -1
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:],'f:s:e:h',['filename=','start=','end=','help'])
+        opts, args = getopt.getopt(sys.argv[1:],'M:f:s:e:h',['model=','filename=','start=','end=','help'])
     except Exception as Instance:
         print 'Exception occured in %s of %s' % (source, module)
         print 'Exception occured during reading arguments'
@@ -300,6 +302,8 @@ def get_input_arguments():
             print 'no help has been written for %s in %s' % (source, module)
             print 'see code for details'
             sys.exit(0)
+        elif a in ('-M','--model'):
+            model = o
         elif a in ('-f','--filename'):
             filename = o
         elif a in ('-s','--start'):
@@ -310,7 +314,7 @@ def get_input_arguments():
             assert False, 'unhandled option in %s of %s' % (source, module)
             sys.exit(0)
 
-    returned_args = [filename, start, end]
+    returned_args = [model, filename, start, end]
 
     return returned_args
 

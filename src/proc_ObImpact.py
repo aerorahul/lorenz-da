@@ -34,7 +34,7 @@ from   module_IO     import *
 def main():
 
     # get the name of .dat file to read and the start and end indices
-    [fname, sOI, eOI] = get_input_arguments()
+    [_, fname, sOI, eOI] = get_input_arguments()
 
     if ( not os.path.isfile(fname) ):
         print '%s does not exist' % fname

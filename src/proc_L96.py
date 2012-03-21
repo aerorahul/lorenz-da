@@ -35,7 +35,7 @@ from   plot_stats    import *
 def main():
 
     # get the name of output diagnostic file to read
-    [fname] = get_input_arguments()
+    [_,fname,_,_] = get_input_arguments()
     if ( not os.path.isfile(fname) ):
         print '%s does not exist' % fname
         sys.exit(1)

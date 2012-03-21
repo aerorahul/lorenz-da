@@ -35,12 +35,10 @@ from   module_IO     import *
 ###############################################################
 def main():
 
+    nf = 4
+
     # read in input arguments
-    model = str(sys.argv[1])
-    nf    = int(sys.argv[2])
-    sOI   = int(sys.argv[3])
-    eOI   = int(sys.argv[4])
-    fname = str(sys.argv[5])
+    [model, fname, sOI, eOI] = get_input_arguments()
 
     fname_ObImpact = fname.replace('.nc4','.dat')
     fname_ObImpact = fname_ObImpact.replace('diag','ObImpact')

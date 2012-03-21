@@ -51,6 +51,8 @@ def main():
             print Instance
             sys.exit(1)
 
+    fname_fig = fname.split('.dat')[0]
+
     adJ  = object['adj_dJ']
     edJ  = object['ens_dJ']
     adJa = object['adj_dJa']
@@ -62,11 +64,11 @@ def main():
     if eOI < 0: eOI = len(adJ)
 
     index = np.arange(eOI-sOI)
-    width = 0.35
+    width = 0.45
     color_adj = 'c'
     color_ens = 'm'
 
-    fig = pyplot.figure()
+    fig1 = pyplot.figure()
     pyplot.hold(True)
     r1 = pyplot.bar(index,       adJ[sOI:eOI], width, color=color_adj, edgecolor=color_adj)
     r2 = pyplot.bar(index+width, edJ[sOI:eOI], width, color=color_ens, edgecolor=color_ens)
@@ -84,7 +86,7 @@ def main():
     pyplot.ylabel(r'$\delta J$', fontsize=12)
     pyplot.hold(False)
 
-    fig = pyplot.figure()
+    fig2 = pyplot.figure()
     pyplot.hold(True)
     r1 = pyplot.bar(index,       adJa[sOI:eOI], width, color=color_adj, edgecolor=color_adj)
     r2 = pyplot.bar(index+width, edJa[sOI:eOI], width, color=color_ens, edgecolor=color_ens)
@@ -102,7 +104,7 @@ def main():
     pyplot.ylabel(r'$\delta J_a$', fontsize=12)
     pyplot.hold(False)
 
-    fig = pyplot.figure()
+    fig3 = pyplot.figure()
     pyplot.hold(True)
     r1 = pyplot.bar(index,       adJa[sOI:eOI], width, color=color_adj, edgecolor=color_adj)
     r2 = pyplot.bar(index+width, edJa[sOI:eOI], width, color=color_ens, edgecolor=color_ens)
@@ -119,6 +121,10 @@ def main():
     pyplot.xlabel('Assimilation Step', fontsize=12)
     pyplot.ylabel(r'$\delta J_b$', fontsize=12)
     pyplot.hold(False)
+
+    fig1.savefig(fname_fig + '-dJ.eps', dpi=300,orientation='landscape',format='eps')
+    fig2.savefig(fname_fig + '-dJa.eps',dpi=300,orientation='landscape',format='eps')
+    fig3.savefig(fname_fig + '-dJb.eps',dpi=300,orientation='landscape',format='eps')
 
     pyplot.show()
 ###############################################################

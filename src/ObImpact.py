@@ -54,6 +54,7 @@ def main():
         if 'do_hybrid' in nc.ncattrs():
             do_hybrid   = nc.do_hybrid
             hybrid_wght = nc.hybrid_wght
+            hybrid_rcnt = nc.hybrid_rcnt
         else:
             do_hybrid = False
 
@@ -100,9 +101,9 @@ def main():
         print '========== assimilation time = %5d ========== ' % (k)
 
         if ( do_hybrid ):
-            xti, Xbi, Xai, y, H, R, xbci, xaci, tmp, tmp = read_diag(fname, k)
+            xti, Xbi, Xai, y, H, R, xbci, xaci, _, _ = read_diag(fname, k)
         else:
-            xti, Xbi, Xai, y, H, R, tmp  = read_diag(fname, k)
+            xti, Xbi, Xai, y, H, R, _  = read_diag(fname, k)
 
         # transpose required because of the way data is written to disk
         Xbi = np.transpose(Xbi)
@@ -144,7 +145,8 @@ def main():
         Xaf = np.zeros((ndof,nens))
         for m in range(0,nens):
             if ( do_hybrid ):
-                xa = np.squeeze(Xai[:,m]) - xami + xaci
+                if ( hybrid_rcnt ): xa = np.squeeze(Xai[:,m]) - xami + xaci
+                else:               xa = Xai[:,m].copy()
             else:
                 xa = Xai[:,m].copy()
             exec('xf = integrate.odeint(%s, xa, tf, (F+dF,0.0))' % model)

@@ -383,10 +383,14 @@ def check_varDA(Vupdate):
         print 'Assimilate observations using 3DVar'
     elif ( Vupdate == 2 ):
         print 'Assimilate observations using 4DVar'
+    elif ( Vupdate == 3 ):
+        print 'Assimilate observations using incremental 3DVar'
+    elif ( Vupdate == 4 ):
+        print 'Assimilate observations using incremental 4DVar'
     else:
         print 'Invalid assimilation algorithm'
-        print 'Vupdate must be one of : 0 | 1 | 2'
-        print 'No Assimilation | 3DVar | 4DVar'
+        print 'Vupdate must be one of : 0 | 1 | 2 | 3 | 4'
+        print 'No Assimilation | 3DVar | 4DVar | incremental 3DVar | incremental 4DVar'
         fail = True
 
     print '==========================================='
@@ -433,6 +437,12 @@ minimization - minimization parameters [maxiter=1000, alpha=4e-3, cg=True]
 
     elif ( Vupdate == 2 ):
         xa, A, niters = FourDvar(xb, B, y, R, H, minimization)
+
+    elif ( Vupdate == 3 ):
+        xa, A, niters = ThreeDvar_inc(xb, B, y, R, H, minimization)
+
+    elif ( Vupdate == 4 ):
+        xa, A, niters = FourDvar_inc(xb, B, y, R, H, minimization)
 
     else:
         print 'invalid update algorithm ...'
@@ -547,3 +557,110 @@ minimization - minimization parameters [maxiter, alpha, cg]
     return xa, A, niters
 # }}}
 ###############################################################
+
+###############################################################
+def ThreeDvar_inc(xb, B, y, R, H, minimization):
+# {{{
+    '''
+    Update the prior with incremental 3Dvar algorithm to produce a posterior
+
+    xa, A, niters = ThreeDvar_inc(xb, B, y, R, H, minimization)
+
+          xb - prior
+           B - background error covariance
+           y - observations
+           R - observation error covariance
+           H - forward operator
+minimization - minimization parameters [maxiter, alpha, cg]
+          xa - posterior
+           A - analysis error covariance from Hessian
+      niters - number of iterations required for minimizing the cost function
+    '''
+
+    # get minimization parameters
+    maxiter, alpha, cg = minimization
+
+    # start with zero analysis increment
+    dx      = np.zeros(np.shape(xb))
+    d       = y - np.dot(H,xb)
+    niters  = 0
+    Jold    = 1e6
+    J       = 0
+    Binv    = np.linalg.inv(B)
+    Rinv    = np.linalg.inv(R)
+
+    while ( np.abs(Jold -J) > 1e-5 ):
+
+        if ( niters > maxiter ):
+            print 'exceeded maximum iterations allowed, cost = %10.5f' % J
+            break
+
+        Jold = J
+
+        # cost function : 2J(x) = Jb + Jo | Jb = [dx]^T B^(-1) [dx] | Jo = [Hdx-d]^T R^(-1) [Hdx-d]
+        Jb = 0.5 * np.dot(np.transpose(dx),np.dot(Binv,dx))
+        Jo = 0.5 * np.dot(np.transpose(np.dot(H,dx)-d),np.dot(Rinv,np.dot(H,dx)-d))
+        J = Jb + Jo
+
+        # cost function gradient : dJ/dx
+        gJ = np.dot(Binv,dx) + np.dot(np.transpose(H),np.dot(Rinv,np.dot(H,dx)-d))
+
+        if ( niters == 0 ): print "initial cost = %10.5f" % J
+        #print "cost = %10.5f" % J
+
+        if ( cg ):
+            if ( niters == 0 ):
+                dx = dx - alpha * gJ
+                cgJo = gJ
+            else:
+                beta = np.dot(np.transpose(gJ),gJ) / np.dot(np.transpose(gJo),gJo)
+                cgJ = gJ + beta * cgJo
+                dx = dx - alpha * cgJ
+                cgJo = cgJ
+
+            gJo = gJ
+        else:
+            dx = dx - alpha * gJ
+
+        niters = niters + 1
+
+    print 'final cost   = %10.5f after %d iterations' % (J, niters)
+
+    # 3DVAR estimate
+    xa = xb + dx
+
+    # analysis error covariance from Hessian
+    A = np.linalg.inv(Binv + Rinv)
+
+    return xa, A, niters
+# }}}
+###############################################################
+
+###############################################################
+def FourDvar_inc(xb, B, y, R, H, minimization):
+# {{{
+    '''
+    Update the prior with incremental 4Dvar algorithm to produce a posterior
+
+    xa, A, niters = FourDvar_inc(xb, B, y, R, H, minimization)
+
+          xb - prior
+           B - background error covariance
+           y - observations
+           R - observation error covariance
+           H - forward operator
+minimization - minimization parameters [maxiter, alpha, cg]
+          xa - posterior
+           A - analysis error covariance from Hessian
+      niters - number of iterations required for minimizing the cost function
+
+    currently calls the incremental 3Dvar update
+    '''
+
+    xa, A, niters = ThreeDvar_inc(xb, B, y, R, H, minimization)
+
+    return xa, A, niters
+# }}}
+###############################################################
+
+

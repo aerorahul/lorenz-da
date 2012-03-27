@@ -45,10 +45,10 @@ model.Name = 'L96'           # model name
 model.Ndof = 40              # model degrees of freedom
 model.Par  = [8.0, 0.4]      # model parameters F, dF
 
-A = np.eye(Ndof)             # initial analysis error covariance
-Q = np.eye(Ndof)*0.0         # model error covariance ( covariance model is white for now)
-H = np.eye(Ndof)             # obs operator ( eye(Ndof) gives identity obs )
-R = np.eye(Ndof)*(1.0**2)    # observation error covariance
+A = np.eye(model.Ndof)          # initial analysis error covariance
+Q = np.eye(model.Ndof)*0.0      # model error covariance ( covariance model is white for now)
+H = np.eye(model.Ndof)          # obs operator ( eye(Ndof) gives identity obs )
+R = np.eye(model.Ndof)*(1.0**2) # observation error covariance
 
 nassim = 2000                # no. of assimilation cycles
 dt     = 1.0e-4              # time-step

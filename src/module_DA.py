@@ -746,7 +746,6 @@ minimization - minimization class
     dxo     = np.zeros(np.shape(xb))
     d       = np.zeros(np.shape(y))
     niters  = 0
-    alpha_r = minimization.alpha
     Jold    = 1e6
     J       = 1e5
     Binv    = np.linalg.inv(B)
@@ -806,17 +805,17 @@ minimization - minimization class
 
             if ( minimization.cg ):
                 if ( niters == 0 ):
-                    dxo = dxo - alpha_r * gJ
+                    dxo = dxo - minimization.alpha * gJ
                     cgJold = gJ
                 else:
                     beta = np.dot(np.transpose(gJ),gJ) / np.dot(np.transpose(gJold),gJold)
                     cgJ = gJ + beta * cgJold
-                    dxo = dxo - alpha_r * cgJ
+                    dxo = dxo - minimization.alpha * cgJ
                     cgJold = cgJ
 
                 gJold = gJ
             else:
-                dxo = dxo - alpha_r * gJ
+                dxo = dxo - minimization.alpha * gJ
 
             niters = niters + 1
 

@@ -476,7 +476,7 @@ minimization - minimization class
     Binv    = np.linalg.inv(B)
     Rinv    = np.linalg.inv(R)
 
-    while ( np.abs(Jold -J) > minimization.tol ):
+    while ( np.abs(Jold - J) > minimization.tol ):
 
         if ( niters > minimization.maxiter ):
             print 'exceeded maximum iterations allowed'
@@ -522,118 +522,10 @@ minimization - minimization class
 
         niters = niters + 1
 
-    print 'final   cost = %10.5f after %d iterations' % (J, niters)
+    print '  final cost = %10.5f after %4d iterations' % (J, niters)
 
     # 3DVAR estimate
     xa = x.copy()
-
-    # analysis error covariance from Hessian
-    A = np.linalg.inv(Binv + Rinv)
-
-    return xa, A, niters
-# }}}
-###############################################################
-
-###############################################################
-def FourDvar(xb, B, y, R, H, minimization, model, fdvar):
-# {{{
-    '''
-    Update the prior with 4Dvar algorithm to produce a posterior
-
-    xa, A, niters = FourDvar(xb, B, y, R, H, minimization, model, fdvar)
-
-          xb - prior
-           B - background error covariance
-           y - observations
-           R - observation error covariance
-           H - forward operator
-minimization - minimization class
-       model - model class
-       fdvar - 4DVar class
-          xa - posterior
-           A - analysis error covariance from Hessian
-      niters - number of iterations required for minimizing the cost function
-    '''
-
-    # start with background
-    x       = xb.copy()
-    niters  = 0
-    alpha_r = minimization.alpha
-    Jold    = 1e6
-    J       = 1e5
-    Binv    = np.linalg.inv(B)
-    Rinv    = np.linalg.inv(R)
-
-    while ( np.abs(Jold -J) > minimization.tol ):
-
-        if ( niters > minimization.maxiter ):
-            print 'exceeded maximum iterations allowed'
-            break
-
-        Jold  = J
-
-        # advance the background through the assimilation window
-        exec('xwind = integrate.odeint(%s, x, fdvar.twind, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
-
-        # get model estimate of the observation at all obs. times
-        ye = np.zeros(np.shape(y))
-        for i in range(0,fdvar.nobstimes):
-            ye[i,:] = np.dot(H,xwind[fdvar.twind_obsIndex[i],:])
-
-        # cost function : 2J(x) = Jb + Jo
-        # Jb = 0.5 * [x-xb]^T B^(-1) [x-xb]
-        # Jy = 0.5 * \sum [Hx_i-y_i]^T R^(-1) [Hx_i -y_i]
-        # cost function gradient: gJ = gJb + gJy
-        # gJb = B^(-1) [x-xb]
-        # gJy = \sum M^T H^T R^(-1) [Hx_i -y_i]
-
-        dx  = x - xb
-        Jb  = 0.5 * np.dot(np.transpose(dx),np.dot(Binv,dx))
-        gJb = np.dot(Binv,dx)
-
-        Jy = 0.0
-        for i in range(0,fdvar.nobstimes):
-            dy = ye[i,:] - y[i,:]
-            Jy = Jy + 0.5 * np.dot(np.transpose(dy),np.dot(Rinv,dy))
-
-        gJy = np.zeros(np.shape(x))
-        for j in range(0,fdvar.nobstimes):
-            i = fdvar.nobstimes - j - 1
-            tint = fdvar.twind[fdvar.twind_obsIndex[i-1]:fdvar.twind_obsIndex[i]+1]
-            dy = ye[i,:] - y[i,:]
-            gJy = gJy + np.dot(np.transpose(H),np.dot(Rinv,dy))
-            if ( len(tint) != 0 ):
-                exec('sxi = integrate.odeint(%s_tlm, gJy, tint, (%f,np.flipud(xwind),fdvar.twind, True))' % (model.Name, model.Par[0]+model.Par[1]))
-                gJy = sxi[-1,:].copy()
-
-        J  =  Jb +  Jy
-        gJ = gJb + gJy
-
-        if ( niters == 0 ): print "initial cost = %10.5f" % J
-        if ( ( not np.mod(niters,10) ) and ( not niters == 0 ) ):
-            print '        cost = %10.5f after %4d iterations' % (J, niters)
-
-        if ( minimization.cg ):
-            if ( niters == 0 ):
-                x = x - alpha_r * gJ
-                cgJold = gJ
-            else:
-                beta = np.dot(np.transpose(gJ),gJ) / np.dot(np.transpose(gJold),gJold)
-                cgJ = gJ + beta * cgJold
-                x = x - alpha_r * cgJ
-                cgJold = cgJ
-
-            gJold = gJ
-        else:
-            x = x - alpha_r * gJ
-
-        niters = niters + 1
-
-    print 'final   cost = %10.5f after %d iterations' % (J, niters)
-
-    # advance to the analysis time to get the 4DVAR estimate
-    exec('xs = integrate.odeint(%s, x, fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
-    xa = xs[-1,:].copy()
 
     # analysis error covariance from Hessian
     A = np.linalg.inv(Binv + Rinv)
@@ -670,7 +562,7 @@ minimization - minimization class
     Binv    = np.linalg.inv(B)
     Rinv    = np.linalg.inv(R)
 
-    while ( np.abs(Jold -J) > minimization.tol ):
+    while ( np.abs(Jold - J) > minimization.tol ):
 
         if ( niters > minimization.maxiter ):
             print 'exceeded maximum iterations allowed, cost = %10.5f' % J
@@ -713,10 +605,113 @@ minimization - minimization class
 
         niters = niters + 1
 
-    print 'final   cost = %10.5f after %d iterations' % (J, niters)
+    print '  final cost = %10.5f after %4d iterations' % (J, niters)
 
     # 3DVAR estimate
     xa = xb + dx
+
+    # analysis error covariance from Hessian
+    A = np.linalg.inv(Binv + Rinv)
+
+    return xa, A, niters
+# }}}
+###############################################################
+
+###############################################################
+def FourDvar(xb, B, y, R, H, minimization, model, fdvar):
+# {{{
+    '''
+    Update the prior with 4Dvar algorithm to produce a posterior
+
+    xa, A, niters = FourDvar(xb, B, y, R, H, minimization, model, fdvar)
+
+          xb - prior
+           B - background error covariance
+           y - observations
+           R - observation error covariance
+           H - forward operator
+minimization - minimization class
+       model - model class
+       fdvar - 4DVar class
+          xa - posterior
+           A - analysis error covariance from Hessian
+      niters - number of iterations required for minimizing the cost function
+    '''
+
+    # start with background
+    x       = xb.copy()
+    niters  = 0
+    alpha_r = minimization.alpha
+    Jold    = 1e6
+    J       = 0
+    Binv    = np.linalg.inv(B)
+    Rinv    = np.linalg.inv(R)
+
+    while ( np.abs(Jold - J) > minimization.tol ):
+
+        if ( niters > minimization.maxiter ):
+            print 'exceeded maximum iterations allowed'
+            break
+
+        Jold  = J
+
+        # advance the background through the assimilation window with the full non-linear model
+        exec('xnl = integrate.odeint(%s, x, fdvar.twind, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
+
+        # cost function : J(x) = Jb + Jo
+        # Jb = 0.5 * [x-xb]^T B^(-1) [x-xb]
+        # Jy = 0.5 * \sum [Hx_i-y_i]^T R^(-1) [Hx_i -y_i]
+        # cost function gradient: gJ = gJb + gJy
+        # gJb = B^(-1) [x-xb]
+        # gJy = \sum M^T H^T R^(-1) [Hx_i -y_i]
+
+        dx  = x - xb
+        Jb  = 0.5 * np.dot(np.transpose(dx),np.dot(Binv,dx))
+        gJb = np.dot(Binv,dx)
+
+        Jy  = 0.0
+        gJy = np.zeros(np.shape(x))
+        for j in range(0,fdvar.nobstimes):
+
+            i = fdvar.nobstimes - j - 1
+            dy = np.dot(H,xnl[fdvar.twind_obsIndex[i],:]) - y[i,:]
+            tint = fdvar.twind[fdvar.twind_obsIndex[i-1]:fdvar.twind_obsIndex[i]+1]
+
+            Jy = Jy + 0.5 * np.dot(np.transpose(dy),np.dot(Rinv,dy))
+
+            gJy = gJy + np.dot(np.transpose(H),np.dot(Rinv,dy))
+            if ( len(tint) != 0 ):
+                exec('sxi = integrate.odeint(%s_tlm, gJy, tint, (%f,np.flipud(xnl),fdvar.twind, True))' % (model.Name, model.Par[0]+model.Par[1]))
+                gJy = sxi[-1,:].copy()
+
+        J  =  Jb +  Jy
+        gJ = gJb + gJy
+
+        if ( niters == 0 ): print "initial cost = %10.5f" % J
+        if ( ( not np.mod(niters,10) ) and ( not niters == 0 ) ):
+            print '        cost = %10.5f after %4d iterations' % (J, niters)
+
+        if ( minimization.cg ):
+            if ( niters == 0 ):
+                x = x - alpha_r * gJ
+                cgJold = gJ
+            else:
+                beta = np.dot(np.transpose(gJ),gJ) / np.dot(np.transpose(gJold),gJold)
+                cgJ = gJ + beta * cgJold
+                x = x - alpha_r * cgJ
+                cgJold = cgJ
+
+            gJold = gJ
+        else:
+            x = x - alpha_r * gJ
+
+        niters = niters + 1
+
+    print '  final cost = %10.5f after %4d iterations' % (J, niters)
+
+    # advance to the analysis time to get the 4DVAR estimate
+    exec('xs = integrate.odeint(%s, x, fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
+    xa = xs[-1,:].copy()
 
     # analysis error covariance from Hessian
     A = np.linalg.inv(Binv + Rinv)
@@ -749,83 +744,85 @@ minimization - minimization class
     # start with background
     x       = xb.copy()
     dxo     = np.zeros(np.shape(xb))
+    d       = np.zeros(np.shape(y))
     niters  = 0
     alpha_r = minimization.alpha
     Jold    = 1e6
-    J       = 0
+    J       = 1e5
     Binv    = np.linalg.inv(B)
     Rinv    = np.linalg.inv(R)
 
-    while ( np.abs(Jold -J) > minimization.tol ):
-
-        if ( niters > minimization.maxiter ):
-            print 'exceeded maximum iterations allowed'
-            break
-
-        Jold  = J
+    for outer in range(0,fdvar.maxouter):
 
         # advance the background through the assimilation window with full non-linear model
         exec('xnl = integrate.odeint(%s, x, fdvar.twind, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
 
-        # advance the increment through the assimilation window with TL model
-        exec('dxtl = integrate.odeint(%s_tlm, dxo, fdvar.twind, (%f,xnl,fdvar.twind,False))' % (model.Name, model.Par[0]+model.Par[1]))
-
         # get observational increment at all observation times
-        d = np.zeros(np.shape(y))
         for i in range(0,fdvar.nobstimes):
             d[i,:] = np.dot(H,xnl[fdvar.twind_obsIndex[i],:]) - y[i,:]
 
-        # cost function : J(dx_o) = Jb + Jy
-        # Jb = 0.5 * [dx_o]^T B^(-1) [dx_o]
-        # Jy = 0.5 * \sum [Hdx_i-d_i]^T R^(-1) [Hdx_i-d_i]
-        # cost function gradient: gJ = gJb + gJy
-        # gJb = B^(-1) [dx_o]
-        # gJy = \sum M^T H^T R^(-1) [Hdx_i-d_i]
+        while ( np.abs(Jold - J) > minimization.tol ):
 
-        Jb  = 0.5 * np.dot(np.transpose(dxo),np.dot(Binv,dxo))
-        gJb = np.dot(Binv,dxo)
+            if ( niters > minimization.maxiter ):
+                print 'exceeded maximum iterations allowed'
+                break
 
-        Jy = 0.0
-        for i in range(0,fdvar.nobstimes):
-            dy = np.dot(H,dxtl[fdvar.twind_obsIndex[i],:]) - d[i,:]
-            Jy = Jy + 0.5 * np.dot(np.transpose(dy),np.dot(Rinv,dy))
+            Jold = J
 
-        gJy = np.zeros(np.shape(x))
-        for j in range(0,fdvar.nobstimes):
-            i = fdvar.nobstimes - j - 1
-            tint = fdvar.twind[fdvar.twind_obsIndex[i-1]:fdvar.twind_obsIndex[i]+1]
-            dy = np.dot(H,dxtl[fdvar.twind_obsIndex[i],:]) - d[i,:]
-            gJy = gJy + np.dot(np.transpose(H),np.dot(Rinv,dy))
-            if ( len(tint) != 0 ):
-                exec('sxi = integrate.odeint(%s_tlm, gJy, tint, (%f,np.flipud(xnl),fdvar.twind, True))' % (model.Name, model.Par[0]+model.Par[1]))
-                gJy = sxi[-1,:].copy()
+            # advance the increment through the assimilation window with TL model
+            exec('dxtl = integrate.odeint(%s_tlm, dxo, fdvar.twind, (%f,xnl,fdvar.twind,False))' % (model.Name, model.Par[0]+model.Par[1]))
 
-        J  =  Jb +  Jy
-        gJ = gJb + gJy
+            # cost function : J(dx_o) = Jb + Jy
+            # Jb = 0.5 * [dx_o]^T B^(-1) [dx_o]
+            # Jy = 0.5 * \sum [Hdx_i-d_i]^T R^(-1) [Hdx_i-d_i]
+            # cost function gradient: gJ = gJb + gJy
+            # gJb = B^(-1) [dx_o]
+            # gJy = \sum M^T H^T R^(-1) [Hdx_i-d_i]
 
-        if ( niters == 0 ): print "initial cost = %10.5f" % J
-        if ( ( not np.mod(niters,10) ) and ( not niters == 0 ) ):
-            print "        cost = %10.5f after %4d iterations" % (J, niters)
+            Jb  = 0.5 * np.dot(np.transpose(dxo),np.dot(Binv,dxo))
+            gJb = np.dot(Binv,dxo)
 
-        if ( minimization.cg ):
-            if ( niters == 0 ):
-                dxo = dxo - alpha_r * gJ
-                cgJold = gJ
+            Jy  = 0.0
+            gJy = np.zeros(np.shape(x))
+            for j in range(0,fdvar.nobstimes):
+
+                i = fdvar.nobstimes - j - 1
+                dy = np.dot(H,dxtl[fdvar.twind_obsIndex[i],:]) - d[i,:]
+                tint = fdvar.twind[fdvar.twind_obsIndex[i-1]:fdvar.twind_obsIndex[i]+1]
+
+                Jy = Jy + 0.5 * np.dot(np.transpose(dy),np.dot(Rinv,dy))
+
+                gJy = gJy + np.dot(np.transpose(H),np.dot(Rinv,dy))
+                if ( len(tint) != 0 ):
+                    exec('sxi = integrate.odeint(%s_tlm, gJy, tint, (%f,np.flipud(xnl),fdvar.twind, True))' % (model.Name, model.Par[0]+model.Par[1]))
+                    gJy = sxi[-1,:].copy()
+
+            J  =  Jb +  Jy
+            gJ = gJb + gJy
+
+            if ( niters == 0 ): print "initial cost = %10.5f" % J
+            if ( ( not np.mod(niters,10) ) and ( not niters == 0 ) ):
+                print "        cost = %10.5f after %4d iterations" % (J, niters)
+
+            if ( minimization.cg ):
+                if ( niters == 0 ):
+                    dxo = dxo - alpha_r * gJ
+                    cgJold = gJ
+                else:
+                    beta = np.dot(np.transpose(gJ),gJ) / np.dot(np.transpose(gJold),gJold)
+                    cgJ = gJ + beta * cgJold
+                    dxo = dxo - alpha_r * cgJ
+                    cgJold = cgJ
+
+                gJold = gJ
             else:
-                beta = np.dot(np.transpose(gJ),gJ) / np.dot(np.transpose(gJold),gJold)
-                cgJ = gJ + beta * cgJold
-                dxo = dxo - alpha_r * cgJ
-                cgJold = cgJ
+                dxo = dxo - alpha_r * gJ
 
-            gJold = gJ
-        else:
-            dxo = dxo - alpha_r * gJ
+            niters = niters + 1
 
-        niters = niters + 1
+        print '  final cost = %10.5f after %4d iterations' % (J, niters)
 
         x = x + dxo
-
-    print 'final   cost = %10.5f after %d iterations' % (J, niters)
 
     # advance to the analysis time to get the 4DVAR estimate
     exec('xs = integrate.odeint(%s, x, fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))

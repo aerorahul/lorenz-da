@@ -36,7 +36,7 @@ from   plot_stats    import *
 global model
 global A, Q, H, R
 global nassim, ntimes, dt, t0
-global Vupdate, minimization
+global varDA
 global diag_fname, diag_fattr
 global restart_state, restart_file
 
@@ -55,11 +55,13 @@ dt     = 1.0e-4              # time-step
 ntimes = 0.05                # do assimilation every ntimes non-dimensional time units
 t0     = 0.0                 # initial time
 
-Vupdate = 1                  # DA method (1= 3Dvar; 2= 4Dvar)
-maxiter = 1000               # maximum iterations
-alpha   = 4e-4               # size of step in direction of normalized J
-cg      = True               # True = Use conjugate gradient; False = Perform line search
-minimization = [maxiter, alpha, cg]
+varDA                      = type('',(),{}) # VarDA class
+varDA.update               = 1              # DA method (1= 3Dvar; 2= 4Dvar)
+varDA.minimization         = type('',(),{}) # minimization class
+varDA.minimization.maxiter = 1000           # maximum iterations
+varDA.minimization.alpha   = 4e-4           # size of step in direction of normalized J
+varDA.minimization.cg      = True           # True = Use conjugate gradient; False = Perform line search
+varDA.minimization.tol     = 1e-5           # tolerance to end the variational minimization iteration
 
 # name and attributes of/in the output diagnostic file
 diag_fname = 'L96_varDA_diag.nc4'
@@ -67,13 +69,14 @@ diag_fattr = {'F'           : str(model.Par[0]),
               'dF'          : str(model.Par[1]),
               'ntimes'      : str(ntimes),
               'dt'          : str(dt),
-              'Vupdate'     : str(Vupdate),
-              'maxiter'     : str(maxiter),
-              'alpha'       : str(alpha),
-              'cg'          : str(int(cg))}
+              'Vupdate'     : str(varDA.update),
+              'maxiter'     : str(varDA.minimization.maxiter),
+              'alpha'       : str(varDA.minimization.alpha),
+              'cg'          : str(int(varDA.minimization.cg)),
+              'tol'         : str(int(varDA.minimization.tol))}
 
 # restart conditions ( state [< -1 | == -1 | > -1], filename)
-restart_state = -1
+restart_state = -2
 restart_file  = 'L96_varDA_diag.nc4'
 ###############################################################
 
@@ -84,7 +87,7 @@ def main():
     np.random.seed(0)
 
     # check for valid variational data assimilation options
-    check_varDA(Vupdate)
+    check_varDA(varDA)
 
     # get IC's
     [xt, xa] = get_IC(model=model, restart_state=restart_state, restart_file=restart_file)
@@ -120,7 +123,7 @@ def main():
         xb = xs[-1,:].copy()
 
         # update step
-        xa, A, niters = update_varDA(xb, Bc, y, R, H, Vupdate=Vupdate, minimization=minimization)
+        xa, A, niters = update_varDA(xb, Bc, y, R, H, varDA)
 
         # write diagnostics to disk
         write_diag(diag_fname, k+1, ver, xb, xa, y, H, np.diag(R), niters=niters)

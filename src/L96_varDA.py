@@ -35,7 +35,7 @@ from   plot_stats    import *
 ###############################################################
 global model
 global A, Q, H, R
-global nassim, ntimes, dt, t0
+global DA
 global varDA
 global diag_fname, diag_fattr
 global restart_state, restart_file
@@ -44,40 +44,56 @@ model      = type('',(),{})  # model Class
 model.Name = 'L96'           # model name
 model.Ndof = 40              # model degrees of freedom
 model.Par  = [8.0, 0.4]      # model parameters F, dF
+model.dt   = 1.0e-4          # model time-step
 
 A = np.eye(model.Ndof)          # initial analysis error covariance
 Q = np.eye(model.Ndof)*0.0      # model error covariance ( covariance model is white for now)
 H = np.eye(model.Ndof)          # obs operator ( eye(Ndof) gives identity obs )
 R = np.eye(model.Ndof)*(1.0**2) # observation error covariance
 
-nassim = 2000                # no. of assimilation cycles
-dt     = 1.0e-4              # time-step
-ntimes = 0.05                # do assimilation every ntimes non-dimensional time units
-t0     = 0.0                 # initial time
+DA        = type('',(),{})      # DA class
+DA.nassim = 50                # no. of assimilation cycles
+DA.ntimes = 0.05                # do assimilation every ntimes non-dimensional time units
+DA.t0     = 0.0                 # initial time
 
 varDA                      = type('',(),{}) # VarDA class
-varDA.update               = 1              # DA method (1= 3Dvar; 2= 4Dvar)
+varDA.update               = 2              # DA method (1= 3Dvar; 2= 4Dvar)
 varDA.minimization         = type('',(),{}) # minimization class
 varDA.minimization.maxiter = 1000           # maximum iterations
 varDA.minimization.alpha   = 4e-4           # size of step in direction of normalized J
 varDA.minimization.cg      = True           # True = Use conjugate gradient; False = Perform line search
 varDA.minimization.tol     = 1e-5           # tolerance to end the variational minimization iteration
 
+if ( (varDA.update == 2) or (varDA.update == 4) ): fdvar = True
+else:                                              fdvar = False
+
+if ( fdvar ):
+    varDA.fdvar                = type('',(),{}) # 4DVar class
+    varDA.fdvar.maxouter       = 1              # no. of outer loops for 4DVar
+    varDA.fdvar.window         = DA.ntimes      # length of the 4Dvar assimilation window
+    varDA.fdvar.offset         = 0.5            # time offset: forecast from analysis to background time
+    varDA.fdvar.nobstimes      = 11             # no. of evenly spaced obs. times in the window
+
 # name and attributes of/in the output diagnostic file
 diag_fname = 'L96_varDA_diag.nc4'
-diag_fattr = {'F'           : str(model.Par[0]),
-              'dF'          : str(model.Par[1]),
-              'ntimes'      : str(ntimes),
-              'dt'          : str(dt),
-              'Vupdate'     : str(varDA.update),
-              'maxiter'     : str(varDA.minimization.maxiter),
-              'alpha'       : str(varDA.minimization.alpha),
-              'cg'          : str(int(varDA.minimization.cg)),
-              'tol'         : str(int(varDA.minimization.tol))}
+diag_fattr = {'F'       : str(model.Par[0]),
+              'dF'      : str(model.Par[1]),
+              'ntimes'  : str(DA.ntimes),
+              'dt'      : str(model.dt),
+              'Vupdate' : str(varDA.update),
+              'maxiter' : str(varDA.minimization.maxiter),
+              'alpha'   : str(varDA.minimization.alpha),
+              'cg'      : str(int(varDA.minimization.cg)),
+              'tol'     : str(int(varDA.minimization.tol))}
+if ( fdvar ):
+    diag_fattr.update({'offset'    : str(varDA.fdvar.offset),
+                       'window'    : str(varDA.fdvar.window),
+                       'nobstimes' : str(int(varDA.fdvar.nobstimes)),
+                       'maxouter'  : str(int(varDA.fdvar.maxouter))})
 
 # restart conditions ( state [< -1 | == -1 | > -1], filename)
-restart_state = -2
-restart_file  = 'L96_varDA_diag.nc4'
+restart_state = 0
+restart_file  = 'L96_4DvarDA_diag-reg.nc4'
 ###############################################################
 
 ###############################################################
@@ -98,35 +114,78 @@ def main():
     Bc = nc.variables['B'][:]
     nc.close()
 
+    if ( fdvar ):
+        # check length of assimilation window
+        if ( varDA.fdvar.offset * DA.ntimes + varDA.fdvar.window - DA.ntimes < 0.0 ):
+            print 'assimilation window is too short'
+            sys.exit(2)
+
+        # time index from analysis to ... background, next analysis, end of window, window
+        varDA.fdvar.tb = np.int(np.rint(varDA.fdvar.offset * DA.ntimes/model.dt))
+        varDA.fdvar.ta = np.int(np.rint(DA.ntimes/model.dt))
+        varDA.fdvar.tf = np.int(np.rint((varDA.fdvar.offset * DA.ntimes + varDA.fdvar.window)/model.dt))
+        varDA.fdvar.tw = varDA.fdvar.tf - varDA.fdvar.tb
+
+        # time vector from analysis to ... background, next analysis, end of window, window
+        varDA.fdvar.tbkgd = np.linspace(DA.t0,varDA.fdvar.tb,   varDA.fdvar.tb   +1) * model.dt
+        varDA.fdvar.tanal = np.linspace(DA.t0,varDA.fdvar.ta-varDA.fdvar.tb,varDA.fdvar.ta-varDA.fdvar.tb+1) * model.dt
+        varDA.fdvar.tfore = np.linspace(DA.t0,varDA.fdvar.tf,   varDA.fdvar.tf   +1) * model.dt
+        varDA.fdvar.twind = np.linspace(DA.t0,varDA.fdvar.tw,   varDA.fdvar.tw   +1) * model.dt
+
+        # time vector, interval, indices of observations
+        varDA.fdvar.twind_obsInterval = varDA.fdvar.tw / (varDA.fdvar.nobstimes-1)
+        varDA.fdvar.twind_obsTimes    = varDA.fdvar.twind[::varDA.fdvar.twind_obsInterval]
+        varDA.fdvar.twind_obsIndex    = np.array(np.rint(varDA.fdvar.twind_obsTimes / model.dt), dtype=int)
+
     print 'Cycling ON the attractor ...'
 
-    ts = np.arange(t0,ntimes+dt,dt)     # time between assimilations
+    if ( not fdvar ):
+        DA.tanal = np.arange(DA.t0,DA.ntimes+model.dt,model.dt)  # time between assimilations
 
     # create diagnostic file
     create_diag(diag_fname, diag_fattr, model.Ndof)
     write_diag(diag_fname, 0, xt, xb, xa, np.dot(H,xt), H, np.diag(R), niters=np.NaN)
 
-    for k in range(0, nassim):
+    for k in range(0, DA.nassim):
 
         print '========== assimilation time = %5d ========== ' % (k+1)
 
         # advance truth with the full nonlinear model
-        xs = integrate.odeint(L96, xt, ts, (model.Par[0],0.0))
-        xt = xs[-1,:].copy()
+        if ( fdvar ):
+            xs = integrate.odeint(L96, xt, varDA.fdvar.tfore, (model.Par[0],0.0))
+            xt = xs[varDA.fdvar.ta,:].copy()
+        else:
+            xs = integrate.odeint(L96, xt, DA.tanal, (model.Par[0],0.0))
+            xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values
-        y   = np.dot(H,xt) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
-        ver = xt.copy()
+        if ( fdvar ):
+            y = np.zeros((varDA.fdvar.nobstimes,model.Ndof))
+            for i in range(0,varDA.fdvar.nobstimes):
+                y[i,:] = np.dot(H,xs[varDA.fdvar.twind_obsIndex[i]+varDA.fdvar.tb,:]) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
+            ver = xt.copy()
+            ya  = np.dot(H,xt) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
+        else:
+            y   = np.dot(H,xt) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
+            ver = xt.copy()
 
-        # step to the next assimilation time
-        xs = integrate.odeint(L96, xa, ts, (model.Par[0]+model.Par[1],0.0))
-        xb = xs[-1,:].copy()
+        if ( fdvar ):
+            # step to the beginning of the assimilation window
+            xs = integrate.odeint(L96, xa, varDA.fdvar.tbkgd, (model.Par[0]+model.Par[1],0.0))
+            xb = xs[-1,:].copy()
+        else:
+            # step to the next assimilation time
+            xs = integrate.odeint(L96, xa, DA.tanal, (model.Par[0]+model.Par[1],0.0))
+            xb = xs[-1,:].copy()
 
         # update step
-        xa, A, niters = update_varDA(xb, Bc, y, R, H, varDA)
+        xa, A, niters = update_varDA(xb, Bc, y, R, H, varDA, model=model)
 
         # write diagnostics to disk
-        write_diag(diag_fname, k+1, ver, xb, xa, y, H, np.diag(R), niters=niters)
+        if ( fdvar ):
+            write_diag(diag_fname, k+1, ver, xb, xa, ya, H, np.diag(R), niters=niters)
+        else:
+            write_diag(diag_fname, k+1, ver, xb, xa, y,  H, np.diag(R), niters=niters)
 
     print '... all done ...'
     sys.exit(0)

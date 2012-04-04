@@ -30,50 +30,50 @@ from module_Lorenz import *
 ###############################################################
 
 ###############################################################
-def check_ensDA(Eupdate, inflation, localization):
+def check_ensDA(ensDA):
 # {{{
     '''
     Check for valid ensemble DA algorithms and methods
 
-      Eupdate - ensemble data assimilation algorithms
-    inflation - inflation
- localization - localization
+    check_ensDA(ensDA)
+
+    ensDA - ensemble data assimilation class
     '''
 
     print '==========================================='
 
     fail = False
 
-    if   ( Eupdate == 0 ):
+    if   ( ensDA.update == 0 ):
         print 'Running "No Assimilation"'
-    elif ( Eupdate == 1 ):
+    elif ( ensDA.update == 1 ):
         print 'Assimilate observations using the EnKF'
-    elif ( Eupdate == 2 ):
+    elif ( ensDA.update == 2 ):
         print 'Assimilate observations using the EnSRF'
-    elif ( Eupdate == 3 ):
+    elif ( ensDA.update == 3 ):
         print 'Assimilate observations using the EAKF'
     else:
         print 'Invalid assimilation algorithm'
-        print 'Eupdate must be one of : 0 | 1 | 2 | 3'
+        print 'ensDA.update must be one of : 0 | 1 | 2 | 3'
         print 'No Assimilation | EnKF | EnSRF | EAKF'
         fail = True
 
-    if   ( inflation[0] == 1 ):
-        print 'Inflating the Prior using multiplicative inflation with a factor of %f' % inflation[1]
-    elif ( inflation[0] == 2 ):
-        print 'Inflating the Prior by adding white-noise with zero-mean and %f spread' % inflation[1]
-    elif ( inflation[0] == 3 ):
-        print 'Inflating the Posterior by covariance relaxation method with weight %f to the prior' % inflation[1]
-    elif ( inflation[0] == 4 ):
-        print 'Inflating the Posterior by spread restoration method with a factor of %f' % inflation[1]
+    if   ( ensDA.inflation[0] == 1 ):
+        print 'Inflating the Prior using multiplicative inflation with a factor of %f' % ensDA.inflation[1]
+    elif ( ensDA.inflation[0] == 2 ):
+        print 'Inflating the Prior by adding white-noise with zero-mean and %f spread' % ensDA.inflation[1]
+    elif ( ensDA.inflation[0] == 3 ):
+        print 'Inflating the Posterior by covariance relaxation method with weight %f to the prior' % ensDA.inflation[1]
+    elif ( ensDA.inflation[0] == 4 ):
+        print 'Inflating the Posterior by spread restoration method with a factor of %f' % ensDA.inflation[1]
     else:
         print 'Invalid inflation method'
-        print 'inflation[0] must be one of : 1 | 2 | 3 | 4'
+        print 'ensDA.inflation[0] must be one of : 1 | 2 | 3 | 4'
         print 'Multiplicative | Additive | Covariance Relaxation | Spread Restoration'
         fail = True
 
-    if   ( localization[0] == True ):
-        print 'Localizing using Gaspari-Cohn with a covariance cutoff of %f' % localization[1]
+    if   ( ensDA.localization[0] == True ):
+        print 'Localizing using Gaspari-Cohn with a covariance cutoff of %f' % ensDA.localization[1]
     else:
         print 'No localization'
 
@@ -86,31 +86,21 @@ def check_ensDA(Eupdate, inflation, localization):
 ###############################################################
 
 ###############################################################
-def update_ensDA(Xb, y, R, H, Eupdate=None, inflation=[None, None], localization=[None,
-        None]):
+def update_ensDA(Xb, y, R, H, ensDA):
 # {{{
     '''
     Update the prior with an ensemble-based state estimation algorithm to produce a posterior
 
-    Xa, A, error_variance_ratio = update_ensDA(Xb, B, y, R, H, Eupdate=3, inflation=[1, 1.02], localization=[True, 1.0])
+    Xa, A, error_variance_ratio = update_ensDA(Xb, B, y, R, H, ensDA)
 
           Xb - prior ensemble
            y - observations
            R - observation error covariance
            H - forward operator
-     Eupdate - ensemble-based data assimilation algorithm [3 = EAKF]
-   inflation - inflation settings [method, factor = 1, 1.02]
-localization - localization settings [localize, cutoff = True, 1.0]
+       ensDA - ensemble data assimilation class
           Xa - posterior ensemble
      evratio - ratio of innovation variance to total variance
     '''
-
-    # set defaults:
-    if ( Eupdate         == None ): Eupdate         = 2
-    if ( inflation[0]    == None ): inflation[0]    = 1
-    if ( inflation[1]    == None ): inflation[1]    = 1.02
-    if ( localization[0] == None ): localization[0] = True
-    if ( localization[1] == None ): localization[1] = 1.0
 
     Nobs = np.shape(y)[0]
     Ndof = np.shape(Xb)[0]
@@ -120,15 +110,15 @@ localization - localization settings [localize, cutoff = True, 1.0]
     totvar = np.zeros(Nobs) * np.NaN
 
     # prior inflation
-    if ( (inflation[0] == 1) or (inflation[0] == 2) ):
+    if ( (ensDA.inflation[0] == 1) or (ensDA.inflation[0] == 2) ):
 
         xbm = np.mean(Xb,axis=1)
         Xbp = np.transpose(np.transpose(Xb) - xbm)
 
-        if   ( inflation[0] == 1 ): # multiplicative inflation
-            Xbp = inflation[1] * Xbp
+        if   ( ensDA.inflation[0] == 1 ): # multiplicative inflation
+            Xbp = ensDA.inflation[1] * Xbp
 
-        elif ( inflation[0] == 2 ): # additive white model error (mean:zero, spread:inflation[1])
+        elif ( inflation[0] == 2 ): # additive white model error (mean:zero, spread:ensDA.inflation[1])
             Xbp = Xbp + inflation[1] * np.random.randn(Ndof,Nens)
 
         Xb = np.transpose(np.transpose(Xbp) + xbm)
@@ -139,16 +129,16 @@ localization - localization settings [localize, cutoff = True, 1.0]
 
         ye = np.dot(H[ob,:],temp_ens)
 
-        if   ( Eupdate == 0 ): # no assimilation
+        if   ( ensDA.update == 0 ): # no assimilation
             obs_inc, innov[ob], totvar[ob] = np.zeros(Ndof), 0.0, 0.0
 
-        elif ( Eupdate == 1 ): # update using the EnKF
+        elif ( ensDA.update == 1 ): # update using the EnKF
             obs_inc, innov[ob], totvar[ob] = obs_increment_EnKF(y[ob], R[ob,ob], ye)
 
-        elif ( Eupdate == 2 ): # update using the EnSRF
+        elif ( ensDA.update == 2 ): # update using the EnSRF
             obs_inc, innov[ob], totvar[ob] = obs_increment_EnSRF(y[ob], R[ob,ob], ye)
 
-        elif ( Eupdate == 3 ): # update using the EAKF
+        elif ( ensDA.update == 3 ): # update using the EAKF
             obs_inc, innov[ob], totvar[ob] = obs_increment_EAKF(y[ob], R[ob,ob], ye)
 
         else:
@@ -159,10 +149,10 @@ localization - localization settings [localize, cutoff = True, 1.0]
             state_inc = state_increment(obs_inc, temp_ens[i,:], ye)
 
             # localization
-            if ( localization[0] ):
+            if ( ensDA.localization[0] ):
                 dist = np.abs( ob - i ) / Ndof
                 if ( dist > 0.5 ): dist = 1.0 - dist
-                cov_factor = compute_cov_factor(dist, localization[1])
+                cov_factor = compute_cov_factor(dist, ensDA.localization[1])
             else:
                 cov_factor = 1.0
 
@@ -175,16 +165,16 @@ localization - localization settings [localize, cutoff = True, 1.0]
     Xap = np.transpose(np.transpose(Xa) - xam)
 
     # posterior inflation
-    if   ( inflation[0] == 3 ): # covariance relaxation (Zhang & Snyder)
+    if   ( ensDA.inflation[0] == 3 ): # covariance relaxation (Zhang & Snyder)
         xbm = np.mean(Xb,axis=1)
         Xbp = np.transpose(np.transpose(Xb) - xbm)
-        Xap = Xbp * inflation[1] + Xap * (1.0 - inflation[1])
+        Xap = Xbp * ensDA.inflation[1] + Xap * (1.0 - ensDA.inflation[1])
 
-    elif ( inflation[0] == 4 ): # posterior spread restoration (Whitaker & Hammill)
+    elif ( ensDA.inflation[0] == 4 ): # posterior spread restoration (Whitaker & Hammill)
         xbs = np.std(Xb,axis=1,ddof=1)
         xas = np.std(Xa,axis=1,ddof=1)
         for i in np.arange(0,Ndof):
-            Xap[i,:] =  np.sqrt((inflation[1] * (xbs[i] - xas[dof])/xas[i]) + 1.0) * Xap[i,:]
+            Xap[i,:] =  np.sqrt((ensDA.inflation[1] * (xbs[i] - xas[dof])/xas[i]) + 1.0) * Xap[i,:]
 
     # add inflated perturbations back to analysis mean
     Xa = np.transpose(np.transpose(Xap) + xam)

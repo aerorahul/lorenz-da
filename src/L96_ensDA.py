@@ -35,8 +35,8 @@ from   plot_stats    import *
 ###############################################################
 global model
 global Q, H, R
-global nassim, ntimes, dt, t0
-global Eupdate, Nens, inflation, localization
+global DA
+global ensDA
 global diag_fname, diag_fattr
 global restart_state, restart_file
 
@@ -44,41 +44,43 @@ model      = type('', (), {})   # model Class
 model.Name = 'L96'              # model name
 model.Ndof = 40                 # model degrees of freedom
 model.Par  = [8.0, 0.4]         # model parameters F, dF
+model.dt   = 1.0e-4             # model time-step
 
 Q = np.eye(model.Ndof)*0.0      # model error variance (covariance model is white for now)
 H = np.eye(model.Ndof)          # obs operator ( eye(Ndof) gives identity obs )
 R = np.eye(model.Ndof)*(1.0**2) # observation error covariance
 
-nassim = 2000                   # no. of assimilation cycles
-ntimes = 0.05                   # do assimilation every ntimes non-dimensional time units
-dt     = 1.0e-4                 # time-step
-t0     = 0.0                    # initial time
+DA        = type('', (), {})    # data assimilation Class
+DA.nassim = 2000                # no. of assimilation cycles
+DA.ntimes = 0.05                # do assimilation every ntimes non-dimensional time units
+DA.t0     = 0.0                 # initial time
 
-Eupdate      = 2                # DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
-Nens         = 30               # number of ensemble members
-localize     = True             # do localization
-cov_cutoff   = 1.0              # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
-localization = [localize, cov_cutoff]
+ensDA        = type('', (), {}) # ensemble data assimilation Class
+ensDA.update = 2                # DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
+ensDA.Nens   = 30               # number of ensemble members
 infl_meth    = 1                # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
                                 # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
 infl_fac     = 1.06             # Depends on inflation method (see values in [] above)
-inflation    = [infl_meth, infl_fac]
+localize     = True             # do localization
+cov_cutoff   = 1.0              # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
+ensDA.inflation    = [infl_meth, infl_fac]
+ensDA.localization = [localize, cov_cutoff]
 
 # name and attributes of/in the output diagnostic file
 diag_fname = 'L96_ensDA_diag.nc4'
 diag_fattr = {'F'           : str(model.Par[0]),
               'dF'          : str(model.Par[1]),
-              'ntimes'      : str(ntimes),
-              'dt'          : str(dt),
-              'Eupdate'     : str(Eupdate),
-              'localize'    : str(int(localize)),
-              'cov_cutoff'  : str(cov_cutoff),
-              'infl_meth'   : str(infl_meth),
-              'infl_fac'    : str(infl_fac)}
+              'ntimes'      : str(DA.ntimes),
+              'dt'          : str(model.dt),
+              'Eupdate'     : str(ensDA.update),
+              'localize'    : str(int(ensDA.localization[0])),
+              'cov_cutoff'  : str(ensDA.localization[1]),
+              'infl_meth'   : str(ensDA.inflation[0]),
+              'infl_fac'    : str(ensDA.inflation[1])}
 
 # restart conditions ( state [< -1 | == -1 | > -1], filename)
-restart_state = -1
-restart_file  = 'L96_ensDA_diag.nc4'
+restart_state = -2
+restart_file  = ''
 ###############################################################
 
 ###############################################################
@@ -88,21 +90,21 @@ def main():
     np.random.seed(0)
 
     # check for valid ensemble data assimilation options
-    check_ensDA(Eupdate, inflation, localization)
+    check_ensDA(ensDA)
 
     # get IC's
-    [xt, Xa] = get_IC(model=model, restart_state=restart_state, restart_file=restart_file, Nens=Nens)
+    [xt, Xa] = get_IC(model=model, restart_state=restart_state, restart_file=restart_file, Nens=ensDA.Nens)
     Xb = Xa.copy()
 
     print 'Cycling ON the attractor ...'
 
-    ts = np.arange(t0,ntimes+dt,dt)     # time between assimilations
+    ts = np.arange(DA.t0,DA.ntimes+model.dt,model.dt)     # time between assimilations
 
     # create diagnostic file
-    create_diag(diag_fname, diag_fattr, model.Ndof, nens=Nens)
+    create_diag(diag_fname, diag_fattr, model.Ndof, nens=ensDA.Nens)
     write_diag(diag_fname, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), evratio = np.NaN)
 
-    for k in range(0, nassim):
+    for k in range(0, DA.nassim):
 
         print '========== assimilation time = %5d ========== ' % (k+1)
 
@@ -115,13 +117,13 @@ def main():
         ver = xt.copy()
 
         # advance analysis ensemble with the full nonlinear model
-        for m in range(0,Nens):
+        for m in range(0,ensDA.Nens):
             xa = Xa[:,m].copy()
             xs = integrate.odeint(L96, xa, ts, (model.Par[0]+model.Par[1],0.0))
             Xb[:,m] = xs[-1,:].copy()
 
         # update ensemble (mean and perturbations)
-        Xa, evratio = update_ensDA(Xb, y, R, H, Eupdate=Eupdate, inflation=inflation, localization=localization)
+        Xa, evratio = update_ensDA(Xb, y, R, H, ensDA)
 
         # write diagnostics to disk
         write_diag(diag_fname, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, H, np.diag(R), evratio = evratio)

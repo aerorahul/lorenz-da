@@ -88,7 +88,8 @@ def plot_abs_error(xbe, xae, label=['x'], N=1, yscale='semilog', figNum=None):
 ###############################################################
 
 ###############################################################
-def plot_rmse(xbrmse=None, xarmse=None, xyrmse=None, yscale='semilog', figNum=None, title=None):
+def plot_rmse(xbrmse=None, xarmse=None, xyrmse=None, yscale='semilog', figNum=None, title=None,
+        sStat=100):
 
     if ( (yscale != 'linear') and (yscale != 'semilog') ): yscale = 'semilog'
     if ( figNum == None ): fig = pyplot.figure()
@@ -111,13 +112,13 @@ def plot_rmse(xbrmse=None, xarmse=None, xyrmse=None, yscale='semilog', figNum=No
     dyl = yl[1]
 
     if ( xbrmse != None ):
-        strb = 'mean prior rmse : %5.4f +/- %5.4f' % (np.mean(xbrmse[100:]), np.std(xbrmse[100:],ddof=1))
+        strb = 'mean prior rmse : %5.4f +/- %5.4f' % (np.mean(xbrmse[sStat:]), np.std(xbrmse[sStat:],ddof=1))
         pyplot.text(0.05*len(xbrmse),yl[1]-0.1*dyl,strb,fontsize=10)
     if ( xarmse != None ):
-        stra = 'mean posterior rmse : %5.4f +/- %5.4f' % (np.mean(xarmse[100:]), np.std(xarmse[100:],ddof=1))
+        stra = 'mean posterior rmse : %5.4f +/- %5.4f' % (np.mean(xarmse[sStat:]), np.std(xarmse[sStat:],ddof=1))
         pyplot.text(0.05*len(xarmse),yl[1]-0.15*dyl,stra,fontsize=10)
     if ( xyrmse != None ):
-        stro = 'mean observation rmse : %5.4f +/- %5.4f' % (np.mean(xyrmse[100:]), np.std(xyrmse[100:],ddof=1))
+        stro = 'mean observation rmse : %5.4f +/- %5.4f' % (np.mean(xyrmse[sStat:]), np.std(xyrmse[sStat:],ddof=1))
         pyplot.text(0.05*len(xyrmse),yl[1]-0.2*dyl,stro,fontsize=10)
 
     pyplot.xlabel('Assimilation Cycle',fontweight='bold',fontsize=12)

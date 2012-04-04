@@ -34,11 +34,14 @@ from   plot_stats    import *
 ###############################################################
 def main():
 
-    # get the name of output diagnostic file to read
-    [_,fname,_,_] = get_input_arguments()
+    # get the name of output diagnostic file to read, start index for statistics, index to plot
+    # state
+    [_,fname,sStat,ePlot] = get_input_arguments()
     if ( not os.path.isfile(fname) ):
         print '%s does not exist' % fname
         sys.exit(1)
+
+    if ( sStat <= -1 ): sStat = 100
 
     # read dimensions and necessary attributes from the diagnostic file
     try:
@@ -116,18 +119,18 @@ def main():
     xyrmse = np.sqrt( np.sum( (xt -   y)**2          ) / ndof )
 
     # plot the last state
-    fig = plot_L96(obs=y[-1,], ver=xt[-1,], xb=Xb[-1,], xa=Xa[-1,], t=nassim, N=ndof)
+    fig = plot_L96(obs=y[ePlot,], ver=xt[ePlot,], xb=Xb[ePlot,], xa=Xa[ePlot,], t=ePlot, N=ndof)
 
     # plot the RMSE
-    fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, yscale='linear')
+    fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, sStat=sStat, yscale='linear')
 
     # plot the last state and RMSE for central state
     if ( do_hybrid ):
         xbrmse = np.sqrt( np.sum( (xt - xbc)**2, axis = 1) / ndof )
         xarmse = np.sqrt( np.sum( (xt - xac)**2, axis = 1) / ndof )
         xyrmse = np.sqrt( np.sum( (xt -   y)**2          ) / ndof )
-        fig = plot_L96(obs=y[-1,], ver=xt[-1,], xb=xbc[-1,], xa=xac[-1,], t=nassim, N=ndof)
-        fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, yscale='linear', title='RMSE-Central')
+        fig = plot_L96(obs=y[ePlot,], ver=xt[ePlot,], xb=xbc[ePlot,], xa=xac[ePlot,], t=ePlot, N=ndof)
+        fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, sStat=sStat, yscale='linear', title='RMSE-Central')
 
     # plot the iteration statistics and/or error-to-variance ratio
     if ( do_hybrid ):

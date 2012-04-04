@@ -506,19 +506,11 @@ minimization - minimization class
         if ( ( not np.mod(niters,10) ) and ( not niters == 0 ) ):
             print '        cost = %10.5f after %4d iterations' % (J, niters)
 
-        if ( minimization.cg ):
-            if ( niters == 0 ):
-                x = x - minimization.alpha * gJ
-                cgJold = gJ
-            else:
-                beta = np.dot(np.transpose(gJ),gJ) / np.dot(np.transpose(gJold),gJold)
-                cgJ = gJ + beta * cgJold
-                x = x - minimization.alpha * cgJ
-                cgJold = cgJ
+        if ( niters == 0 ) :
+            gJold  = gJ
+            cgJold = gJ
 
-            gJold = gJ
-        else:
-            x = x - minimization.alpha * gJ
+        [x, gJold, cgJold] = minimize(minimization, niters, x, gJ, gJold, cgJold)
 
         niters = niters + 1
 
@@ -528,7 +520,7 @@ minimization - minimization class
     xa = x.copy()
 
     # analysis error covariance from Hessian
-    A = np.linalg.inv(Binv + Rinv)
+    A = np.linalg.inv(Binv + np.dot(np.transpose(H),np.dot(Rinv,H)))
 
     return xa, A, niters
 # }}}
@@ -589,19 +581,11 @@ minimization - minimization class
         if ( ( not np.mod(niters,10) ) and ( not niters == 0 ) ):
             print '        cost = %10.5f after %4d iterations' % (J, niters)
 
-        if ( minimization.cg ):
-            if ( niters == 0 ):
-                dx = dx - minimization.alpha * gJ
-                cgJold = gJ
-            else:
-                beta = np.dot(np.transpose(gJ),gJ) / np.dot(np.transpose(gJold),gJold)
-                cgJ = gJ + beta * cgJold
-                dx = dx - minimization.alpha * cgJ
-                cgJold = cgJ
+        if ( niters == 0 ):
+            gJold  = 0
+            cgJold = 0
 
-            gJold = gJ
-        else:
-            dx = dx - minimization.alpha * gJ
+        [dx, gJold, cgJold] = minimize(minimization, niters, dx, gJ, gJold, cgJold)
 
         niters = niters + 1
 
@@ -611,7 +595,7 @@ minimization - minimization class
     xa = xb + dx
 
     # analysis error covariance from Hessian
-    A = np.linalg.inv(Binv + Rinv)
+    A = np.linalg.inv(Binv + np.dot(np.transpose(H),np.dot(Rinv,H)))
 
     return xa, A, niters
 # }}}
@@ -641,7 +625,6 @@ minimization - minimization class
     # start with background
     x       = xb.copy()
     niters  = 0
-    alpha_r = minimization.alpha
     Jold    = 1e6
     J       = 0
     Binv    = np.linalg.inv(B)
@@ -691,19 +674,11 @@ minimization - minimization class
         if ( ( not np.mod(niters,10) ) and ( not niters == 0 ) ):
             print '        cost = %10.5f after %4d iterations' % (J, niters)
 
-        if ( minimization.cg ):
-            if ( niters == 0 ):
-                x = x - alpha_r * gJ
-                cgJold = gJ
-            else:
-                beta = np.dot(np.transpose(gJ),gJ) / np.dot(np.transpose(gJold),gJold)
-                cgJ = gJ + beta * cgJold
-                x = x - alpha_r * cgJ
-                cgJold = cgJ
+        if ( niters == 0 ):
+            gJold  = 0
+            cgJold = 0
 
-            gJold = gJ
-        else:
-            x = x - alpha_r * gJ
+        [x, gJold, cgJold] = minimize(minimization, niters, x, gJ, gJold, cgJold)
 
         niters = niters + 1
 
@@ -714,7 +689,7 @@ minimization - minimization class
     xa = xs[-1,:].copy()
 
     # analysis error covariance from Hessian
-    A = np.linalg.inv(Binv + Rinv)
+    A = np.linalg.inv(Binv + np.dot(np.transpose(H),np.dot(Rinv,H)))
 
     return xa, A, niters
 # }}}
@@ -803,19 +778,11 @@ minimization - minimization class
             if ( ( not np.mod(niters,10) ) and ( not niters == 0 ) ):
                 print "        cost = %10.5f after %4d iterations" % (J, niters)
 
-            if ( minimization.cg ):
-                if ( niters == 0 ):
-                    dxo = dxo - minimization.alpha * gJ
-                    cgJold = gJ
-                else:
-                    beta = np.dot(np.transpose(gJ),gJ) / np.dot(np.transpose(gJold),gJold)
-                    cgJ = gJ + beta * cgJold
-                    dxo = dxo - minimization.alpha * cgJ
-                    cgJold = cgJ
+            if ( niters == 0 ):
+                gJold  = 0
+                cgJold = 0
 
-                gJold = gJ
-            else:
-                dxo = dxo - minimization.alpha * gJ
+            [dxo, gJold, cgJold] = minimize(minimization, niters, dxo, gJ, gJold, cgJold)
 
             niters = niters + 1
 
@@ -828,8 +795,44 @@ minimization - minimization class
     xa = xs[-1,:].copy()
 
     # analysis error covariance from Hessian
-    A = np.linalg.inv(Binv + Rinv)
+    A = np.linalg.inv(Binv + np.dot(np.transpose(H),np.dot(Rinv,H)))
 
     return xa, A, niters
+# }}}
+###############################################################
+
+###############################################################
+def minimize(minimization, iteration, x, gJ, gJold, cgJold):
+# {{{
+    '''
+    Perform minimization using steepest descent / conjugate gradient method
+
+    [x, gJold, cgJold] = minimize(minimization, niters, x, gJ, gJold, cgJold)
+
+minimization - minimization class
+   iteration - iteration number ( required for conj. grad. method )
+           x - quantity to minimize
+          gJ - current gradient of the cost function
+       gJold - previous gradient of the cost function ( required for conj. grad. method )
+      cgJold - previous conjugate gradient of the cost function ( required for conj. grad. method )
+    '''
+
+    if ( minimization.cg ):
+        if ( iteration == 0 ):
+            x = x - minimization.alpha * gJ
+            cgJold = gJ
+        else:
+            beta = np.dot(np.transpose(gJ),gJ) / np.dot(np.transpose(gJold),gJold)
+            cgJ = gJ + beta * cgJold
+            x = x - minimization.alpha * cgJ
+            cgJold = cgJ
+
+        gJold = gJ
+    else:
+        x = x - minimization.alpha * gJ
+        gJold  = None
+        cgJold = None
+
+    return [x, gJold, cgJold]
 # }}}
 ###############################################################

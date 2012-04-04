@@ -733,7 +733,7 @@ minimization - minimization class
 
         # get observational increment at all observation times
         for i in range(0,fdvar.nobstimes):
-            d[i,:] = np.dot(H,xnl[fdvar.twind_obsIndex[i],:]) - y[i,:]
+            d[i,:] = y[i,:] - np.dot(H,xnl[fdvar.twind_obsIndex[i],:])
 
         while ( np.abs(Jold - J) > minimization.tol ):
 

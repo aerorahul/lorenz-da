@@ -52,12 +52,12 @@ H = np.eye(model.Ndof)          # obs operator ( eye(Ndof) gives identity obs )
 R = np.eye(model.Ndof)*(1.0**2) # observation error covariance
 
 DA        = type('',(),{})      # DA class
-DA.nassim = 50                # no. of assimilation cycles
+DA.nassim = 2000                # no. of assimilation cycles
 DA.ntimes = 0.05                # do assimilation every ntimes non-dimensional time units
 DA.t0     = 0.0                 # initial time
 
 varDA                      = type('',(),{}) # VarDA class
-varDA.update               = 2              # DA method (1= 3Dvar; 2= 4Dvar)
+varDA.update               = 1              # DA method (1= 3Dvar; 2= 4Dvar)
 varDA.minimization         = type('',(),{}) # minimization class
 varDA.minimization.maxiter = 1000           # maximum iterations
 varDA.minimization.alpha   = 4e-4           # size of step in direction of normalized J
@@ -92,8 +92,8 @@ if ( fdvar ):
                        'maxouter'  : str(int(varDA.fdvar.maxouter))})
 
 # restart conditions ( state [< -1 | == -1 | > -1], filename)
-restart_state = 0
-restart_file  = 'L96_4DvarDA_diag-reg.nc4'
+restart_state = -2
+restart_file  = ''
 ###############################################################
 
 ###############################################################

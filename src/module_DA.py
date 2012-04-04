@@ -502,7 +502,7 @@ minimization - minimization class
         J  =  Jb +  Jy
         gJ = gJb + gJy
 
-        if ( niters == 0 ): print "initial cost = %10.5f" % J
+        if ( niters == 0 ): print 'initial cost = %10.5f' % J
         if ( ( not np.mod(niters,10) ) and ( not niters == 0 ) ):
             print '        cost = %10.5f after %4d iterations' % (J, niters)
 
@@ -510,7 +510,7 @@ minimization - minimization class
             gJold  = gJ
             cgJold = gJ
 
-        [x, gJold, cgJold] = minimize(minimization, niters, x, gJ, gJold, cgJold)
+        [x, gJold, cgJold] = minimize(minimization, niters, minimization.alpha, x, gJ, gJold, cgJold)
 
         niters = niters + 1
 
@@ -577,7 +577,7 @@ minimization - minimization class
         gJy = np.dot(np.transpose(H),np.dot(Rinv,np.dot(H,dx)-d))
         gJ  = gJb + gJy
 
-        if ( niters == 0 ): print "initial cost = %10.5f" % J
+        if ( niters == 0 ): print 'initial cost = %10.5f' % J
         if ( ( not np.mod(niters,10) ) and ( not niters == 0 ) ):
             print '        cost = %10.5f after %4d iterations' % (J, niters)
 
@@ -585,7 +585,7 @@ minimization - minimization class
             gJold  = 0
             cgJold = 0
 
-        [dx, gJold, cgJold] = minimize(minimization, niters, dx, gJ, gJold, cgJold)
+        [dx, gJold, cgJold] = minimize(minimization, niters, minimization.alpha, dx, gJ, gJold, cgJold)
 
         niters = niters + 1
 
@@ -624,11 +624,16 @@ minimization - minimization class
 
     # start with background
     x       = xb.copy()
-    niters  = 0
+    xold    = xb.copy()
+    J       = 1e5
+    Jmin    = 1e5
     Jold    = 1e6
-    J       = 0
+    gJold   = 0
+    cgJold  = 0
     Binv    = np.linalg.inv(B)
     Rinv    = np.linalg.inv(R)
+    niters  = 0
+    alpha_r = minimization.alpha
 
     while ( np.abs(Jold - J) > minimization.tol ):
 
@@ -636,7 +641,7 @@ minimization - minimization class
             print 'exceeded maximum iterations allowed'
             break
 
-        Jold  = J
+        Jold = J
 
         # advance the background through the assimilation window with the full non-linear model
         exec('xnl = integrate.odeint(%s, x, fdvar.twind, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
@@ -670,22 +675,43 @@ minimization - minimization class
         J  =  Jb +  Jy
         gJ = gJb + gJy
 
-        if ( niters == 0 ): print "initial cost = %10.5f" % J
+        if ( niters == 0 ): print 'initial cost = %10.5f' % J
         if ( ( not np.mod(niters,10) ) and ( not niters == 0 ) ):
             print '        cost = %10.5f after %4d iterations' % (J, niters)
 
-        if ( niters == 0 ):
-            gJold  = 0
-            cgJold = 0
+        # if the cost function increased, reset x and cut line-search parameter by half
+        if ( J > Jold ):
+            print 'decreasing alpha ...'
+            x              = xold.copy()
+            alpha_r        = 0.5 * alpha_r
+            J              = 1e5
+            Jold           = 1e6
+            niters         = niters - 1
+            increase_alpha = False
+        else:
+            increase_alpha = True
 
-        [x, gJold, cgJold] = minimize(minimization, niters, x, gJ, gJold, cgJold)
+        # try to increase alpha, if we are past the difficult part
+        if ( ( increase_alpha ) and ( alpha_r < minimization.alpha ) ):
+            print 'increasing alpha ...'
+            alpha_r = 1.1 * alpha_r
+
+        # keep a copy of x, incase cost function increases in the next step
+        xold = x.copy()
+
+        [x, gJold, cgJold] = minimize(minimization, niters, alpha_r, x, gJ, gJold, cgJold)
 
         niters = niters + 1
+
+        # save cost function minima, in case next step is to larger value
+        if ( J < Jmin ):
+            Jmin = J
+            xmin = x.copy()
 
     print '  final cost = %10.5f after %4d iterations' % (J, niters)
 
     # advance to the analysis time to get the 4DVAR estimate
-    exec('xs = integrate.odeint(%s, x, fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
+    exec('xs = integrate.odeint(%s, xmin, fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
     xa = xs[-1,:].copy()
 
     # analysis error covariance from Hessian
@@ -717,16 +743,22 @@ minimization - minimization class
     '''
 
     # start with background
-    x       = xb.copy()
-    dxo     = np.zeros(np.shape(xb))
-    d       = np.zeros(np.shape(y))
-    niters  = 0
-    Jold    = 1e6
-    J       = 1e5
-    Binv    = np.linalg.inv(B)
-    Rinv    = np.linalg.inv(R)
+    x    = xb.copy()
+    d    = np.zeros(np.shape(y))
+    Binv = np.linalg.inv(B)
+    Rinv = np.linalg.inv(R)
 
     for outer in range(0,fdvar.maxouter):
+
+        dxo     = np.zeros(np.shape(xb))
+        dxold   = np.zeros(np.shape(xb))
+        J       = 1e5
+        Jmin    = 1e5
+        Jold    = 1e6
+        gJold   = 0
+        cgJold  = 0
+        niters  = 0
+        alpha_r = minimization.alpha
 
         # advance the background through the assimilation window with full non-linear model
         exec('xnl = integrate.odeint(%s, x, fdvar.twind, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
@@ -774,21 +806,42 @@ minimization - minimization class
             J  =  Jb +  Jy
             gJ = gJb + gJy
 
-            if ( niters == 0 ): print "initial cost = %10.5f" % J
+            if ( niters == 0 ): print 'initial cost = %10.5f' % J
             if ( ( not np.mod(niters,10) ) and ( not niters == 0 ) ):
-                print "        cost = %10.5f after %4d iterations" % (J, niters)
+                print '        cost = %10.5f after %4d iterations' % (J, niters)
 
-            if ( niters == 0 ):
-                gJold  = 0
-                cgJold = 0
+            # if the cost function increased, reset x and cut line-search parameter by half
+            if ( J > Jold ):
+                print 'decreasing alpha ...'
+                dxo            = dxold.copy()
+                alpha_r        = 0.5 * alpha_r
+                J              = 1e5
+                Jold           = 1e6
+                niters         = niters - 1
+                increase_alpha = False
+            else:
+                increase_alpha = True
 
-            [dxo, gJold, cgJold] = minimize(minimization, niters, dxo, gJ, gJold, cgJold)
+            # try to increase alpha, if we are past the difficult part
+            if ( ( increase_alpha ) and ( alpha_r < minimization.alpha ) ):
+                print 'increasing alpha ...'
+                alpha_r = 1.1 * alpha_r
+
+            # keep a copy of dxo, incase cost function increases in the next step
+            dxold = dxo.copy()
+
+            [dxo, gJold, cgJold] = minimize(minimization, niters, alpha_r, dxo, gJ, gJold, cgJold)
 
             niters = niters + 1
 
+            # save cost function minima, in case next step is to larger value
+            if ( J < Jmin ):
+                Jmin = J
+                dxmin = dxo.copy()
+
         print '  final cost = %10.5f after %4d iterations' % (J, niters)
 
-        x = x + dxo
+        x = x + dxmin
 
     # advance to the analysis time to get the 4DVAR estimate
     exec('xs = integrate.odeint(%s, x, fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
@@ -802,7 +855,7 @@ minimization - minimization class
 ###############################################################
 
 ###############################################################
-def minimize(minimization, iteration, x, gJ, gJold, cgJold):
+def minimize(minimization, iteration, dstep, x, gJ, gJold, cgJold):
 # {{{
     '''
     Perform minimization using steepest descent / conjugate gradient method
@@ -811,6 +864,7 @@ def minimize(minimization, iteration, x, gJ, gJold, cgJold):
 
 minimization - minimization class
    iteration - iteration number ( required for conj. grad. method )
+       dstep - size of step in the direction of the gradient
            x - quantity to minimize
           gJ - current gradient of the cost function
        gJold - previous gradient of the cost function ( required for conj. grad. method )
@@ -818,18 +872,18 @@ minimization - minimization class
     '''
 
     if ( minimization.cg ):
-        if ( iteration == 0 ):
-            x = x - minimization.alpha * gJ
+        if ( iteration == 0 ): # first iteration do a line search
+            x = x - dstep * gJ
             cgJold = gJ
         else:
             beta = np.dot(np.transpose(gJ),gJ) / np.dot(np.transpose(gJold),gJold)
             cgJ = gJ + beta * cgJold
-            x = x - minimization.alpha * cgJ
+            x = x - dstep * cgJ
             cgJold = cgJ
 
         gJold = gJ
     else:
-        x = x - minimization.alpha * gJ
+        x = x - dstep * gJ
         gJold  = None
         cgJold = None
 

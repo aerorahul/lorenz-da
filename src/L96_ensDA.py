@@ -37,8 +37,8 @@ global model
 global Q, H, R
 global DA
 global ensDA
-global diag_fname, diag_fattr
-global restart_state, restart_file
+global diag_file
+global restart
 
 model      = type('', (), {})   # model Class
 model.Name = 'L96'              # model name
@@ -67,16 +67,17 @@ ensDA.localization.localize   = True   # do localization
 ensDA.localization.cov_cutoff = 1.0    # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
 
 # name and attributes of/in the output diagnostic file
-diag_fname = 'L96_ensDA_diag.nc4'
-diag_fattr = {'F'           : str(model.Par[0]),
-              'dF'          : str(model.Par[1]),
-              'ntimes'      : str(DA.ntimes),
-              'dt'          : str(model.dt),
-              'Eupdate'     : str(ensDA.update),
-              'localize'    : str(int(ensDA.localization.localize)),
-              'cov_cutoff'  : str(ensDA.localization.cov_cutoff),
-              'infl_meth'   : str(ensDA.inflation.infl_meth),
-              'infl_fac'    : str(ensDA.inflation.infl_fac)}
+diag_file            = type('', (), {})  # diagnostic file Class
+diag_file.filename   = 'L96_ensDA_diag.nc4'
+diag_file.attributes = {'F'           : str(model.Par[0]),
+                        'dF'          : str(model.Par[1]),
+                        'ntimes'      : str(DA.ntimes),
+                        'dt'          : str(model.dt),
+                        'Eupdate'     : str(ensDA.update),
+                        'localize'    : str(int(ensDA.localization.localize)),
+                        'cov_cutoff'  : str(ensDA.localization.cov_cutoff),
+                        'infl_meth'   : str(ensDA.inflation.infl_meth),
+                        'infl_fac'    : str(ensDA.inflation.infl_fac)}
 
 # restart conditions
 restart          = type('', (), {})  # restart initial conditions Class
@@ -103,8 +104,8 @@ def main():
     DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))
 
     # create diagnostic file
-    create_diag(diag_fname, diag_fattr, model.Ndof, nens=ensDA.Nens)
-    write_diag(diag_fname, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), evratio = np.NaN)
+    create_diag(diag_file, model.Ndof, nens=ensDA.Nens)
+    write_diag(diag_file.filename, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), evratio = np.NaN)
 
     for k in range(0, DA.nassim):
 
@@ -128,7 +129,7 @@ def main():
         Xa, evratio = update_ensDA(Xb, y, R, H, ensDA)
 
         # write diagnostics to disk
-        write_diag(diag_fname, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, H, np.diag(R), evratio = evratio)
+        write_diag(diag_file.filename, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, H, np.diag(R), evratio = evratio)
 
     print '... all done ...'
     sys.exit(0)

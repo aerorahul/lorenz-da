@@ -33,15 +33,14 @@ module = 'module_IO.py'
 ###############################################################
 
 ###############################################################
-def create_diag(fname, fattr, ndof, nobs=None, nens=None, hybrid=False):
+def create_diag(dfile, ndof, nobs=None, nens=None, hybrid=False):
 # {{{
     '''
     create an output file for writing diagnostics
 
-    create_diag(fname, ndof, nens=None, nobs=None)
+    create_diag(dfile, ndof, nens=None, nobs=None)
 
-    fname - name of the output file
-    fattr - global attributes
+    dfile - diagnostic file Class
      ndof - number of degrees of freedom in the model
      nobs - number of observations (None)
      nens - number of ensemble members (None)
@@ -59,7 +58,7 @@ def create_diag(fname, fattr, ndof, nobs=None, nens=None, hybrid=False):
 
     try:
 
-        nc  = Dataset(fname, mode='w', clobber=True, format='NETCDF4')
+        nc  = Dataset(dfile.filename, mode='w', clobber=True, format='NETCDF4')
 
         Dim = nc.createDimension('ntime',size=None)
         Dim = nc.createDimension('ndof', size=ndof)
@@ -88,7 +87,7 @@ def create_diag(fname, fattr, ndof, nobs=None, nens=None, hybrid=False):
             Var = nc.createVariable('central_posterior','f8',('ntime','ndof',))
             Var = nc.createVariable('niters',           'f8',('ntime',))
 
-        for (key,value) in fattr.iteritems():
+        for (key,value) in dfile.attributes.iteritems():
             exec( 'nc.%s = %s' % (key,value) )
 
         nc.close()
@@ -96,7 +95,7 @@ def create_diag(fname, fattr, ndof, nobs=None, nens=None, hybrid=False):
     except Exception as Instance:
 
         print 'Exception occured in %s of %s' % (source, module)
-        print 'Exception occured during creating  %s' % (fname)
+        print 'Exception occured during creating  %s' % (dfile.filename)
         print type(Instance)
         print Instance.args
         print Instance

@@ -37,8 +37,8 @@ global model
 global A, Q, H, R
 global DA
 global varDA
-global diag_fname, diag_fattr
-global restart_state, restart_file
+global diag_file
+global restart
 
 model      = type('',(),{})  # model Class
 model.Name = 'L96'           # model name
@@ -74,22 +74,22 @@ if ( fdvar ):
     varDA.fdvar.offset         = 0.5            # time offset: forecast from analysis to background time
     varDA.fdvar.nobstimes      = 11             # no. of evenly spaced obs. times in the window
 
-# name and attributes of/in the output diagnostic file
-diag_fname = 'L96_varDA_diag.nc4'
-diag_fattr = {'F'       : str(model.Par[0]),
-              'dF'      : str(model.Par[1]),
-              'ntimes'  : str(DA.ntimes),
-              'dt'      : str(model.dt),
-              'Vupdate' : str(varDA.update),
-              'maxiter' : str(varDA.minimization.maxiter),
-              'alpha'   : str(varDA.minimization.alpha),
-              'cg'      : str(int(varDA.minimization.cg)),
-              'tol'     : str(int(varDA.minimization.tol))}
+diag_file            = type('', (), {})  # diagnostic file Class
+diag_file.filename   = 'L96_varDA_diag.nc4'
+diag_file.attributes = {'F'       : str(model.Par[0]),
+                        'dF'      : str(model.Par[1]),
+                        'ntimes'  : str(DA.ntimes),
+                        'dt'      : str(model.dt),
+                        'Vupdate' : str(varDA.update),
+                        'maxiter' : str(varDA.minimization.maxiter),
+                        'alpha'   : str(varDA.minimization.alpha),
+                        'cg'      : str(int(varDA.minimization.cg)),
+                        'tol'     : str(int(varDA.minimization.tol))}
 if ( fdvar ):
-    diag_fattr.update({'offset'    : str(varDA.fdvar.offset),
-                       'window'    : str(varDA.fdvar.window),
-                       'nobstimes' : str(int(varDA.fdvar.nobstimes)),
-                       'maxouter'  : str(int(varDA.fdvar.maxouter))})
+    diag_file.attributes.update({'offset'    : str(varDA.fdvar.offset),
+                                 'window'    : str(varDA.fdvar.window),
+                                 'nobstimes' : str(int(varDA.fdvar.nobstimes)),
+                                 'maxouter'  : str(int(varDA.fdvar.maxouter))})
 
 # restart conditions
 restart          = type('', (), {})  # restart initial conditions Class
@@ -145,8 +145,8 @@ def main():
         DA.tanal = np.arange(DA.t0,DA.ntimes+model.dt,model.dt)  # time between assimilations
 
     # create diagnostic file
-    create_diag(diag_fname, diag_fattr, model.Ndof)
-    write_diag(diag_fname, 0, xt, xb, xa, np.dot(H,xt), H, np.diag(R), niters=np.NaN)
+    create_diag(diag_file, model.Ndof)
+    write_diag(diag_file.filename, 0, xt, xb, xa, np.dot(H,xt), H, np.diag(R), niters=np.NaN)
 
     for k in range(0, DA.nassim):
 
@@ -185,9 +185,9 @@ def main():
 
         # write diagnostics to disk
         if ( fdvar ):
-            write_diag(diag_fname, k+1, ver, xb, xa, ya, H, np.diag(R), niters=niters)
+            write_diag(diag_file.filename, k+1, ver, xb, xa, ya, H, np.diag(R), niters=niters)
         else:
-            write_diag(diag_fname, k+1, ver, xb, xa, y,  H, np.diag(R), niters=niters)
+            write_diag(diag_file.filename, k+1, ver, xb, xa, y,  H, np.diag(R), niters=niters)
 
     print '... all done ...'
     sys.exit(0)

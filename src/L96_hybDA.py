@@ -126,8 +126,6 @@ def main():
         Bs = nc.variables['B'][:]
         nc.close()
 
-    print 'Cycling ON the attractor ...'
-
     # time between assimilations
     DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))
 
@@ -137,6 +135,8 @@ def main():
         write_diag(diag_file.filename, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), central_prior=xbc, central_posterior=xac, evratio=np.NaN, niters=np.NaN)
     else:
         write_diag(diag_file.filename, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), evratio=np.NaN)
+
+    print 'Cycling ON the attractor ...'
 
     for k in range(0, DA.nassim):
 
@@ -156,20 +156,19 @@ def main():
             exec('xs = integrate.odeint(%s, xa, DA.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
             Xb[:,m] = xs[-1,:].copy()
 
-        # advance central analysis with the full nonlinear model
-        if ( DA.do_hybrid ):
-            exec('xs = integrate.odeint(%s, xac, DA.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
-            xbc = xs[-1,:].copy()
-
         # compute background error covariance from the ensemble
-        B = np.cov(Xb, ddof=1)
+        if ( DA.do_hybrid ): Be = np.cov(Xb, ddof=1)
 
         # update ensemble (mean and perturbations)
         Xa, evratio = update_ensDA(Xb, y, R, H, ensDA)
 
         if ( DA.do_hybrid ):
+            # advance central analysis with the full nonlinear model
+            exec('xs = integrate.odeint(%s, xac, DA.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
+            xbc = xs[-1,:].copy()
+
             # blend covariance from flow-dependent (ensemble) and static (climatology)
-            Bc = (1.0 - DA.hybrid_wght) * Bs + DA.hybrid_wght * B
+            Bc = (1.0 - DA.hybrid_wght) * Bs + DA.hybrid_wght * Be
 
             # update the central background
             xac, Ac, niters = update_varDA(xbc, Bc, y, R, H, varDA)

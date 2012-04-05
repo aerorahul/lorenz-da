@@ -360,6 +360,12 @@ def get_IC(model, restart, Nens=None):
                 print Instance
                 sys.exit(1)
 
+            if ( (len(np.shape(xa)) == 1) and (Nens != None) ):
+                # populate initial ensemble analysis by perturbing the analysis and re-centering
+                pert = 0.001 * ( np.random.randn(model.Ndof,Nens) )
+                tmp = np.transpose(xa + np.transpose(pert))
+                xa = np.transpose(np.transpose(tmp) - np.mean(tmp,axis=1) + xa)
+
     return [xt, xa]
 # }}}
 ###############################################################

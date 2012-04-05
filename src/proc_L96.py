@@ -135,12 +135,12 @@ def main():
     # plot the iteration statistics and/or error-to-variance ratio
     if ( do_hybrid ):
         fig = plot_iteration_stats(niters)
-        fig = plot_error_variance_stats(evratio)
+        fig = plot_error_variance_stats(evratio, sStat=sStat)
     else:
         if ( nens == 0 ):
             fig = plot_iteration_stats(niters)
         else:
-            fig = plot_error_variance_stats(evratio)
+            fig = plot_error_variance_stats(evratio, sStat=sStat)
 
     pyplot.show()
     sys.exit(0)

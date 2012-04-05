@@ -198,7 +198,7 @@ def plot_iteration_stats(itstats, figNum=None):
 ###############################################################
 
 ###############################################################
-def plot_error_variance_stats(evratio, figNum=None):
+def plot_error_variance_stats(evratio, figNum=None, sStat=100):
 
     if ( figNum == None ): fig = pyplot.figure()
     else: fig = pyplot.figure(figNum)
@@ -210,10 +210,10 @@ def plot_error_variance_stats(evratio, figNum=None):
     pyplot.plot(np.ones(len(evratio)-1)*0.5,'r:',linewidth=1)
     pyplot.plot(np.ones(len(evratio)-1)*1.0,'r-',linewidth=1)
     pyplot.plot(np.ones(len(evratio)-1)*2.0,'r:',linewidth=1)
-    pyplot.plot(np.ones(len(evratio)-1)*np.mean(evratio[100:]),'g-',linewidth=1)
+    pyplot.plot(np.ones(len(evratio)-1)*np.mean(evratio[sStat:]),'g-',linewidth=1)
 
     pyplot.ylim(0.0,3.0)
-    str = 'mean E/V  : %5.4f +/- %5.4f' % (np.mean(evratio[100:]), np.std(evratio[100:],ddof=1))
+    str = 'mean E/V  : %5.4f +/- %5.4f' % (np.mean(evratio[sStat:]), np.std(evratio[sStat:],ddof=1))
     pyplot.text(0.05*len(evratio),0.2,str,fontsize=10)
 
     pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)

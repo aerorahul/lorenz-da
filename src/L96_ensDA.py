@@ -26,7 +26,7 @@ import numpy         as     np
 from   scipy         import integrate, io
 from   matplotlib    import pyplot
 from   netCDF4       import Dataset
-from   module_Lorenz import L96, plot_L96, get_IC
+from   module_Lorenz import *
 from   module_DA     import *
 from   module_IO     import *
 from   plot_stats    import *
@@ -68,7 +68,7 @@ ensDA.localization.cov_cutoff = 1.0    # normalized covariance cutoff = cutoff /
 
 # name and attributes of/in the output diagnostic file
 diag_file            = type('', (), {})  # diagnostic file Class
-diag_file.filename   = 'L96_ensDA_diag.nc4'
+diag_file.filename   = model.Name + '_ensDA_diag.nc4'
 diag_file.attributes = {'F'           : str(model.Par[0]),
                         'dF'          : str(model.Par[1]),
                         'ntimes'      : str(DA.ntimes),
@@ -112,7 +112,7 @@ def main():
         print '========== assimilation time = %5d ========== ' % (k+1)
 
         # advance truth with the full nonlinear model
-        xs = integrate.odeint(L96, xt, DA.tanal, (model.Par[0],0.0))
+        exec('xs = integrate.odeint(%s, xt, DA.tanal, (%f,0.0))' % (model.Name, model.Par[0]))
         xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values
@@ -122,7 +122,7 @@ def main():
         # advance analysis ensemble with the full nonlinear model
         for m in range(0,ensDA.Nens):
             xa = Xa[:,m].copy()
-            xs = integrate.odeint(L96, xa, DA.tanal, (model.Par[0]+model.Par[1],0.0))
+            exec('xs = integrate.odeint(%s, xa, DA.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
             Xb[:,m] = xs[-1,:].copy()
 
         # update ensemble (mean and perturbations)

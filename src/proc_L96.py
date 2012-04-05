@@ -137,7 +137,7 @@ def main():
         xbrmse = np.sqrt( np.sum( (xt - xbc)**2, axis = 1) / ndof )
         xarmse = np.sqrt( np.sum( (xt - xac)**2, axis = 1) / ndof )
         xyrmse = np.sqrt( np.sum( (xt -   y)**2          ) / ndof )
-        fig = plot_L96(obs=y[pIndex,], ver=xt[pIndex,], xb=xbc[pIndex,], xa=xac[pIndex,], t=pIndex, N=ndof)
+        fig = plot_L96(obs=y[pIndex,], ver=xt[pIndex,], xb=xbc[pIndex,], xa=xac[pIndex,], t=pIndex+1, N=ndof)
         fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, sStat=sStat, yscale='linear', title='RMSE-Central')
 
     # plot the iteration statistics and/or error-to-variance ratio

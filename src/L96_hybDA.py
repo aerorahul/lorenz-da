@@ -76,6 +76,16 @@ varDA.minimization.alpha   = 4e-4             # size of step in direction of nor
 varDA.minimization.cg      = True             # True = Use conjugate gradient; False = Perform line search
 varDA.minimization.tol     = 1e-4             # True = Use conjugate gradient; False = Perform line search
 
+if ( (varDA.update == 2) or (varDA.update == 4) ): fdvar = True
+else:                                              fdvar = False
+
+if ( fdvar ):
+    varDA.fdvar                = type('',(),{}) # 4DVar class
+    varDA.fdvar.maxouter       = 1              # no. of outer loops for 4DVar
+    varDA.fdvar.window         = DA.ntimes      # length of the 4Dvar assimilation window
+    varDA.fdvar.offset         = 0.5            # time offset: forecast from analysis to background time
+    varDA.fdvar.nobstimes      = 5              # no. of evenly spaced obs. times in the window
+
 # name and attributes of/in the output diagnostic file
 diag_file            = type('', (), {})  # diagnostic file Class
 diag_file.filename   = model.Name + '_hybDA_diag.nc4'
@@ -96,10 +106,15 @@ diag_file.attributes = {'F'           : str(model.Par[0]),
                         'alpha'       : str(varDA.minimization.alpha),
                         'cg'          : str(int(varDA.minimization.cg)),
                         'tol'         : str(varDA.minimization.tol)}
+if ( fdvar ):
+    diag_file.attributes.update({'offset'    : str(varDA.fdvar.offset),
+                                 'window'    : str(varDA.fdvar.window),
+                                 'nobstimes' : str(int(varDA.fdvar.nobstimes)),
+                                 'maxouter'  : str(int(varDA.fdvar.maxouter))})
 
 # restart conditions
 restart          = type('', (), {})  # restart initial conditions Class
-restart.time     = 0                 # 0 | None == default, 1...N | -1...-N
+restart.time     = None              # None == default | -N...-1 0 1...N
 restart.filename = ''
 ###############################################################
 
@@ -126,8 +141,32 @@ def main():
         Bs = nc.variables['B'][:]
         nc.close()
 
-    # time between assimilations
-    DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))
+    if ( fdvar ):
+        # check length of assimilation window
+        if ( varDA.fdvar.offset * DA.ntimes + varDA.fdvar.window - DA.ntimes < 0.0 ):
+            print 'assimilation window is too short'
+            sys.exit(2)
+
+        # time index from analysis to ... background, next analysis, end of window, window
+        varDA.fdvar.tb = np.int(np.rint(varDA.fdvar.offset * DA.ntimes/model.dt))
+        varDA.fdvar.ta = np.int(np.rint(DA.ntimes/model.dt))
+        varDA.fdvar.tf = np.int(np.rint((varDA.fdvar.offset * DA.ntimes + varDA.fdvar.window)/model.dt))
+        varDA.fdvar.tw = varDA.fdvar.tf - varDA.fdvar.tb
+
+        # time vector from analysis to ... background, next analysis, end of window, window
+        varDA.fdvar.tbkgd = np.linspace(DA.t0,varDA.fdvar.tb,   varDA.fdvar.tb   +1) * model.dt
+        varDA.fdvar.tanal = np.linspace(DA.t0,varDA.fdvar.ta-varDA.fdvar.tb,varDA.fdvar.ta-varDA.fdvar.tb+1) * model.dt
+        varDA.fdvar.tfore = np.linspace(DA.t0,varDA.fdvar.tf,   varDA.fdvar.tf   +1) * model.dt
+        varDA.fdvar.twind = np.linspace(DA.t0,varDA.fdvar.tw,   varDA.fdvar.tw   +1) * model.dt
+
+        # time vector, interval, indices of observations
+        varDA.fdvar.twind_obsInterval = varDA.fdvar.tw / (varDA.fdvar.nobstimes-1)
+        varDA.fdvar.twind_obsTimes    = varDA.fdvar.twind[::varDA.fdvar.twind_obsInterval]
+        varDA.fdvar.twind_obsIndex    = np.array(np.rint(varDA.fdvar.twind_obsTimes / model.dt), dtype=int)
+
+    else:
+        # time between assimilations
+        DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))
 
     # create diagnostic file
     create_diag(diag_file, model.Ndof, nens=ensDA.Nens, hybrid=DA.do_hybrid)
@@ -143,12 +182,20 @@ def main():
         print '========== assimilation time = %5d ========== ' % (k+1)
 
         # advance truth with the full nonlinear model
-        exec('xs = integrate.odeint(%s, xt, DA.tanal, (%f,0.0))' % (model.Name, model.Par[0]))
-        xt = xs[-1,:].copy()
+        if ( fdvar ):
+            exec('xs = integrate.odeint(%s, xt, varDA.fdvar.tfore, (%f,0.0))' % (model.Name, model.Par[0]))
+            xt = xs[varDA.fdvar.ta,:].copy()
+        else:
+            exec('xs = integrate.odeint(%s, xt, DA.tanal, (%f,0.0))' % (model.Name, model.Par[0]))
+            xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values
         y   = np.dot(H,xt) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
         ver = xt.copy()
+        if ( fdvar ):
+            ywin = np.zeros((varDA.fdvar.nobstimes,model.Ndof))
+            for i in range(0,varDA.fdvar.nobstimes):
+                ywin[i,:] = np.dot(H,xs[varDA.fdvar.twind_obsIndex[i]+varDA.fdvar.tb,:]) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
 
         # advance analysis ensemble with the full nonlinear model
         for m in range(0,ensDA.Nens):
@@ -164,14 +211,20 @@ def main():
 
         if ( DA.do_hybrid ):
             # advance central analysis with the full nonlinear model
-            exec('xs = integrate.odeint(%s, xac, DA.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
+            if ( fdvar ):
+                # step to the beginning of the assimilation window (varDA.fdvar.tbkgd)
+                exec('xs = integrate.odeint(%s, xac, varDA.fdvar.tbkgd, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
+            else:
+                # step to the next assimilation time (DA.tanal)
+                exec('xs = integrate.odeint(%s, xac, DA.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
             xbc = xs[-1,:].copy()
 
             # blend covariance from flow-dependent (ensemble) and static (climatology)
             Bc = (1.0 - DA.hybrid_wght) * Bs + DA.hybrid_wght * Be
 
             # update the central background
-            xac, Ac, niters = update_varDA(xbc, Bc, y, R, H, varDA)
+            if ( fdvar ): xac, Ac, niters = update_varDA(xbc, Bc, ywin, R, H, varDA, model=model)
+            else:         xac, Ac, niters = update_varDA(xbc, Bc, y,    R, H, varDA)
 
         # write diagnostics to disk before recentering
         if ( DA.do_hybrid ):

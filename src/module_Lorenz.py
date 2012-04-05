@@ -315,7 +315,7 @@ def get_IC(model, restart, Nens=None):
 
     elif ( model.Name == 'L96' ):
 
-        if ( (restart.time == 0) or (restart.time == None) ):
+        if ( restart.time == None ):
             print '... from LE 1998'
 
             # initial setup from LE1998
@@ -339,10 +339,9 @@ def get_IC(model, restart, Nens=None):
             try:
                 nc = Dataset(restart.filename, mode='r', format='NETCDF4')
                 ntime = len(nc.dimensions['ntime'])
-                if   ( restart.time > 0 ):
-                    read_index = restart.time - 1
-                elif ( restart.time < 0 ):
-                    read_index = ntime + restart.time
+                if   ( restart.time == 0 ): read_index = 0
+                elif ( restart.time >  0 ): read_index = restart.time - 1
+                elif ( restart.time <  0 ): read_index = ntime + restart.time
                 if ( (read_index < 0) or (read_index >= ntime) ):
                     print 'ERROR : t = %d does not exist in %s' % (read_index+1, restart.filename)
                     print '        valid options are t = +/- [1 ... %d]' % ntime

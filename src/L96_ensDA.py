@@ -80,7 +80,7 @@ diag_file.attributes = {'F'           : str(model.Par[0]),
 
 # restart conditions
 restart          = type('', (), {})  # restart initial conditions Class
-restart.time     = 0                 # 0 | None == default, 1...N | -1...-N
+restart.time     = None              # None == default | -1...-N 0 1...N
 restart.filename = ''
 ###############################################################
 

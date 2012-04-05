@@ -92,7 +92,7 @@ if ( fdvar ):
 
 # restart conditions
 restart          = type('', (), {})  # restart initial conditions Class
-restart.time     = 0                 # 0 | None == default, 1...N | -1...-N
+restart.time     = None              # None == default | -1...-N 0 1...N
 restart.filename = ''
 
 ###############################################################
@@ -161,33 +161,28 @@ def main():
             xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values
+        y   = np.dot(H,xt) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
+        ver = xt.copy()
         if ( fdvar ):
-            y = np.zeros((varDA.fdvar.nobstimes,model.Ndof))
+            ywin = np.zeros((varDA.fdvar.nobstimes,model.Ndof))
             for i in range(0,varDA.fdvar.nobstimes):
-                y[i,:] = np.dot(H,xs[varDA.fdvar.twind_obsIndex[i]+varDA.fdvar.tb,:]) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
-            ver = xt.copy()
-            ya  = np.dot(H,xt) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
-        else:
-            y   = np.dot(H,xt) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
-            ver = xt.copy()
+                ywin[i,:] = np.dot(H,xs[varDA.fdvar.twind_obsIndex[i]+varDA.fdvar.tb,:]) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
 
+        # advance analysis with the full nonlinear model
         if ( fdvar ):
-            # step to the beginning of the assimilation window
+            # step to the beginning of the assimilation window (varDA.fdvar.tbkgd)
             exec('xs = integrate.odeint(%s, xa, varDA.fdvar.tbkgd, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
-            xb = xs[-1,:].copy()
         else:
-            # step to the next assimilation time
+            # step to the next assimilation time (DA.tanal)
             exec('xs = integrate.odeint(%s, xa, DA.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
-            xb = xs[-1,:].copy()
+        xb = xs[-1,:].copy()
 
         # update step
-        xa, A, niters = update_varDA(xb, Bc, y, R, H, varDA, model=model)
+        if ( fdvar ): xa, A, niters = update_varDA(xb, Bc, ywin, R, H, varDA, model=model)
+        else:         xa, A, niters = update_varDA(xb, Bc, y,    R, H, varDA)
 
         # write diagnostics to disk
-        if ( fdvar ):
-            write_diag(diag_file.filename, k+1, ver, xb, xa, ya, H, np.diag(R), niters=niters)
-        else:
-            write_diag(diag_file.filename, k+1, ver, xb, xa, y,  H, np.diag(R), niters=niters)
+        write_diag(diag_file.filename, k+1, ver, xb, xa, y, H, np.diag(R), niters=niters)
 
     print '... all done ...'
     sys.exit(0)

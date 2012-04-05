@@ -118,8 +118,16 @@ def main():
     xarmse = np.sqrt( np.sum( (xt - xam)**2, axis = 1) / ndof )
     xyrmse = np.sqrt( np.sum( (xt -   y)**2          ) / ndof )
 
+    if   ( ePlot == 0 ): pIndex = 0
+    elif ( ePlot >  0 ): pIndex = ePlot + 1
+    elif ( ePlot <  0 ): pIndex = nassim + ePlot
+    if ( (pIndex < 0) or (pIndex >= nassim) ):
+        print 'ERROR : t = %d does not exist in %s' % (pIndex+1, fname)
+        print '        valid options are t = +/- [1 ... %d]' % nassim
+        sys.exit(2)
+
     # plot the last state
-    fig = plot_L96(obs=y[ePlot,], ver=xt[ePlot,], xb=Xb[ePlot,], xa=Xa[ePlot,], t=ePlot, N=ndof)
+    fig = plot_L96(obs=y[pIndex,], ver=xt[pIndex,], xb=Xb[pIndex,], xa=Xa[pIndex,], t=pIndex+1, N=ndof)
 
     # plot the RMSE
     fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, sStat=sStat, yscale='linear')
@@ -129,7 +137,7 @@ def main():
         xbrmse = np.sqrt( np.sum( (xt - xbc)**2, axis = 1) / ndof )
         xarmse = np.sqrt( np.sum( (xt - xac)**2, axis = 1) / ndof )
         xyrmse = np.sqrt( np.sum( (xt -   y)**2          ) / ndof )
-        fig = plot_L96(obs=y[ePlot,], ver=xt[ePlot,], xb=xbc[ePlot,], xa=xac[ePlot,], t=ePlot, N=ndof)
+        fig = plot_L96(obs=y[pIndex,], ver=xt[pIndex,], xb=xbc[pIndex,], xa=xac[pIndex,], t=pIndex, N=ndof)
         fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, sStat=sStat, yscale='linear', title='RMSE-Central')
 
     # plot the iteration statistics and/or error-to-variance ratio

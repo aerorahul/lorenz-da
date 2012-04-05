@@ -58,22 +58,22 @@ def check_ensDA(ensDA):
         print 'No Assimilation | EnKF | EnSRF | EAKF'
         fail = True
 
-    if   ( ensDA.inflation[0] == 1 ):
-        print 'Inflating the Prior using multiplicative inflation with a factor of %f' % ensDA.inflation[1]
-    elif ( ensDA.inflation[0] == 2 ):
-        print 'Inflating the Prior by adding white-noise with zero-mean and %f spread' % ensDA.inflation[1]
-    elif ( ensDA.inflation[0] == 3 ):
-        print 'Inflating the Posterior by covariance relaxation method with weight %f to the prior' % ensDA.inflation[1]
-    elif ( ensDA.inflation[0] == 4 ):
-        print 'Inflating the Posterior by spread restoration method with a factor of %f' % ensDA.inflation[1]
+    if   ( ensDA.inflation.infl_meth == 1 ):
+        print 'Inflating the Prior using multiplicative inflation with a factor of %f' % ensDA.inflation.infl_fac
+    elif ( ensDA.inflation.infl_meth == 2 ):
+        print 'Inflating the Prior by adding white-noise with zero-mean and %f spread' % ensDA.inflation.infl_fac
+    elif ( ensDA.inflation.infl_meth == 3 ):
+        print 'Inflating the Posterior by covariance relaxation method with weight %f to the prior' % ensDA.inflation.infl_fac
+    elif ( ensDA.inflation.infl_meth == 4 ):
+        print 'Inflating the Posterior by spread restoration method with a factor of %f' % ensDA.inflation.infl_fac
     else:
         print 'Invalid inflation method'
-        print 'ensDA.inflation[0] must be one of : 1 | 2 | 3 | 4'
+        print 'ensDA.inflation.infl_meth must be one of : 1 | 2 | 3 | 4'
         print 'Multiplicative | Additive | Covariance Relaxation | Spread Restoration'
         fail = True
 
-    if   ( ensDA.localization[0] == True ):
-        print 'Localizing using Gaspari-Cohn with a covariance cutoff of %f' % ensDA.localization[1]
+    if   ( ensDA.localization.localize == True ):
+        print 'Localizing using Gaspari-Cohn with a covariance cutoff of %f' % ensDA.localization.cov_cutoff
     else:
         print 'No localization'
 
@@ -110,16 +110,16 @@ def update_ensDA(Xb, y, R, H, ensDA):
     totvar = np.zeros(Nobs) * np.NaN
 
     # prior inflation
-    if ( (ensDA.inflation[0] == 1) or (ensDA.inflation[0] == 2) ):
+    if ( (ensDA.inflation.infl_meth == 1) or (ensDA.inflation.infl_meth == 2) ):
 
         xbm = np.mean(Xb,axis=1)
         Xbp = np.transpose(np.transpose(Xb) - xbm)
 
-        if   ( ensDA.inflation[0] == 1 ): # multiplicative inflation
-            Xbp = ensDA.inflation[1] * Xbp
+        if   ( ensDA.inflation.infl_meth == 1 ): # multiplicative inflation
+            Xbp = ensDA.inflation.infl_fac * Xbp
 
-        elif ( inflation[0] == 2 ): # additive white model error (mean:zero, spread:ensDA.inflation[1])
-            Xbp = Xbp + inflation[1] * np.random.randn(Ndof,Nens)
+        elif ( inflation.infl_meth == 2 ): # additive white model error (mean:zero, spread:ensDA.inflation.infl_fac)
+            Xbp = Xbp + inflation.infl_fac * np.random.randn(Ndof,Nens)
 
         Xb = np.transpose(np.transpose(Xbp) + xbm)
 
@@ -149,10 +149,10 @@ def update_ensDA(Xb, y, R, H, ensDA):
             state_inc = state_increment(obs_inc, temp_ens[i,:], ye)
 
             # localization
-            if ( ensDA.localization[0] ):
+            if ( ensDA.localization.localize ):
                 dist = np.abs( ob - i ) / Ndof
                 if ( dist > 0.5 ): dist = 1.0 - dist
-                cov_factor = compute_cov_factor(dist, ensDA.localization[1])
+                cov_factor = compute_cov_factor(dist, ensDA.localization.cov_cutoff)
             else:
                 cov_factor = 1.0
 
@@ -165,16 +165,16 @@ def update_ensDA(Xb, y, R, H, ensDA):
     Xap = np.transpose(np.transpose(Xa) - xam)
 
     # posterior inflation
-    if   ( ensDA.inflation[0] == 3 ): # covariance relaxation (Zhang & Snyder)
+    if   ( ensDA.inflation.infl_meth == 3 ): # covariance relaxation (Zhang & Snyder)
         xbm = np.mean(Xb,axis=1)
         Xbp = np.transpose(np.transpose(Xb) - xbm)
-        Xap = Xbp * ensDA.inflation[1] + Xap * (1.0 - ensDA.inflation[1])
+        Xap = Xbp * ensDA.inflation.infl_fac + Xap * (1.0 - ensDA.inflation.infl_fac)
 
-    elif ( ensDA.inflation[0] == 4 ): # posterior spread restoration (Whitaker & Hammill)
+    elif ( ensDA.inflation.infl_meth == 4 ): # posterior spread restoration (Whitaker & Hamill)
         xbs = np.std(Xb,axis=1,ddof=1)
         xas = np.std(Xa,axis=1,ddof=1)
         for i in np.arange(0,Ndof):
-            Xap[i,:] =  np.sqrt((ensDA.inflation[1] * (xbs[i] - xas[dof])/xas[i]) + 1.0) * Xap[i,:]
+            Xap[i,:] =  np.sqrt((ensDA.inflation.infl_fac * (xbs[i] - xas[dof])/xas[i]) + 1.0) * Xap[i,:]
 
     # add inflated perturbations back to analysis mean
     Xa = np.transpose(np.transpose(Xap) + xam)

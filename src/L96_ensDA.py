@@ -55,16 +55,16 @@ DA.nassim = 2000                # no. of assimilation cycles
 DA.ntimes = 0.05                # do assimilation every ntimes non-dimensional time units
 DA.t0     = 0.0                 # initial time
 
-ensDA        = type('', (), {}) # ensemble data assimilation Class
-ensDA.update = 2                # DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
-ensDA.Nens   = 30               # number of ensemble members
-infl_meth    = 1                # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
-                                # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
-infl_fac     = 1.06             # Depends on inflation method (see values in [] above)
-localize     = True             # do localization
-cov_cutoff   = 1.0              # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
-ensDA.inflation    = [infl_meth, infl_fac]
-ensDA.localization = [localize, cov_cutoff]
+ensDA              = type('', (), {})  # ensemble data assimilation Class
+ensDA.inflation    = type('', (), {})  # inflation Class
+ensDA.localization = type('', (), {})  # localization Class
+ensDA.update                  = 2      # DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
+ensDA.Nens                    = 30     # number of ensemble members
+ensDA.inflation.infl_meth     = 1      # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
+                                       # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
+ensDA.inflation.infl_fac      = 1.06   # Depends on inflation method (see values in [] above)
+ensDA.localization.localize   = True   # do localization
+ensDA.localization.cov_cutoff = 1.0    # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
 
 # name and attributes of/in the output diagnostic file
 diag_fname = 'L96_ensDA_diag.nc4'
@@ -73,14 +73,15 @@ diag_fattr = {'F'           : str(model.Par[0]),
               'ntimes'      : str(DA.ntimes),
               'dt'          : str(model.dt),
               'Eupdate'     : str(ensDA.update),
-              'localize'    : str(int(ensDA.localization[0])),
-              'cov_cutoff'  : str(ensDA.localization[1]),
-              'infl_meth'   : str(ensDA.inflation[0]),
-              'infl_fac'    : str(ensDA.inflation[1])}
+              'localize'    : str(int(ensDA.localization.localize)),
+              'cov_cutoff'  : str(ensDA.localization.cov_cutoff),
+              'infl_meth'   : str(ensDA.inflation.infl_meth),
+              'infl_fac'    : str(ensDA.inflation.infl_fac)}
 
-# restart conditions ( state [< -1 | == -1 | > -1], filename)
-restart_state = -2
-restart_file  = ''
+# restart conditions
+restart          = type('', (), {})  # restart initial conditions Class
+restart.time     = 0                 # 0 | None == default, 1...N | -1...-N
+restart.filename = ''
 ###############################################################
 
 ###############################################################
@@ -93,12 +94,13 @@ def main():
     check_ensDA(ensDA)
 
     # get IC's
-    [xt, Xa] = get_IC(model=model, restart_state=restart_state, restart_file=restart_file, Nens=ensDA.Nens)
+    [xt, Xa] = get_IC(model, restart, Nens=ensDA.Nens)
     Xb = Xa.copy()
 
     print 'Cycling ON the attractor ...'
 
-    ts = np.arange(DA.t0,DA.ntimes+model.dt,model.dt)     # time between assimilations
+    # time between assimilations
+    DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))
 
     # create diagnostic file
     create_diag(diag_fname, diag_fattr, model.Ndof, nens=ensDA.Nens)
@@ -109,7 +111,7 @@ def main():
         print '========== assimilation time = %5d ========== ' % (k+1)
 
         # advance truth with the full nonlinear model
-        xs = integrate.odeint(L96, xt, ts, (model.Par[0],0.0))
+        xs = integrate.odeint(L96, xt, DA.tanal, (model.Par[0],0.0))
         xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values
@@ -119,7 +121,7 @@ def main():
         # advance analysis ensemble with the full nonlinear model
         for m in range(0,ensDA.Nens):
             xa = Xa[:,m].copy()
-            xs = integrate.odeint(L96, xa, ts, (model.Par[0]+model.Par[1],0.0))
+            xs = integrate.odeint(L96, xa, DA.tanal, (model.Par[0]+model.Par[1],0.0))
             Xb[:,m] = xs[-1,:].copy()
 
         # update ensemble (mean and perturbations)

@@ -13,18 +13,23 @@
 #                test its TLM and adjoint
 ###############################################################
 
+###############################################################
 __author__    = "Rahul Mahajan"
 __email__     = "rahul.mahajan@nasa.gov"
 __copyright__ = "Copyright 2012, NASA / GSFC / GMAO"
 __license__   = "GPL"
 __status__    = "Prototype"
+###############################################################
 
+###############################################################
 import numpy         as     np
 from   scipy         import integrate
 from   matplotlib    import pyplot
 from   plot_stats    import *
 from   module_Lorenz import *
+###############################################################
 
+###############################################################
 # insure the same sequence of random numbers EVERY TIME
 np.random.seed(0)
 
@@ -32,39 +37,38 @@ model      = type('',(),{})  # model Class
 model.Name = 'L96'           # model name
 model.Ndof = 40              # model degrees of freedom
 model.Par  = [8.0, 0.4]      # model parameters F, dF
+model.dt   = 1.0e-4          # model time-step
 
 # initial setup from LE1998
-x0    = np.ones(model.Ndof) * model.Par[0]
-x0[0] = 1.001 * model.Par[0]
+IC          = type('',(),{})
+IC.time     = 0
+IC.filename = ''
+[x0,_] = get_IC(model,IC)
 
-dt  = 1.0e-4
-t0  = 0.0
-tol = 1.0e-13
-nf  = 4.0
+tf  = 0.05
+
+tol  = 1.0e-13
+pert = 1.0e-4
 
 print 'spinning-up ON the attractor ...'
 print '--------------------------------'
 
-tf = 25.0
-ts = np.linspace(t0,tf,tf/dt+1.0,endpoint=True)
-
-xs = integrate.odeint(L96, x0, ts, (model.Par[0],0.0))
-plot_L96(ver=xs[-1,:],obs=xs[-1,:],t=tf,N=model.Ndof)
-
+ts = np.rint(np.linspace(0,1000*tf/model.dt,1000*tf/model.dt+1)) * model.dt
+exec('xs = integrate.odeint(%s, x0, ts, (%f,0.0))' % (model.Name, model.Par[0]))
+exec('plot_%s(ver=xs[-1,:],obs=xs[-1,:],t=25,N=%d)' % (model.Name, model.Ndof))
 x0 = xs[-1,:].copy()
 
-tf = 0.05 * nf
-ts = np.linspace(t0,tf,tf/dt+1.0,endpoint=True)
+ts = np.rint(np.linspace(0,tf/model.dt,tf/model.dt+1)) * model.dt
 
-xs = integrate.odeint(L96, x0, ts, (model.Par[0],0.0),rtol=tol,atol=tol)
+exec('xs = integrate.odeint(%s, x0, ts, (%f,0.0),rtol=tol,atol=tol)' % (model.Name, model.Par[0]))
 xsf = xs[-1,:].copy()
 
-xp0 = np.random.randn(model.Ndof) * 1.0e-4
+xp0 = np.random.randn(model.Ndof) * pert
 
-xsp = integrate.odeint(L96, x0+xp0, ts, (model.Par[0],0.0),rtol=tol,atol=tol)
+exec('xsp = integrate.odeint(%s, x0+xp0, ts, (%f,0.0),rtol=tol,atol=tol)' % (model.Name, model.Par[0]))
 xspf = xsp[-1,:].copy()
 
-xp = integrate.odeint(L96_tlm, xp0, ts, (model.Par[0], xs, ts, False),rtol=tol,atol=tol)
+exec('xp = integrate.odeint(%s_tlm, xp0, ts, (%f, xs, ts, False),rtol=tol,atol=tol)' % (model.Name, model.Par[0]))
 xpf = xp[-1,:].copy()
 
 print 'check TLM ..'
@@ -73,13 +77,14 @@ for j in range(0,model.Ndof):
 print '--------------------------------'
 
 xa0 = xpf.copy()
-xa = integrate.odeint(L96_tlm, xa0, ts, (model.Par[0], np.flipud(xs), ts, True),rtol=tol,atol=tol)
+exec('xa = integrate.odeint(%s_tlm, xa0, ts, (%f, np.flipud(xs), ts, True),rtol=tol,atol=tol)' % (model.Name, model.Par[0]))
 xaf = xa[-1,:].copy()
 
 q1 = np.dot(np.transpose(xpf),xpf)
 q2 = np.dot(np.transpose(xaf),xp0)
 
-print 'check adjoint .. %14.13f' % (q2 -q1)
+print 'check adjoint .. %14.13f' % (q2-q1)
 print '--------------------------------'
 
 pyplot.show()
+###############################################################

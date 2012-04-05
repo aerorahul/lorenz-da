@@ -97,14 +97,14 @@ def main():
     [xt, Xa] = get_IC(model, restart, Nens=ensDA.Nens)
     Xb = Xa.copy()
 
-    print 'Cycling ON the attractor ...'
-
     # time between assimilations
     DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))
 
     # create diagnostic file
     create_diag(diag_file, model.Ndof, nens=ensDA.Nens)
     write_diag(diag_file.filename, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), evratio = np.NaN)
+
+    print 'Cycling ON the attractor ...'
 
     for k in range(0, DA.nassim):
 

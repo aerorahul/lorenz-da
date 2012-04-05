@@ -138,15 +138,15 @@ def main():
         varDA.fdvar.twind_obsTimes    = varDA.fdvar.twind[::varDA.fdvar.twind_obsInterval]
         varDA.fdvar.twind_obsIndex    = np.array(np.rint(varDA.fdvar.twind_obsTimes / model.dt), dtype=int)
 
-    print 'Cycling ON the attractor ...'
-
-    if ( not fdvar ):
+    else:
         # time between assimilations
         DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))
 
     # create diagnostic file
     create_diag(diag_file, model.Ndof)
     write_diag(diag_file.filename, 0, xt, xb, xa, np.dot(H,xt), H, np.diag(R), niters=np.NaN)
+
+    print 'Cycling ON the attractor ...'
 
     for k in range(0, DA.nassim):
 

@@ -173,7 +173,7 @@ def update_ensDA(Xb, y, R, H, ensDA):
     elif ( ensDA.inflation.infl_meth == 4 ): # posterior spread restoration (Whitaker & Hamill)
         xbs = np.std(Xb,axis=1,ddof=1)
         xas = np.std(Xa,axis=1,ddof=1)
-        for i in np.arange(0,Ndof):
+        for i in range(0,Ndof):
             Xap[i,:] =  np.sqrt((ensDA.inflation.infl_fac * (xbs[i] - xas[dof])/xas[i]) + 1.0) * Xap[i,:]
 
     # add inflated perturbations back to analysis mean

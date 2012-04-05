@@ -243,7 +243,7 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None):
     else:
         fig = pyplot.figure(figNum)
     pyplot.clf()
-    mean_dist = 35.0
+    mean_dist = 35
     ax = fig.add_axes([0.1, 0.1, 0.8, 0.8], polar=True)
     theta = np.linspace(0.0,2*np.pi,N+1)
     pyplot.hold(True)
@@ -251,13 +251,13 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None):
     if ( xb != None ):
         if ( len(xb.shape) == 1 ):
             tmp = np.zeros((N,1)) ; tmp[:,0] = xb ; xb = tmp
-        for M in np.arange(0, xb.shape[1]):
+        for M in range(0, xb.shape[1]):
             tmp = np.zeros(N+1) ; tmp[1:] = xb[:,M] ; tmp[0] = xb[-1,M]
             ax.plot(theta, tmp+mean_dist, 'b-')
     if ( xa != None ):
         if ( len(xa.shape) == 1 ):
             tmp = np.zeros((N,1)) ; tmp[:,0] = xa ; xa = tmp
-        for M in np.arange(0, xa.shape[1]):
+        for M in range(0, xa.shape[1]):
             tmp = np.zeros(N+1) ; tmp[1:] = xa[:,M] ; tmp[0] = xa[-1,M]
             ax.plot(theta, tmp+mean_dist, 'r-')
     if ( ver != None ):
@@ -267,16 +267,15 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None):
         tmp = np.zeros(N+1) ; tmp[1:] = obs ; tmp[0] = obs[-1]
         ax.plot(theta, tmp+mean_dist, 'yo')
 
-    ax.set_rmin(0.0)
-    ax.set_rmax(mean_dist+25.0)
-    rgrid  = np.arange(10,mean_dist+21,10)
-    rgrid  = np.arange(10,mean_dist+20,10)
+    ax.set_rmin(0)
+    ax.set_rmax(mean_dist+25)
+    rgrid  = np.array(np.linspace(10,mean_dist+25,5,endpoint=False),dtype=int)
     rlabel = []
     rgrid, rlabel = pyplot.rgrids(rgrid, rlabel)
 
     tlabel = []
-    tgrid  = np.arange(0,360,18)
-    tlabel = np.arange(0,40,2)
+    tgrid  = np.array(np.linspace(0,360,20,endpoint=False),dtype=int)
+    tlabel = np.array(np.linspace(0, 40,20,endpoint=False),dtype=int)
     tgrid, tlabel = pyplot.thetagrids(tgrid, tlabel)
 
     pyplot.hold(False)

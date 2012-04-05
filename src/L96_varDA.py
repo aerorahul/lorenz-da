@@ -35,8 +35,7 @@ from   plot_stats    import *
 ###############################################################
 global model
 global A, Q, H, R
-global DA
-global varDA
+global DA, varDA
 global diag_file
 global restart
 
@@ -62,7 +61,7 @@ varDA.update               = 1              # DA method (1= 3Dvar; 2= 4Dvar)
 varDA.minimization.maxiter = 1000           # maximum iterations
 varDA.minimization.alpha   = 4e-4           # size of step in direction of normalized J
 varDA.minimization.cg      = True           # True = Use conjugate gradient; False = Perform line search
-varDA.minimization.tol     = 1e-5           # tolerance to end the variational minimization iteration
+varDA.minimization.tol     = 1e-4           # tolerance to end the variational minimization iteration
 
 if ( (varDA.update == 2) or (varDA.update == 4) ): fdvar = True
 else:                                              fdvar = False
@@ -72,7 +71,7 @@ if ( fdvar ):
     varDA.fdvar.maxouter       = 1              # no. of outer loops for 4DVar
     varDA.fdvar.window         = DA.ntimes      # length of the 4Dvar assimilation window
     varDA.fdvar.offset         = 0.5            # time offset: forecast from analysis to background time
-    varDA.fdvar.nobstimes      = 11             # no. of evenly spaced obs. times in the window
+    varDA.fdvar.nobstimes      = 5              # no. of evenly spaced obs. times in the window
 
 diag_file            = type('', (), {})  # diagnostic file Class
 diag_file.filename   = model.Name + '_varDA_diag.nc4'
@@ -142,7 +141,8 @@ def main():
     print 'Cycling ON the attractor ...'
 
     if ( not fdvar ):
-        DA.tanal = np.arange(DA.t0,DA.ntimes+model.dt,model.dt)  # time between assimilations
+        # time between assimilations
+        DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))
 
     # create diagnostic file
     create_diag(diag_file, model.Ndof)

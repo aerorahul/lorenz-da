@@ -35,8 +35,7 @@ from   plot_stats    import *
 ###############################################################
 global model
 global Q, H, R
-global DA
-global ensDA
+global DA, ensDA
 global diag_file
 global restart
 

@@ -696,13 +696,9 @@ minimization - minimization class
         # save cost function minima, in case next step is to larger value
         if ( J < Jmin ):
             Jmin = J
-            xmin = x.copy()
+            xa   = x.copy()
 
     print '  final cost = %10.5f after %4d iterations' % (J, niters)
-
-    # advance to the analysis time to get the 4DVAR estimate
-    exec('xs = integrate.odeint(%s, xmin, fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
-    xa = xs[-1,:].copy()
 
     # analysis error covariance from Hessian
     A = np.linalg.inv(Binv + np.dot(np.transpose(H),np.dot(Rinv,H)))
@@ -733,7 +729,7 @@ minimization - minimization class
     '''
 
     # start with background
-    x    = xb.copy()
+    xa   = xb.copy()
     d    = np.zeros(np.shape(y))
     Binv = np.linalg.inv(B)
     Rinv = np.linalg.inv(R)
@@ -751,7 +747,7 @@ minimization - minimization class
         alpha_r = minimization.alpha
 
         # advance the background through the assimilation window with full non-linear model
-        exec('xnl = integrate.odeint(%s, x, fdvar.twind, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
+        exec('xnl = integrate.odeint(%s, xa, fdvar.twind, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
 
         # get observational increment at all observation times
         for i in range(0,fdvar.nobstimes):
@@ -779,7 +775,7 @@ minimization - minimization class
             gJb = np.dot(Binv,dxo)
 
             Jy  = 0.0
-            gJy = np.zeros(np.shape(x))
+            gJy = np.zeros(np.shape(xb))
             for j in range(0,fdvar.nobstimes):
 
                 i = fdvar.nobstimes - j - 1
@@ -800,7 +796,7 @@ minimization - minimization class
             if ( ( not np.mod(niters,10) ) and ( not niters == 0 ) ):
                 print '        cost = %10.5f after %4d iterations' % (J, niters)
 
-            # if the cost function increased, reset x and cut line-search parameter by half
+            # if the cost function increased, reset dxo and cut line-search parameter by half
             if ( J > Jold ):
                 print 'decreasing alpha ...'
                 dxo            = dxold.copy()
@@ -826,16 +822,12 @@ minimization - minimization class
 
             # save cost function minima, in case next step is to larger value
             if ( J < Jmin ):
-                Jmin = J
+                Jmin  = J
                 dxmin = dxo.copy()
 
         print '  final cost = %10.5f after %4d iterations' % (J, niters)
 
-        x = x + dxmin
-
-    # advance to the analysis time to get the 4DVAR estimate
-    exec('xs = integrate.odeint(%s, x, fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
-    xa = xs[-1,:].copy()
+        xa = xa + dxmin
 
     # analysis error covariance from Hessian
     A = np.linalg.inv(Binv + np.dot(np.transpose(H),np.dot(Rinv,H)))

@@ -181,6 +181,13 @@ def main():
         if ( fdvar ): xa, A, niters = update_varDA(xb, Bc, ywin, R, H, varDA, model=model)
         else:         xa, A, niters = update_varDA(xb, Bc, y,    R, H, varDA)
 
+        # if doing 4Dvar, step to the next assimilation time from the beginning of assimilation window
+        if ( fdvar ):
+            exec('xs = integrate.odeint(%s, xb, varDA.fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
+            xb = xs[-1,:].copy()
+            exec('xs = integrate.odeint(%s, xa, varDA.fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
+            xa = xs[-1,:].copy()
+
         # write diagnostics to disk
         write_diag(diag_file.filename, k+1, ver, xb, xa, y, H, np.diag(R), niters=niters)
 

@@ -50,12 +50,12 @@ H = np.eye(model.Ndof)          # obs operator ( eye(Ndof) gives identity obs )
 R = np.eye(model.Ndof)*(1.0**2) # observation error covariance
 
 DA             = type('', (), {}) # data assimilation Class
-DA.nassim      = 2000             # no. of assimilation cycles
+DA.nassim      = 465              # no. of assimilation cycles
 DA.ntimes      = 0.05             # do assimilation every ntimes non-dimensional time units
 DA.t0          = 0.0              # initial time
 DA.do_hybrid   = True             # True= run hybrid (varDA + ensDA) mode, False= run ensDA mode
-DA.hybrid_wght = 0.0              # weight for hybrid (0.0= Bstatic; 1.0= Bensemble)
-DA.hybrid_rcnt = False            # True= re-center ensemble about varDA, False= free ensDA
+DA.hybrid_wght = 0.25             # weight for hybrid (0.0= Bstatic; 1.0= Bensemble)
+DA.hybrid_rcnt = True             # True= re-center ensemble about varDA, False= free ensDA
 
 ensDA              = type('', (), {})  # ensemble data assimilation Class
 ensDA.inflation    = type('', (), {})  # inflation Class
@@ -66,15 +66,15 @@ ensDA.inflation.infl_meth     = 1      # inflation (1= Multiplicative [1.01], 2=
                                        # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
 ensDA.inflation.infl_fac      = 1.06   # Depends on inflation method (see values in [] above)
 ensDA.localization.localize   = True   # do localization
-ensDA.localization.cov_cutoff = 1.0    # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
+ensDA.localization.cov_cutoff = 0.0625 # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
 
 varDA                      = type('', (), {}) # variational data assimilation Class
 varDA.minimization         = type('', (), {}) # minimization Class
-varDA.update               = 1                # variational-based DA method (1 = 3Dvar; 2= 4Dvar)
+varDA.update               = 2                # variational-based DA method (1 = 3Dvar; 2= 4Dvar)
 varDA.minimization.maxiter = 1000             # maximum iterations for minimization
-varDA.minimization.alpha   = 4e-4             # size of step in direction of normalized J
+varDA.minimization.alpha   = 3e-3             # size of step in direction of normalized J
 varDA.minimization.cg      = True             # True = Use conjugate gradient; False = Perform line search
-varDA.minimization.tol     = 1e-4             # tolerance to end the variational minimization iteration
+varDA.minimization.tol     = 1e-3             # tolerance to end the variational minimization iteration
 
 if ( (varDA.update == 2) or (varDA.update == 4) ): fdvar = True
 else:                                              fdvar = False
@@ -114,8 +114,8 @@ if ( fdvar ):
 
 # restart conditions
 restart          = type('', (), {})  # restart initial conditions Class
-restart.time     = None              # None == default | -N...-1 0 1...N
-restart.filename = ''
+restart.time     = -1                # None == default | -N...-1 0 1...N
+restart.filename = '../data/L96/ensDA_N=30/inf=1.06/L96_ensDA_diag-0.nc4'
 ###############################################################
 
 ###############################################################
@@ -227,7 +227,14 @@ def main():
 
             # update the central background
             if ( fdvar ): xac, Ac, niters = update_varDA(xbc, Bc, ywin, R, H, varDA, model=model)
-            else:         xac, Ac, niters = update_varDA(xbc, Bc, y,    R, H, varDA)
+            else:         xac, Ac, niters = update_varDA(xbc, Bc, y,    R, H, varDA, model=model)
+
+            # if doing 4Dvar, step to the next assimilation time from the beginning of assimilation window
+            if ( fdvar ):
+                exec('xs = integrate.odeint(%s, xbc, varDA.fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
+                xbc = xs[-1,:].copy()
+                exec('xs = integrate.odeint(%s, xac, varDA.fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
+                xac = xs[-1,:].copy()
 
         # write diagnostics to disk before recentering
         if ( DA.do_hybrid ):

@@ -34,7 +34,9 @@ from   module_IO  import *
 def main():
 
     # name of starting hybrid output diagnostic file, starting index and no. of files
-    [_, fname, sOI, nf] = get_input_arguments()
+    [measure, fname, sOI, nf] = get_input_arguments()
+
+    if ( not measure ): measure = 'truth'
 
     fnames = []
     for i in range(0,nf): fnames.append(fname.replace('e0','e%d'%i))
@@ -65,6 +67,7 @@ def main():
         sys.exit(1)
 
     # allocate room for variables
+    print 'computing RMSE against %s' % measure
     xbrmseE = np.zeros((len(fnames),nassim))
     xarmseE = np.zeros((len(fnames),nassim))
     xbrmseC = np.zeros((len(fnames),nassim))
@@ -96,11 +99,17 @@ def main():
         xam = np.squeeze(np.mean(Xa, axis=1))
 
         # compute RMSE in prior, posterior and observations
-        xbrmseE[f,] = np.sqrt( np.sum( (xt - xbm)**2, axis = 1) / ndof )
-        xarmseE[f,] = np.sqrt( np.sum( (xt - xam)**2, axis = 1) / ndof )
-        xbrmseC[f,] = np.sqrt( np.sum( (xt - xbc)**2, axis = 1) / ndof )
-        xarmseC[f,] = np.sqrt( np.sum( (xt - xac)**2, axis = 1) / ndof )
-        xyrmse[f,]  = np.sqrt( np.sum( (xt -   y)**2          ) / ndof )
+        if ( measure == 'truth' ):
+            xbrmseE[f,] = np.sqrt( np.sum( (xt - xbm)**2, axis = 1) / ndof )
+            xarmseE[f,] = np.sqrt( np.sum( (xt - xam)**2, axis = 1) / ndof )
+            xbrmseC[f,] = np.sqrt( np.sum( (xt - xbc)**2, axis = 1) / ndof )
+            xarmseC[f,] = np.sqrt( np.sum( (xt - xac)**2, axis = 1) / ndof )
+        else:
+            xbrmseE[f,] = np.sqrt( np.sum( (y - xbm)**2, axis = 1) / ndof )
+            xarmseE[f,] = np.sqrt( np.sum( (y - xam)**2, axis = 1) / ndof )
+            xbrmseC[f,] = np.sqrt( np.sum( (y - xbc)**2, axis = 1) / ndof )
+            xarmseC[f,] = np.sqrt( np.sum( (y - xac)**2, axis = 1) / ndof )
+        xyrmse[f,]  = np.sqrt( np.sum( (xt - y)**2          ) / ndof )
 
     # start plotting
     fig = pyplot.figure()

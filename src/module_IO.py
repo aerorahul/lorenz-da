@@ -287,7 +287,7 @@ def get_input_arguments():
     end      = -1
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:],'M:f:s:e:h',['model=','filename=','start=','end=','help'])
+        opts, args = getopt.getopt(sys.argv[1:],'m:f:s:e:h',['model=','filename=','start=','end=','help'])
     except Exception as Instance:
         print 'Exception occured in %s of %s' % (source, module)
         print 'Exception occured during reading arguments'
@@ -301,7 +301,7 @@ def get_input_arguments():
             print 'no help has been written for %s in %s' % (source, module)
             print 'see code for details'
             sys.exit(0)
-        elif a in ('-M','--model'):
+        elif a in ('-m','--model'):
             model = o
         elif a in ('-f','--filename'):
             filename = o

@@ -35,13 +35,14 @@ from   plot_stats    import *
 def main():
 
     # get the name of output diagnostic file to read, start index for statistics, index to plot
-    # state
-    [_,fname,sStat,ePlot] = get_input_arguments()
+    # state, measure to do verification (truth | observations)
+    [measure,fname,sStat,ePlot] = get_input_arguments()
     if ( not os.path.isfile(fname) ):
         print '%s does not exist' % fname
         sys.exit(1)
 
-    if ( sStat <= -1 ): sStat = 100
+    if ( sStat <= -1 ): sStat   = 100
+    if ( not measure ): measure = 'truth'
 
     # read dimensions and necessary attributes from the diagnostic file
     try:
@@ -114,9 +115,14 @@ def main():
         sys.exit(1)
 
     # compute RMSE in prior, posterior and observations
-    xbrmse = np.sqrt( np.sum( (xt - xbm)**2, axis = 1) / ndof )
-    xarmse = np.sqrt( np.sum( (xt - xam)**2, axis = 1) / ndof )
-    xyrmse = np.sqrt( np.sum( (xt -   y)**2          ) / ndof )
+    print 'computing RMSE against %s' % measure
+    if ( measure == 'truth' ):
+        xbrmse = np.sqrt( np.sum( (xt - xbm)**2, axis = 1) / ndof )
+        xarmse = np.sqrt( np.sum( (xt - xam)**2, axis = 1) / ndof )
+    else:
+        xbrmse = np.sqrt( np.sum( (y  - xbm)**2, axis = 1) / ndof )
+        xarmse = np.sqrt( np.sum( (y  - xam)**2, axis = 1) / ndof )
+    xyrmse = np.sqrt( np.sum( (xt - y)**2 ) / ndof )
 
     if   ( ePlot == 0 ): pIndex = 0
     elif ( ePlot >  0 ): pIndex = ePlot + 1
@@ -134,9 +140,13 @@ def main():
 
     # plot the last state and RMSE for central state
     if ( do_hybrid ):
-        xbrmse = np.sqrt( np.sum( (xt - xbc)**2, axis = 1) / ndof )
-        xarmse = np.sqrt( np.sum( (xt - xac)**2, axis = 1) / ndof )
-        xyrmse = np.sqrt( np.sum( (xt -   y)**2          ) / ndof )
+        if ( measure == 'truth' ):
+            xbrmse = np.sqrt( np.sum( (xt - xbc)**2, axis = 1) / ndof )
+            xarmse = np.sqrt( np.sum( (xt - xac)**2, axis = 1) / ndof )
+        else:
+            xbrmse = np.sqrt( np.sum( (y  - xbc)**2, axis = 1) / ndof )
+            xarmse = np.sqrt( np.sum( (y  - xac)**2, axis = 1) / ndof )
+        xyrmse = np.sqrt( np.sum( (xt - y)**2 ) / ndof )
         fig = plot_L96(obs=y[pIndex,], ver=xt[pIndex,], xb=xbc[pIndex,], xa=xac[pIndex,], t=pIndex+1, N=ndof)
         fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, sStat=sStat, yscale='linear', title='RMSE-Central')
 

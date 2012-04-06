@@ -74,7 +74,7 @@ varDA.update               = 1                # variational-based DA method (1 =
 varDA.minimization.maxiter = 1000             # maximum iterations for minimization
 varDA.minimization.alpha   = 4e-4             # size of step in direction of normalized J
 varDA.minimization.cg      = True             # True = Use conjugate gradient; False = Perform line search
-varDA.minimization.tol     = 1e-4             # True = Use conjugate gradient; False = Perform line search
+varDA.minimization.tol     = 1e-4             # tolerance to end the variational minimization iteration
 
 if ( (varDA.update == 2) or (varDA.update == 4) ): fdvar = True
 else:                                              fdvar = False
@@ -84,7 +84,7 @@ if ( fdvar ):
     varDA.fdvar.maxouter       = 1              # no. of outer loops for 4DVar
     varDA.fdvar.window         = DA.ntimes      # length of the 4Dvar assimilation window
     varDA.fdvar.offset         = 0.5            # time offset: forecast from analysis to background time
-    varDA.fdvar.nobstimes      = 5              # no. of evenly spaced obs. times in the window
+    varDA.fdvar.nobstimes      = 11             # no. of evenly spaced obs. times in the window
 
 # name and attributes of/in the output diagnostic file
 diag_file            = type('', (), {})  # diagnostic file Class
@@ -134,6 +134,7 @@ def main():
     if ( DA.do_hybrid ):
         xac = np.mean(Xa,axis=1)
         xbc = np.mean(Xb,axis=1)
+        if ( fdvar ): Xbb = Xa.copy()
 
     if ( DA.do_hybrid ):
         print 'load climatological covariance ...'
@@ -164,9 +165,8 @@ def main():
         varDA.fdvar.twind_obsTimes    = varDA.fdvar.twind[::varDA.fdvar.twind_obsInterval]
         varDA.fdvar.twind_obsIndex    = np.array(np.rint(varDA.fdvar.twind_obsTimes / model.dt), dtype=int)
 
-    else:
-        # time between assimilations
-        DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))
+    # time between assimilations
+    DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))
 
     # create diagnostic file
     create_diag(diag_file, model.Ndof, nens=ensDA.Nens, hybrid=DA.do_hybrid)
@@ -202,9 +202,12 @@ def main():
             xa = Xa[:,m].copy()
             exec('xs = integrate.odeint(%s, xa, DA.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
             Xb[:,m] = xs[-1,:].copy()
+            if ( (DA.do_hybrid) and (fdvar) ): Xbb[:,m] = xs[varDA.fdvar.tb,:].copy()
 
         # compute background error covariance from the ensemble
-        if ( DA.do_hybrid ): Be = np.cov(Xb, ddof=1)
+        if ( DA.do_hybrid ):
+            if ( fdvar ): Be = np.cov(Xbb, ddof=1)
+            else:         Be = np.cov(Xb,  ddof=1)
 
         # update ensemble (mean and perturbations)
         Xa, evratio = update_ensDA(Xb, y, R, H, ensDA)

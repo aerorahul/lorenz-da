@@ -104,6 +104,7 @@ def main():
     np.random.seed(0)
 
     # check for valid variational data assimilation options
+    check_DA(DA)
     check_varDA(varDA)
 
     # get IC's

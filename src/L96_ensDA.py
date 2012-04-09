@@ -91,6 +91,7 @@ def main():
     np.random.seed(0)
 
     # check for valid ensemble data assimilation options
+    check_DA(DA)
     check_ensDA(ensDA)
 
     # get IC's

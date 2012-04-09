@@ -21,12 +21,42 @@ __status__    = "Prototype"
 ###############################################################
 
 ###############################################################
-import os
 import sys
-import numpy as np
-from scipy import integrate
-from module_Lorenz import *
+import numpy         as     np
+from   scipy         import integrate
+from   module_Lorenz import *
+###############################################################
 
+###############################################################
+def check_DA(DA):
+# {{{
+    '''
+    Check for valid DA options
+
+    check_DA(DA)
+
+    DA - data assimilation class
+    '''
+
+    print '==========================================='
+
+    fail = False
+
+    print 'Cycle DA for %d cycles' % DA.nassim
+    print 'Interval between each DA cycle is %f' % DA.ntimes
+    if ( hasattr(DA,'do_hybrid') ):
+        if ( DA.do_hybrid ):
+            print 'Doing hybrid data assimilation'
+            print 'Using %d%% of the flow-dependent covariance' % (np.int(DA.hybrid_wght * 100))
+            if ( DA.hybrid_rcnt ): print 'Re-centering the ensemble about the central analysis'
+            else:                  print 'No re-centering of the ensemble about the central analysis'
+
+    print '==========================================='
+
+    if ( fail ): sys.exit(1)
+
+    return
+# }}}
 ###############################################################
 
 ###############################################################

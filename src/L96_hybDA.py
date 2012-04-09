@@ -54,7 +54,7 @@ DA.nassim      = 465              # no. of assimilation cycles
 DA.ntimes      = 0.05             # do assimilation every ntimes non-dimensional time units
 DA.t0          = 0.0              # initial time
 DA.do_hybrid   = True             # True= run hybrid (varDA + ensDA) mode, False= run ensDA mode
-DA.hybrid_wght = 0.25             # weight for hybrid (0.0= Bstatic; 1.0= Bensemble)
+DA.hybrid_wght = 0.1              # weight for hybrid (0.0= Bstatic; 1.0= Bensemble)
 DA.hybrid_rcnt = True             # True= re-center ensemble about varDA, False= free ensDA
 
 ensDA              = type('', (), {})  # ensemble data assimilation Class
@@ -114,8 +114,8 @@ if ( fdvar ):
 
 # restart conditions
 restart          = type('', (), {})  # restart initial conditions Class
-restart.time     = -1                # None == default | -N...-1 0 1...N
-restart.filename = '../data/L96/ensDA_N=30/inf=1.06/L96_ensDA_diag-0.nc4'
+restart.time     = None              # None == default | -N...-1 0 1...N
+restart.filename = ''
 ###############################################################
 
 ###############################################################
@@ -125,6 +125,7 @@ def main():
     np.random.seed(0)
 
     # check for valid ensemble and variational data assimilation options
+    check_DA(DA)
     check_ensDA(ensDA)
     check_varDA(varDA)
 

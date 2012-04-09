@@ -37,8 +37,9 @@ def main():
 
     # some more arguments, currently hard-coded
     save_figures = False
-    yscale = 'semilog'
     model  = 'L96'
+    yscale = 'linear'
+    yFix   = None
 
     if ( not measure ): measure = 'truth'
 
@@ -141,8 +142,10 @@ def main():
         if   ( yscale == 'linear'  ): pyplot.plot(    q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
         elif ( yscale == 'semilog' ): pyplot.semilogy(q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
 
-    yl = pyplot.get(pyplot.gca(),'ylim'); ymax = yl[1]
+    yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
+    if ( yFix == None ): ymax = yl[1]
+    else:                ymax = yFix
     pyplot.ylim(0.0, ymax)
     pyplot.xlim(0.0, len(np.squeeze(xbrmseE[f,sOI:])))
 
@@ -160,7 +163,7 @@ def main():
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_RMSE_%dDhybDA_EnKF_Prior.eps' % (model, varDA),dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_%dDhybDA_RMSE_EnKF_Prior.eps' % (model, varDA),dpi=300,orientation='landscape',format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -177,7 +180,9 @@ def main():
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
-    pyplot.ylim(0.0, ymax); ymax = yl[1]
+    if ( yFix == None ): ymax = yl[1]
+    else:                ymax = yFix
+    pyplot.ylim(0.0, ymax)
     pyplot.xlim(0.0, len(np.squeeze(xbrmseC[f,sOI:])))
 
     for fname in fnames:
@@ -192,7 +197,7 @@ def main():
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_RMSE_%dDhybDA_%dDVar_Prior.eps' % (model, varDA, varDA),dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_%dDhybDA_RMSE_%dDVar_Prior.eps' % (model, varDA, varDA),dpi=300,orientation='landscape',format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -207,7 +212,9 @@ def main():
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
-    pyplot.ylim(0.0, ymax); ymax = yl[1]
+    if ( yFix == None ): ymax = yl[1]
+    else:                ymax = yFix
+    pyplot.ylim(0.0, ymax)
     pyplot.xlim(0.0, len(np.squeeze(xarmseE[f,sOI:])))
 
     for fname in fnames:
@@ -224,7 +231,7 @@ def main():
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_RMSE_%dDhybDA_EnKF_Posterior.eps' % (model, varDA),dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_%dDhybDA_RMSE_EnKF_Posterior.eps' % (model, varDA),dpi=300,orientation='landscape',format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -239,7 +246,9 @@ def main():
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
-    pyplot.ylim(0.0, ymax); ymax = yl[1]
+    if ( yFix == None ): ymax = yl[1]
+    else:                ymax = yFix
+    pyplot.ylim(0.0, ymax)
     pyplot.xlim(0.0, len(np.squeeze(xarmseC[f,sOI:])))
 
     for fname in fnames:
@@ -256,7 +265,7 @@ def main():
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_RMSE_%dDhybDA_%dDVar_Posterior.eps' % (model, varDA, varDA),dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_%dDhybDA_RMSE_%dDVar_Posterior.eps' % (model, varDA, varDA),dpi=300,orientation='landscape',format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -277,7 +286,7 @@ def main():
     pyplot.title('RMSE - EnKF',fontweight='bold',fontsize=14)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_RMSE_%dDhybDA_EnKF.eps' % (model, varDA),dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_%dDhybDA_RMSE_EnKF.eps' % (model, varDA),dpi=300,orientation='landscape',format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -295,7 +304,7 @@ def main():
     pyplot.title('RMSE - %dDVar' % (varDA),fontweight='bold',fontsize=14)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_RMSE_%dDhybDA_%dDVar.eps' % (model, varDA, varDA),dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_%dDhybDA_RMSE_%dDVar.eps' % (model, varDA, varDA),dpi=300,orientation='landscape',format='eps')
     #-----------------------------------------------------------
 
     if not save_figures: pyplot.show()

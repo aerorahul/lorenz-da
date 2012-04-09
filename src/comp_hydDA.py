@@ -43,7 +43,9 @@ def main():
 
     fcolor = ['black', 'gray', 'blue', 'red', 'green', 'cyan', 'magenta']
     if ( len(fnames) > 7 ): fcolor = get_Ndistinct_colors(len(fnames))
+
     save_figures = False
+    yscale = 'semilog'
 
     # read dimensions and necessary attributes from the diagnostic file
     try:
@@ -118,7 +120,8 @@ def main():
     for fname in fnames:
         f = fnames.index(fname)
         q = np.squeeze(xbrmseE[f,sOI:])
-        pyplot.plot(q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
+        if   ( yscale == 'linear'  ): pyplot.plot(    q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
+        elif ( yscale == 'semilog' ): pyplot.semilogy(q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
@@ -145,7 +148,8 @@ def main():
     for fname in fnames:
         f = fnames.index(fname)
         q = np.squeeze(xbrmseC[f,sOI:])
-        pyplot.plot(q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
+        if   ( yscale == 'linear'  ): pyplot.plot(    q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
+        elif ( yscale == 'semilog' ): pyplot.semilogy(q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
@@ -172,7 +176,8 @@ def main():
     for fname in fnames:
         f = fnames.index(fname)
         q = np.squeeze(xarmseE[f,sOI:])
-        pyplot.plot(q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
+        if   ( yscale == 'linear'  ): pyplot.plot(    q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
+        elif ( yscale == 'semilog' ): pyplot.semilogy(q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
@@ -199,7 +204,8 @@ def main():
     for fname in fnames:
         f = fnames.index(fname)
         q = np.squeeze(xarmseC[f,sOI:])
-        pyplot.plot(q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
+        if   ( yscale == 'linear'  ): pyplot.plot(    q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
+        elif ( yscale == 'semilog' ): pyplot.semilogy(q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')

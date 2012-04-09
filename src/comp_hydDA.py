@@ -22,7 +22,6 @@ __status__    = "Prototype"
 ###############################################################
 
 ###############################################################
-import os
 import sys
 import numpy      as     np
 from   matplotlib import pyplot
@@ -36,6 +35,11 @@ def main():
     # name of starting hybrid output diagnostic file, starting index and no. of files
     [measure, fname, sOI, nf] = get_input_arguments()
 
+    # some more arguments, currently hard-coded
+    save_figures = False
+    yscale = 'semilog'
+    model  = 'L96'
+
     if ( not measure ): measure = 'truth'
 
     fnames = []
@@ -43,9 +47,6 @@ def main():
 
     fcolor = ['black', 'gray', 'blue', 'red', 'green', 'cyan', 'magenta']
     if ( len(fnames) > 7 ): fcolor = get_Ndistinct_colors(len(fnames))
-
-    save_figures = False
-    yscale = 'semilog'
 
     # read dimensions and necessary attributes from the diagnostic file
     try:
@@ -60,6 +61,8 @@ def main():
         F      = nc.F
         dF     = nc.dF
 
+        Vupdate = nc.Vupdate
+
         nc.close()
     except Exception as Instance:
         print 'Exception occurred during read of ' + fname
@@ -67,6 +70,9 @@ def main():
         print Instance.args
         print Instance
         sys.exit(1)
+
+    if ( Vupdate == 1 or Vupdate == 3 ): varDA = 3
+    if ( Vupdate == 2 or Vupdate == 4 ): varDA = 4
 
     # allocate room for variables
     print 'computing RMSE against %s' % measure
@@ -76,6 +82,15 @@ def main():
     xarmseC = np.zeros((len(fnames),nassim))
     xyrmse  = np.zeros((len(fnames),nassim))
     flabel  = []
+    blabel  = []
+    mean_prior_C     = np.zeros(len(fnames))
+    mean_prior_E     = np.zeros(len(fnames))
+    mean_posterior_C = np.zeros(len(fnames))
+    mean_posterior_E = np.zeros(len(fnames))
+    std_prior_C      = np.zeros(len(fnames))
+    std_prior_E      = np.zeros(len(fnames))
+    std_posterior_C  = np.zeros(len(fnames))
+    std_posterior_E  = np.zeros(len(fnames))
 
     for fname in fnames:
 
@@ -85,6 +100,7 @@ def main():
         try:
             nc = Dataset(fname, mode='r', format='NETCDF4')
             flabel.append(r'$\beta_e$ = %3.2f' % nc.hybrid_wght)
+            blabel.append('%3.2f' % nc.hybrid_wght)
             nc.close()
         except Exception as Instance:
             print 'Exception occurred during read of ' + fname
@@ -114,6 +130,8 @@ def main():
         xyrmse[f,]  = np.sqrt( np.sum( (xt - y)**2          ) / ndof )
 
     # start plotting
+
+    #-----------------------------------------------------------
     fig = pyplot.figure()
     pyplot.clf()
     pyplot.hold(True)
@@ -123,53 +141,61 @@ def main():
         if   ( yscale == 'linear'  ): pyplot.plot(    q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
         elif ( yscale == 'semilog' ): pyplot.semilogy(q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
 
-    yl = pyplot.get(pyplot.gca(),'ylim')
+    yl = pyplot.get(pyplot.gca(),'ylim'); ymax = yl[1]
     xl = pyplot.get(pyplot.gca(),'xlim')
-    pyplot.ylim(0.0, yl[1])
+    pyplot.ylim(0.0, ymax)
     pyplot.xlim(0.0, len(np.squeeze(xbrmseE[f,sOI:])))
 
     for fname in fnames:
         f = fnames.index(fname)
         q = np.squeeze(xbrmseE[f,sOI:])
+        mean_prior_E[f] = np.mean(q)
+        std_prior_E[f]  = np.std(q,ddof=1)
         str = 'mean rmse : %5.4f +/- %5.4f' % (np.mean(q), np.std(q,ddof=1))
-        pyplot.text(25,(1-0.05*(f+1))*yl[1],str,color=fcolor[f],fontsize=10)
+        pyplot.text(25,(1-0.05*(f+1))*ymax,str,color=fcolor[f],fontsize=10)
 
     pyplot.xlabel('Assimilation Cycle',fontweight='bold',fontsize=12)
     pyplot.ylabel('RMSE',fontweight='bold',fontsize=12)
-    pyplot.title('RMSE - Ensemble Prior',fontweight='bold',fontsize=14)
+    pyplot.title('RMSE - EnKF Prior',fontweight='bold',fontsize=14)
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('RMSE_HybridEnKF_Prior.eps',dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_RMSE_%dDhybDA_EnKF_Prior.eps' % (model, varDA),dpi=300,orientation='landscape',format='eps')
+    #-----------------------------------------------------------
 
+    #-----------------------------------------------------------
     fig = pyplot.figure()
     pyplot.clf()
     pyplot.hold(True)
     for fname in fnames:
         f = fnames.index(fname)
         q = np.squeeze(xbrmseC[f,sOI:])
+        mean_prior_C[f] = np.mean(q)
+        std_prior_C[f]  = np.std(q,ddof=1)
         if   ( yscale == 'linear'  ): pyplot.plot(    q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
         elif ( yscale == 'semilog' ): pyplot.semilogy(q,'-',color=fcolor[f],label=flabel[f],linewidth=1)
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
-    pyplot.ylim(0.0, yl[1])
+    pyplot.ylim(0.0, ymax); ymax = yl[1]
     pyplot.xlim(0.0, len(np.squeeze(xbrmseC[f,sOI:])))
 
     for fname in fnames:
         f = fnames.index(fname)
         q = np.squeeze(xbrmseC[f,sOI:])
         str = 'mean rmse : %5.4f +/- %5.4f' % (np.mean(q), np.std(q,ddof=1))
-        pyplot.text(25,(1-0.05*(f+1))*yl[1],str,color=fcolor[f],fontsize=10)
+        pyplot.text(25,(1-0.05*(f+1))*ymax,str,color=fcolor[f],fontsize=10)
 
     pyplot.xlabel('Assimilation Cycle',fontweight='bold',fontsize=12)
     pyplot.ylabel('RMSE',fontweight='bold',fontsize=12)
-    pyplot.title('RMSE - Central Prior',fontweight='bold',fontsize=14)
+    pyplot.title('RMSE - %dDVar Prior' % (varDA), fontweight='bold',fontsize=14)
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('RMSE_Hybrid3DVar_Prior.eps',dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_RMSE_%dDhybDA_%dDVar_Prior.eps' % (model, varDA, varDA),dpi=300,orientation='landscape',format='eps')
+    #-----------------------------------------------------------
 
+    #-----------------------------------------------------------
     fig = pyplot.figure()
     pyplot.clf()
     pyplot.hold(True)
@@ -181,23 +207,27 @@ def main():
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
-    pyplot.ylim(0.0, yl[1])
+    pyplot.ylim(0.0, ymax); ymax = yl[1]
     pyplot.xlim(0.0, len(np.squeeze(xarmseE[f,sOI:])))
 
     for fname in fnames:
         f = fnames.index(fname)
         q = np.squeeze(xarmseE[f,sOI:])
+        mean_posterior_E[f] = np.mean(q)
+        std_posterior_E[f]  = np.std(q,ddof=1)
         str = 'mean rmse : %5.4f +/- %5.4f' % (np.mean(q), np.std(q,ddof=1))
-        pyplot.text(25,(1-0.05*(f+1))*yl[1],str,color=fcolor[f],fontsize=10)
+        pyplot.text(25,(1-0.05*(f+1))*ymax,str,color=fcolor[f],fontsize=10)
 
     pyplot.xlabel('Assimilation Cycle',fontweight='bold',fontsize=12)
     pyplot.ylabel('RMSE',fontweight='bold',fontsize=12)
-    pyplot.title('RMSE - Ensemble Posterior',fontweight='bold',fontsize=14)
+    pyplot.title('RMSE - EnKF Posterior',fontweight='bold',fontsize=14)
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('RMSE_HybridEnKF_Posterior.eps',dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_RMSE_%dDhybDA_EnKF_Posterior.eps' % (model, varDA),dpi=300,orientation='landscape',format='eps')
+    #-----------------------------------------------------------
 
+    #-----------------------------------------------------------
     fig = pyplot.figure()
     pyplot.clf()
     pyplot.hold(True)
@@ -209,24 +239,67 @@ def main():
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
-    pyplot.ylim(0.0, yl[1])
+    pyplot.ylim(0.0, ymax); ymax = yl[1]
     pyplot.xlim(0.0, len(np.squeeze(xarmseC[f,sOI:])))
 
     for fname in fnames:
         f = fnames.index(fname)
         q = np.squeeze(xarmseC[f,sOI:])
+        mean_posterior_C[f] = np.mean(q)
+        std_posterior_C[f]  = np.std(q,ddof=1)
         str = 'mean rmse : %5.4f +/- %5.4f' % (np.mean(q), np.std(q,ddof=1))
-        pyplot.text(25,(1-0.05*(f+1))*yl[1],str,color=fcolor[f],fontsize=10)
+        pyplot.text(25,(1-0.05*(f+1))*ymax,str,color=fcolor[f],fontsize=10)
 
     pyplot.xlabel('Assimilation Cycle',fontweight='bold',fontsize=12)
     pyplot.ylabel('RMSE',fontweight='bold',fontsize=12)
-    pyplot.title('RMSE - Central Posterior',fontweight='bold',fontsize=14)
+    pyplot.title('RMSE - %dDVar Posterior' % (varDA),fontweight='bold',fontsize=14)
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('RMSE_Hybrid3DVar_Posterior.eps',dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_RMSE_%dDhybDA_%dDVar_Posterior.eps' % (model, varDA, varDA),dpi=300,orientation='landscape',format='eps')
+    #-----------------------------------------------------------
+
+    #-----------------------------------------------------------
+    fig = pyplot.figure()
+    pyplot.clf()
+    pyplot.hold(True)
+
+    index = np.arange(nf) + 0.15
+    width = 0.35
+
+    pyplot.bar(index,      mean_prior_E,    width,color='r',edgecolor='r',yerr=std_prior_E,    ecolor = 'k')
+    pyplot.bar(index+width,mean_posterior_E,width,color='b',edgecolor='b',yerr=std_posterior_E,ecolor = 'k')
+
+    pyplot.xticks(index+width, blabel)
+
+    pyplot.xlabel(r'$\beta_e$',fontweight='bold',fontsize=12)
+    pyplot.ylabel('RMSE',      fontweight='bold',fontsize=12)
+    pyplot.title('RMSE - EnKF',fontweight='bold',fontsize=14)
+    pyplot.hold(False)
+    if save_figures:
+        fig.savefig('%s_RMSE_%dDhybDA_EnKF.eps' % (model, varDA),dpi=300,orientation='landscape',format='eps')
+    #-----------------------------------------------------------
+
+    #-----------------------------------------------------------
+    fig = pyplot.figure()
+    pyplot.clf()
+    pyplot.hold(True)
+
+    pyplot.bar(index,      mean_prior_C,    width,color='r',edgecolor='r',yerr=std_prior_C,    ecolor = 'k')
+    pyplot.bar(index+width,mean_posterior_C,width,color='b',edgecolor='b',yerr=std_posterior_C,ecolor = 'k')
+
+    pyplot.xticks(index+width, blabel)
+
+    pyplot.xlabel(r'$\beta_e$',fontweight='bold',fontsize=12)
+    pyplot.ylabel('RMSE',      fontweight='bold',fontsize=12)
+    pyplot.title('RMSE - %dDVar' % (varDA),fontweight='bold',fontsize=14)
+    pyplot.hold(False)
+    if save_figures:
+        fig.savefig('%s_RMSE_%dDhybDA_%dDVar.eps' % (model, varDA, varDA),dpi=300,orientation='landscape',format='eps')
+    #-----------------------------------------------------------
 
     if not save_figures: pyplot.show()
+    print '... all done ...'
     sys.exit(0)
 ###############################################################
 

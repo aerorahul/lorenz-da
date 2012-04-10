@@ -54,7 +54,7 @@ DA.nassim      = 465              # no. of assimilation cycles
 DA.ntimes      = 0.05             # do assimilation every ntimes non-dimensional time units
 DA.t0          = 0.0              # initial time
 DA.do_hybrid   = True             # True= run hybrid (varDA + ensDA) mode, False= run ensDA mode
-DA.hybrid_wght = 0.1              # weight for hybrid (0.0= Bstatic; 1.0= Bensemble)
+DA.hybrid_wght = 0.5              # weight for hybrid (0.0= Bstatic; 1.0= Bensemble)
 DA.hybrid_rcnt = True             # True= re-center ensemble about varDA, False= free ensDA
 
 ensDA              = type('', (), {})  # ensemble data assimilation Class
@@ -70,7 +70,7 @@ ensDA.localization.cov_cutoff = 0.0625 # normalized covariance cutoff = cutoff /
 
 varDA                      = type('', (), {}) # variational data assimilation Class
 varDA.minimization         = type('', (), {}) # minimization Class
-varDA.update               = 2                # variational-based DA method (1 = 3Dvar; 2= 4Dvar)
+varDA.update               = 1                # variational-based DA method (1 = 3Dvar; 2= 4Dvar)
 varDA.minimization.maxiter = 1000             # maximum iterations for minimization
 varDA.minimization.alpha   = 3e-3             # size of step in direction of normalized J
 varDA.minimization.cg      = True             # True = Use conjugate gradient; False = Perform line search
@@ -114,8 +114,8 @@ if ( fdvar ):
 
 # restart conditions
 restart          = type('', (), {})  # restart initial conditions Class
-restart.time     = None              # None == default | -N...-1 0 1...N
-restart.filename = ''
+restart.time     = -1                # None == default | -N...-1 0 1...N
+restart.filename = '../data/L96/ensDA_N=30/inf=1.06/L96_ensDA_diag-0.nc4'
 ###############################################################
 
 ###############################################################
@@ -215,26 +215,20 @@ def main():
 
         if ( DA.do_hybrid ):
             # advance central analysis with the full nonlinear model
-            if ( fdvar ):
-                # step to the beginning of the assimilation window (varDA.fdvar.tbkgd)
-                exec('xs = integrate.odeint(%s, xac, varDA.fdvar.tbkgd, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
-            else:
-                # step to the next assimilation time (DA.tanal)
-                exec('xs = integrate.odeint(%s, xac, DA.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
+            exec('xs = integrate.odeint(%s, xac, DA.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
             xbc = xs[-1,:].copy()
+            if ( fdvar ): xbcwin = xs[varDA.fdvar.tb,:].copy()
 
             # blend covariance from flow-dependent (ensemble) and static (climatology)
             Bc = (1.0 - DA.hybrid_wght) * Bs + DA.hybrid_wght * Be
 
             # update the central background
-            if ( fdvar ): xac, Ac, niters = update_varDA(xbc, Bc, ywin, R, H, varDA, model=model)
-            else:         xac, Ac, niters = update_varDA(xbc, Bc, y,    R, H, varDA, model=model)
+            if ( fdvar ): xacwin, Ac, niters = update_varDA(xbcwin, Bc, ywin, R, H, varDA, model=model)
+            else:         xac,    Ac, niters = update_varDA(xbc,    Bc, y,    R, H, varDA, model=model)
 
             # if doing 4Dvar, step to the next assimilation time from the beginning of assimilation window
             if ( fdvar ):
-                exec('xs = integrate.odeint(%s, xbc, varDA.fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
-                xbc = xs[-1,:].copy()
-                exec('xs = integrate.odeint(%s, xac, varDA.fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
+                exec('xs = integrate.odeint(%s, xacwin, varDA.fdvar.tanal, (%f,0.0))' % (model.Name, model.Par[0]+model.Par[1]))
                 xac = xs[-1,:].copy()
 
         # write diagnostics to disk before recentering

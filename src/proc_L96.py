@@ -55,9 +55,13 @@ def main():
             nens = len(nc.dimensions['ncopy'])
         else:
             nens = 0
+            if ( (nc.Vupdate == 1) or (nc.Vupdate == 3) ): varDA = 3
+            if ( (nc.Vupdate == 2) or (nc.Vupdate == 4) ): varDA = 4
 
         if 'do_hybrid' in nc.ncattrs():
             do_hybrid = nc.do_hybrid
+            if ( (nc.Vupdate == 1) or (nc.Vupdate == 3) ): varDA = 3
+            if ( (nc.Vupdate == 2) or (nc.Vupdate == 4) ): varDA = 4
         else:
             do_hybrid = False
 
@@ -148,7 +152,7 @@ def main():
             xarmse = np.sqrt( np.sum( (y  - xac)**2, axis = 1) / ndof )
         xyrmse = np.sqrt( np.sum( (xt - y)**2 ) / ndof )
         fig = plot_L96(obs=y[pIndex,], ver=xt[pIndex,], xb=xbc[pIndex,], xa=xac[pIndex,], t=pIndex+1, N=ndof)
-        fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, sStat=sStat, yscale='linear', title='RMSE-Central')
+        fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, sStat=sStat, yscale='linear', title='RMSE-%dDVar'%(varDA))
 
     # plot the iteration statistics and/or error-to-variance ratio
     if ( do_hybrid ):

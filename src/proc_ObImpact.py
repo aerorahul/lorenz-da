@@ -52,6 +52,7 @@ def main():
             sys.exit(1)
 
     fname_fig = fname.split('.dat')[0]
+    save_fig  = False
 
     adJ  = object['adj_dJ']
     edJ  = object['ens_dJ']
@@ -122,11 +123,12 @@ def main():
     pyplot.ylabel(r'$\delta J_b$', fontsize=12)
     pyplot.hold(False)
 
-    fig1.savefig(fname_fig + '-dJ.eps', dpi=300,orientation='landscape',format='eps')
-    fig2.savefig(fname_fig + '-dJa.eps',dpi=300,orientation='landscape',format='eps')
-    fig3.savefig(fname_fig + '-dJb.eps',dpi=300,orientation='landscape',format='eps')
-
-    pyplot.show()
+    if ( save_fig ):
+        fig1.savefig(fname_fig + '-dJ.eps', dpi=300,orientation='landscape',format='eps')
+        fig2.savefig(fname_fig + '-dJa.eps',dpi=300,orientation='landscape',format='eps')
+        fig3.savefig(fname_fig + '-dJb.eps',dpi=300,orientation='landscape',format='eps')
+    else:
+        pyplot.show()
 ###############################################################
 
 ###############################################################

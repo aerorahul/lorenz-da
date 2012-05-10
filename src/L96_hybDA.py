@@ -70,7 +70,7 @@ ensDA.localization.cov_cutoff = 0.0625 # normalized covariance cutoff = cutoff /
 
 varDA                      = type('', (), {}) # variational data assimilation Class
 varDA.minimization         = type('', (), {}) # minimization Class
-varDA.update               = 1                # variational-based DA method (1 = 3Dvar; 2= 4Dvar)
+varDA.update               = 2                # variational-based DA method (1 = 3Dvar; 2= 4Dvar)
 varDA.minimization.maxiter = 1000             # maximum iterations for minimization
 varDA.minimization.alpha   = 3e-3             # size of step in direction of normalized J
 varDA.minimization.cg      = True             # True = Use conjugate gradient; False = Perform line search
@@ -82,9 +82,9 @@ else:                                              fdvar = False
 if ( fdvar ):
     varDA.fdvar                = type('',(),{}) # 4DVar class
     varDA.fdvar.maxouter       = 1              # no. of outer loops for 4DVar
-    varDA.fdvar.window         = DA.ntimes      # length of the 4Dvar assimilation window
+    varDA.fdvar.window         = 0.025          # length of the 4Dvar assimilation window
     varDA.fdvar.offset         = 0.5            # time offset: forecast from analysis to background time
-    varDA.fdvar.nobstimes      = 11             # no. of evenly spaced obs. times in the window
+    varDA.fdvar.nobstimes      = 2              # no. of evenly spaced obs. times in the window
 
 # name and attributes of/in the output diagnostic file
 diag_file            = type('', (), {})  # diagnostic file Class
@@ -146,7 +146,7 @@ def main():
     if ( fdvar ):
         # check length of assimilation window
         if ( varDA.fdvar.offset * DA.ntimes + varDA.fdvar.window - DA.ntimes < 0.0 ):
-            print 'assimilation window is too short'
+            print '4DVar assimilation window is too short'
             sys.exit(2)
 
         # time index from analysis to ... background, next analysis, end of window, window
@@ -197,6 +197,8 @@ def main():
             ywin = np.zeros((varDA.fdvar.nobstimes,model.Ndof))
             for i in range(0,varDA.fdvar.nobstimes):
                 ywin[i,:] = np.dot(H,xs[varDA.fdvar.twind_obsIndex[i]+varDA.fdvar.tb,:]) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
+            oind = np.where(varDA.fdvar.twind_obsIndex + varDA.fdvar.tb == varDA.fdvar.ta)
+            if ( len(oind[0]) != 0 ): y = ywin[oind[0][0],:].copy()
 
         # advance analysis ensemble with the full nonlinear model
         for m in range(0,ensDA.Nens):

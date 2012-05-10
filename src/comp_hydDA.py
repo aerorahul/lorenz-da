@@ -59,8 +59,6 @@ def main():
 
         ntimes = nc.ntimes
         dt     = nc.dt
-        F      = nc.F
-        dF     = nc.dF
 
         Vupdate = nc.Vupdate
 

@@ -10,68 +10,132 @@
 
 ###############################################################
 # L63_stats.py - compute climatological covariance matrix for
-#                the 1963 Lorenz attractor
+#                the 1963 Lorenz system
 ###############################################################
 
+###############################################################
 __author__    = "Rahul Mahajan"
 __email__     = "rahul.mahajan@nasa.gov"
-__copyright__ = "Copyright 2011, NASA / GSFC / GMAO"
+__copyright__ = "Copyright 2012, NASA / GSFC / GMAO"
 __license__   = "GPL"
 __status__    = "Prototype"
+###############################################################
 
+###############################################################
 import os
-import numpy      as     np
-from   lorenz     import L63, plot_L63
-from   netCDF4    import Dataset
-from   scipy      import integrate, io
-from   matplotlib import pyplot
+import sys
+import numpy         as     np
+from   netCDF4       import Dataset
+from   scipy         import integrate
+from   module_Lorenz import L63
+from   module_IO     import *
+###############################################################
 
-dt = 0.01 # time-step
+###############################################################
+def main():
 
-# control parameter settings for Lorenz 63
-par = np.array([10.0, 28.0, 8.0/3.0])
+    method = 'EnKF' # choose method to create B: NMC / Climo / EnKF
 
-# get a state on the attractor
-print 'running onto the attractor ...'
-x0 = np.array([10.0, 20.0, 30.0])  # initial conditions
-ts = np.arange(0.0,100.0,dt)       # how long to run onto the attractor
-xs = integrate.odeint(L63, x0, ts, (par,0.0))
+    if ( (method == 'NMC') or (method == 'Climo') ):
 
-# use the end state to run ON the attractor
-xt = xs[-1,:]
+        dt = 1.0e-4     # time-step
+        tf = 0.25       # time for forecast (6 hours)
+        ts = 50*4*tf    # time for spin-up  (50 days)
+        Ne = 500        # no. of samples to estimate B
 
-print 'running ON the attractor ...'
-ts = np.arange(0.0,1000.0,dt)
-xs = integrate.odeint(L63, xt, ts, (par,0.0))
+        # initial setup from Miller et al., 1994
+        Ndof  = 3
+        Par   = [10.0, 28.0, 8.0/3.0]
+        x0    = np.array([1.508870, -1.531271, 25.46091])
 
-X = xs.copy()
-nsamp = np.shape(X)[0]
-print 'number of samples : %d' % nsamp
+        if ( method == 'NMC' ):
+            pscale = 1.0e-3         # scale of perturbations to add
 
-# calculate sample mean
-xm = np.mean(X,axis=0)
-[Xm, tmp] = np.meshgrid(xm,np.ones(nsamp));
+    elif ( method == 'EnKF' ):
 
-# remove the sample mean from the sample
-Xp = np.transpose(X - Xm)
+        # get the name of output diagnostic file to read
+        [fname] = get_input_arguments()
+        if ( not os.path.isfile(fname) ):
+            print '%s does not exist' % fname
+            sys.exit(1)
 
-# compute climatological covariance matrix
-B = np.dot(Xp,np.transpose(Xp)) / (nsamp - 1)
+    if ( (method == 'NMC') or (method == 'Climo') ):
 
-# option to save B to disk for use with DA experiments (both MatLAB and netCDF)
-print 'save B to disk ...'
-os.system('rm -f L63_climo_B.mat L63_climo_B.nc4')
-data      = {}
-data['B'] = B
-io.savemat('L63_climo_B.mat',data)
+        # get a state on the attractor
+        print 'spinning-up onto the attractor ...'
+        ts = np.arange(0.0,ts+dt,dt)       # how long to run onto the attractor
+        xs = integrate.odeint(L63, x0, ts, (Par,0.0))
 
-nc       = Dataset('L63_climo_B.nc4',mode='w',clobber=True,format='NETCDF4')
-Dim      = nc.createDimension('xyz',3)
-Var      = nc.createVariable('B', 'f8', ('xyz','xyz',))
-Var[:,:] = B
-nc.close()
+        # use the end state as IC
+        xt = xs[-1,:]
 
-# plot the attractor
-plot_L63(xs, segment = xs[50:155,:])
+        print 'Using the NMC method to create B'
 
-pyplot.show()
+        # allocate space upfront
+        X = np.zeros((Ndof,Ne))
+
+        print 'running ON the attractor ...'
+
+        tf0 = np.arange(0.0,1*tf+dt,dt)
+        tf1 = np.arange(0.0,3*tf+dt,dt)
+        tf2 = np.arange(0.0,4*tf+dt,dt)
+
+        for i in range(0,Ne):
+            xs = integrate.odeint(L63, xt, tf0, (Par,0.0))
+            xt = xs[-1,:].copy()
+
+            xs = integrate.odeint(L63, xt, tf1, (Par,0.0))
+            x24 = xs[-1,:].copy()
+
+            xs = integrate.odeint(L63, x24, tf2, (Par,0.0))
+            x48 = xs[-1,:].copy()
+
+            X[:,i] = x48 - x24
+
+            xt = xt + pscale * np.random.randn(Ndof)
+
+        # compute climatological covariance matrix
+        B = np.dot(X,np.transpose(X)) / (Ne - 1)
+
+    elif ( method == 'EnKF'):
+
+        print 'Using the EnKF output to create B'
+
+        try:
+            nc   = Dataset(fname, mode='r', format='NETCDF4')
+            Ndof = len(nc.dimensions['ndof'])
+            Nens = len(nc.dimensions['ncopy'])
+            Ntim = len(nc.dimensions['ntime'])
+            Xb   = np.transpose(np.squeeze(nc.variables['prior'][:,]),(0,2,1))
+            nc.close()
+        except Exception as Instance:
+            print 'Exception occurred during read of ' + fname
+            print type(Instance)
+            print Instance.args
+            print Instance
+            sys.exit(1)
+
+        print 'no. of samples ... %d' % Ntim
+
+        Bi = np.zeros((Ntim,Ndof,Ndof))
+        for i in range(0,Ntim):
+            Bi[i,] = np.cov(np.squeeze(Xb[i,]),ddof=1)
+
+        B = np.mean(Bi,axis=0)
+        print np.diag(B)
+
+    # save B to disk for use with DA experiments
+    print 'save B to disk ...'
+    nc       = Dataset('L63_climo_B_' + method +'.nc4',mode='w',clobber=True,format='NETCDF4')
+    Dim      = nc.createDimension('xyz',Ndof)
+    Var      = nc.createVariable('B', 'f8', ('xyz','xyz',))
+    Var[:,:] = B
+    nc.close()
+
+    sys.exit(0)
+###############################################################
+
+###############################################################
+if __name__ == "__main__":
+	main()
+###############################################################

@@ -39,11 +39,12 @@ model.Ndof = 3                          # model degrees of freedom
 model.Par  = [10.0, 28.0, 8.0/3.0]      # model parameters F, dF
 model.dt   = 1.0e-3                     # model time-step
 
+tf  = 0.25
+
 IC          = type('',(),{})
 IC.time     = None
 IC.filename = ''
 [x0,_] = get_IC(model,IC)
-tf  = 0.05
 
 tol  = 1.0e-13
 pert = 1.0e-4

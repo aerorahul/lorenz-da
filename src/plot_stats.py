@@ -26,19 +26,19 @@ from   matplotlib import pyplot
 ###############################################################
 
 ###############################################################
-def plot_trace(obs=None, ver=None, xb=None, xa=None, label=['x'], N=1, figNum=None):
+def plot_trace(obs=None, ver=None, xb=None, xa=None, N=1, figNum=None):
     if ( figNum == None ): fig = pyplot.figure()
     else: fig = pyplot.figure(figNum)
     pyplot.clf()
     for k in range(0,N):
         pyplot.subplot(N,1,k+1)
         pyplot.hold(True)
-        if ( obs != None ): pyplot.plot(obs[k,:],'ro',label='observation')
-        if ( ver != None ): pyplot.plot(ver[k,:],'k-',label='truth')
-        if ( xb  != None ): pyplot.plot(xb[k,:], 'c-',label='background')
-        if ( xa  != None ): pyplot.plot(xa[k,:], 'b-',label='analysis')
-        pyplot.ylabel(label[k],fontweight='bold',fontsize=12)
-        if ( label[k] != 'z' ): pyplot.plot(np.zeros(len(ver[k,:])),'k:')
+        if ( obs != None ): pyplot.plot(obs[:,k],'ro',label='observation')
+        if ( ver != None ): pyplot.plot(ver[:,k],'k-',label='truth')
+        if ( xb  != None ): pyplot.plot(xb[:,k], 'c-',label='background')
+        if ( xa  != None ): pyplot.plot(xa[:,k], 'b-',label='analysis')
+        pyplot.plot(np.zeros(len(ver[k,:])),'k:')
+        pyplot.ylabel('x' + str(k+1),fontweight='bold',fontsize=12)
         pyplot.hold(False)
         if ( k == 0 ):
             pyplot.title('Time trace',fontweight='bold',fontsize=14)

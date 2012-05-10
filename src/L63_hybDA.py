@@ -9,7 +9,7 @@
 ###############################################################
 
 ###############################################################
-# L63_hybDA.py - cycle Hybrid DA on the 1963 Lorenz attractor
+# L63_hybDA.py - cycle Hybrid DA on Lorenz & Emanuel 1998
 ###############################################################
 
 ###############################################################
@@ -22,49 +22,102 @@ __status__    = "Prototype"
 
 ###############################################################
 import sys
-import numpy      as     np
-from   ensDA      import PerturbedObs, Potter, EnKF
-from   varDA      import ThreeDvar, FourDvar
-from   lorenz     import L63, plot_L63
-from   matplotlib import pyplot
-from   netCDF4    import Dataset
-from   scipy      import integrate, io
-from   plot_stats import plot_trace, plot_abs_error, plot_abs_error_var
+import numpy         as     np
+from   scipy         import integrate, io
+from   matplotlib    import pyplot
+from   netCDF4       import Dataset
+from   module_Lorenz import *
+from   module_DA     import *
+from   module_IO     import *
+from   plot_stats    import *
 ###############################################################
 
 ###############################################################
-global Ndof, par, lab
+global model
 global Q, H, R
-global nassim, ntimes, dt
-global Eupdate, Nens, infl, infl_fac
-global Vupdate, maxiter, alpha, cg
-global hybrid_wght
+global DA, ensDA, varDA
+global diag_file
+global restart
 
-# settings for Lorenz 63
-Ndof = 3
-par  = np.array([10.0, 28.0, 8.0/3.0])
-lab  = ['x', 'y', 'z']
+model      = type('', (), {})              # model Class
+model.Name = 'L63'                         # model name
+model.Ndof = 3                             # model degrees of freedom
+model.Par  = [10.0, 28.0, 8.0/3.0]         # model parameters F, dF
+model.dt   = 1.0e-4                        # model time-step
 
-Q         = np.eye(Ndof)*1e-3   # model error variance (covariance model is white for now)
-H         = np.eye(Ndof)        # obs operator ( eye(3) gives identity obs )
-R         = np.eye(Ndof)*1e-2   # observation error covariance
+Q = np.eye(model.Ndof)*0.0      # model error variance (covariance model is white for now)
+H = np.eye(model.Ndof)          # obs operator ( eye(Ndof) gives identity obs )
+R = np.eye(model.Ndof)*(2.0)    # observation error covariance
 
-nassim    = 160                 # no. of assimilation cycles
-ntimes    = 0.25                # do assimilation every ntimes non-dimensional time units
-dt        = 0.01                # time-step
+DA             = type('', (), {}) # data assimilation Class
+DA.nassim      = 200              # no. of assimilation cycles
+DA.ntimes      = 0.25             # do assimilation every ntimes non-dimensional time units
+DA.t0          = 0.0              # initial time
+DA.do_hybrid   = True             # True= run hybrid (varDA + ensDA) mode, False= run ensDA mode
+DA.hybrid_wght = 0.5              # weight for hybrid (0.0= Bstatic; 1.0= Bensemble)
+DA.hybrid_rcnt = True             # True= re-center ensemble about varDA, False= free ensDA
 
-Eupdate  = 3                    # ens. DA method (1= Perturbed Obs; 2= Potter; 3= EnKF)
-Nens     = 50                   # number of ensemble members
-infl     = 1                    # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
-                                # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
-infl_fac = 1.01                 # Depends on inflation method (see values in [] above)
+ensDA              = type('', (), {})  # ensemble data assimilation Class
+ensDA.inflation    = type('', (), {})  # inflation Class
+ensDA.localization = type('', (), {})  # localization Class
+ensDA.update                  = 2      # ensemble-based DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
+ensDA.Nens                    = 100    # number of ensemble members
+ensDA.inflation.infl_meth     = 1      # inflation (1= Multiplicative [1.01], 2= Additive [0.01],
+                                       # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0], 5= Adaptive)
+ensDA.inflation.infl_fac      = 1.1    # Depends on inflation method (see values in [] above)
+ensDA.localization.localize   = True   # do localization
+ensDA.localization.cov_cutoff = 1.0    # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
 
-Vupdate = 1                     # var. DA method (1= 3Dvar; 2= 4Dvar)
-maxiter = 100                   # maximum iterations
-alpha   = 4e-3                  # size of step in direction of normalized J
-cg      = True                  # True = Use conjugate gradient; False = Perform line search
+varDA                      = type('', (), {}) # variational data assimilation Class
+varDA.minimization         = type('', (), {}) # minimization Class
+varDA.update               = 1                # variational-based DA method (1 = 3Dvar; 2= 4Dvar)
+varDA.minimization.maxiter = 1000             # maximum iterations for minimization
+varDA.minimization.alpha   = 3e-3             # size of step in direction of normalized J
+varDA.minimization.cg      = True             # True = Use conjugate gradient; False = Perform line search
+varDA.minimization.tol     = 1e-3             # tolerance to end the variational minimization iteration
 
-hybrid_wght = 0.0               # weight for hybrid (0= varDA; 1= ensDA)
+if ( (varDA.update == 2) or (varDA.update == 4) ): fdvar = True
+else:                                              fdvar = False
+
+if ( fdvar ):
+    varDA.fdvar                = type('',(),{}) # 4DVar class
+    varDA.fdvar.maxouter       = 1              # no. of outer loops for 4DVar
+    varDA.fdvar.window         = 0.025          # length of the 4Dvar assimilation window
+    varDA.fdvar.offset         = 0.5            # time offset: forecast from analysis to background time
+    varDA.fdvar.nobstimes      = 2              # no. of evenly spaced obs. times in the window
+
+# name and attributes of/in the output diagnostic file
+diag_file            = type('', (), {})  # diagnostic file Class
+diag_file.filename   = model.Name + '_hybDA_diag.nc4'
+diag_file.attributes = {'F'           : str(model.Par[0]),
+                        'sigma'       : str(model.Par[1]),
+                        'rho'         : str(model.Par[1]),
+                        'beta'        : str(model.Par[2]),
+                        'dt'          : str(model.dt),
+                        'ntimes'      : str(DA.ntimes),
+                        'do_hybrid'   : str(int(DA.do_hybrid)),
+                        'hybrid_wght' : str(DA.hybrid_wght),
+                        'hybrid_rcnt' : str(int(DA.hybrid_rcnt)),
+                        'Eupdate'     : str(ensDA.update),
+                        'infl_meth'   : str(ensDA.inflation.infl_meth),
+                        'infl_fac'    : str(ensDA.inflation.infl_fac),
+                        'localize'    : str(int(ensDA.localization.localize)),
+                        'cov_cutoff'  : str(ensDA.localization.cov_cutoff),
+                        'Vupdate'     : str(varDA.update),
+                        'maxiter'     : str(varDA.minimization.maxiter),
+                        'alpha'       : str(varDA.minimization.alpha),
+                        'cg'          : str(int(varDA.minimization.cg)),
+                        'tol'         : str(varDA.minimization.tol)}
+if ( fdvar ):
+    diag_file.attributes.update({'offset'    : str(varDA.fdvar.offset),
+                                 'window'    : str(varDA.fdvar.window),
+                                 'nobstimes' : str(int(varDA.fdvar.nobstimes)),
+                                 'maxouter'  : str(int(varDA.fdvar.maxouter))})
+
+# restart conditions
+restart          = type('', (), {})  # restart initial conditions Class
+restart.time     = None              # None == default | -N...-1 0 1...N
+restart.filename = ''
 ###############################################################
 
 ###############################################################
@@ -73,204 +126,127 @@ def main():
     # insure the same sequence of random numbers EVERY TIME
     np.random.seed(0)
 
-    # get a state on the attractor
-    print 'running onto the attractor ...'
-    x0 = np.array([10.0, 20.0, 30.0]) # initial conditions
-    ts = np.arange(0.0,100.0,2*dt)    # how long to run on the attractor
-    xs = integrate.odeint(L63, x0, ts, (par,0.0))
+    # check for valid ensemble and variational data assimilation options
+    check_DA(DA)
+    check_ensDA(ensDA)
+    check_varDA(varDA)
 
-    # IC for truth taken from last time:
-    xt = xs[-1,:].copy()
+    # get IC's
+    [xt, Xa] = get_IC(model, restart, Nens=ensDA.Nens)
+    Xb = Xa.copy()
+    if ( DA.do_hybrid ):
+        xac = np.mean(Xa,axis=1)
+        xbc = np.mean(Xb,axis=1)
+        if ( fdvar ): Xbb = Xa.copy()
 
-    # initial conditions from Miller et al., 1994
-    #xs = np.array([1.508870, -1.531271, 25.46091])
-    #xt = np.array([1.508870, -1.531271, 25.46091])
+    if ( DA.do_hybrid ):
+        print 'load climatological covariance ...'
+        nc = Dataset(model.Name + '_climo_B.nc4','r')
+        Bs = nc.variables['B'][:]
+        nc.close()
 
-    # Make a copy of truth for plotting later
-    #truth = xs.copy()
-    truth = xt.copy()
+    if ( fdvar ):
+        # check length of assimilation window
+        if ( varDA.fdvar.offset * DA.ntimes + varDA.fdvar.window - DA.ntimes < 0.0 ):
+            print '4DVar assimilation window is too short'
+            sys.exit(2)
 
-    # populate initial ensemble analysis by perturbing true state
-    [tmp, Xa] = np.meshgrid(np.ones(Nens),xt)
-    pert = 1e-1 * np.random.randn(Ndof,Nens)
-    Xa  = Xa + pert
-    xam = np.mean(Xa,axis=1)
-    Xb  = Xa.copy()
-    xbm = xam.copy()
+        # time index from analysis to ... background, next analysis, end of window, window
+        varDA.fdvar.tb = np.int(np.rint(varDA.fdvar.offset * DA.ntimes/model.dt))
+        varDA.fdvar.ta = np.int(np.rint(DA.ntimes/model.dt))
+        varDA.fdvar.tf = np.int(np.rint((varDA.fdvar.offset * DA.ntimes + varDA.fdvar.window)/model.dt))
+        varDA.fdvar.tw = varDA.fdvar.tf - varDA.fdvar.tb
 
-    print 'load static climatological covariance ...'
-    nc = Dataset('L63_climo_B.nc4','r')
-    Bs = nc.variables['B'][:]
-    nc.close()
+        # time vector from analysis to ... background, next analysis, end of window, window
+        varDA.fdvar.tbkgd = np.linspace(DA.t0,varDA.fdvar.tb,   varDA.fdvar.tb   +1) * model.dt
+        varDA.fdvar.tanal = np.linspace(DA.t0,varDA.fdvar.ta-varDA.fdvar.tb,varDA.fdvar.ta-varDA.fdvar.tb+1) * model.dt
+        varDA.fdvar.tfore = np.linspace(DA.t0,varDA.fdvar.tf,   varDA.fdvar.tf   +1) * model.dt
+        varDA.fdvar.twind = np.linspace(DA.t0,varDA.fdvar.tw,   varDA.fdvar.tw   +1) * model.dt
+
+        # time vector, interval, indices of observations
+        varDA.fdvar.twind_obsInterval = varDA.fdvar.tw / (varDA.fdvar.nobstimes-1)
+        varDA.fdvar.twind_obsTimes    = varDA.fdvar.twind[::varDA.fdvar.twind_obsInterval]
+        varDA.fdvar.twind_obsIndex    = np.array(np.rint(varDA.fdvar.twind_obsTimes / model.dt), dtype=int)
+
+    # time between assimilations
+    DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))
+
+    # create diagnostic file
+    create_diag(diag_file, model.Ndof, nens=ensDA.Nens, hybrid=DA.do_hybrid)
+    if ( DA.do_hybrid ):
+        write_diag(diag_file.filename, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), central_prior=xbc, central_posterior=xac, evratio=np.NaN, niters=np.NaN)
+    else:
+        write_diag(diag_file.filename, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), evratio=np.NaN)
 
     print 'Cycling ON the attractor ...'
 
-    # initialize arrays for statistics before cycling
-    xbe  = np.zeros((Ndof,nassim))
-    xae  = np.zeros((Ndof,nassim))
-    xye  = np.zeros((Ndof,nassim))
-    xbev = np.zeros((Ndof,nassim))
-    xaev = np.zeros((Ndof,nassim))
+    for k in range(0, DA.nassim):
 
-    hist_ver = np.zeros((Ndof,nassim))
-    hist_obs = np.zeros((Ndof,nassim))
-    hist_xbm = np.zeros((Ndof,nassim))
-    hist_xam = np.zeros((Ndof,nassim))
-
-    ts = np.arange(0,ntimes,dt)     # time between assimilations
-
-    for k in range(0, nassim):
-
-        print '========== assimilation time = %d ========== ' % (k+1)
+        print '========== assimilation time = %5d ========== ' % (k+1)
 
         # advance truth with the full nonlinear model
-        xs = integrate.odeint(L63, xt, ts, (par,0.0))
-        truth = np.vstack([truth, xs[1:,:]])
-        xt = xs[-1,:].copy()
+        if ( fdvar ):
+            exec('xs = integrate.odeint(%s, xt, varDA.fdvar.tfore, (model.Par,0.0))' % (model.Name))
+            xt = xs[varDA.fdvar.ta,:].copy()
+        else:
+            exec('xs = integrate.odeint(%s, xt, DA.tanal, (model.Par,0.0))' % (model.Name))
+            xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values
-        y   = np.dot(H,xt) + np.diag(np.diag(np.random.randn(Ndof))*np.sqrt(R))
+        y   = np.dot(H,xt) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
         ver = xt.copy()
+        if ( fdvar ):
+            ywin = np.zeros((varDA.fdvar.nobstimes,model.Ndof))
+            for i in range(0,varDA.fdvar.nobstimes):
+                ywin[i,:] = np.dot(H,xs[varDA.fdvar.twind_obsIndex[i]+varDA.fdvar.tb,:]) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
+            oind = np.where(varDA.fdvar.twind_obsIndex + varDA.fdvar.tb == varDA.fdvar.ta)
+            if ( len(oind[0]) != 0 ): y = ywin[oind[0][0],:].copy()
 
         # advance analysis ensemble with the full nonlinear model
-        for n in range(0,Nens):
-            xa = Xa[:,n].copy()
-            xs = integrate.odeint(L63, xa, ts, (par,0.0))
-            Xb[:,n] = xs[-1,:].copy()
+        for m in range(0,ensDA.Nens):
+            xa = Xa[:,m].copy()
+            exec('xs = integrate.odeint(%s, xa, DA.tanal, (model.Par,0.0))' % (model.Name))
+            Xb[:,m] = xs[-1,:].copy()
+            if ( (DA.do_hybrid) and (fdvar) ): Xbb[:,m] = xs[varDA.fdvar.tb,:].copy()
 
-        # advance central analysis with the full nonlinear model
-        xs = integrate.odeint(L63, xam, ts, (par,0.0))
-        xbc = xs[-1,:].copy()
-
-        # compute background ensemble mean and perturbations
-        xbm = np.mean(Xb,axis=1)
-        Xbp = np.transpose(np.transpose(Xb) - xbm)
-
-        # compute background error covariance matrix
-#        if ( infl ): # square-root filter
-#            Xbp = infl_fac * Xbp
-#            # additive zero-mean white model error
-#            Xbp = Xbp + np.dot(Q,np.random.randn(Ndof,Nens))
-#        B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1) + Q
-        B = np.dot(Xbp,np.transpose(Xbp)) / (Nens - 1)
+        # compute background error covariance from the ensemble
+        if ( DA.do_hybrid ):
+            if ( fdvar ): Be = np.cov(Xbb, ddof=1)
+            else:         Be = np.cov(Xb,  ddof=1)
 
         # update ensemble (mean and perturbations)
-        [xam, Xap, Xa, A] = update_ensDA(xbm, Xbp, Xb, B, y, R, H)
+        Xa, evratio = update_ensDA(Xb, y, R, H, ensDA)
 
-        # blend covariance from flow-dependent (ensemble) and static (climatology)
-        Bc = (1.0 - hybrid_wght) * Bs + hybrid_wght * B
+        if ( DA.do_hybrid ):
+            # advance central analysis with the full nonlinear model
+            exec('xs = integrate.odeint(%s, xac, DA.tanal, (model.Par,0.0))' % (model.Name))
+            xbc = xs[-1,:].copy()
+            if ( fdvar ): xbcwin = xs[varDA.fdvar.tb,:].copy()
 
-        # update the central trajectory
-        [xac, Ac] = update_varDA(xbc, Bc, y, R, H)
+            # blend covariance from flow-dependent (ensemble) and static (climatology)
+            Bc = (1.0 - DA.hybrid_wght) * Bs + DA.hybrid_wght * Be
 
-        # replace ensemble mean analysis with central analysis
-        xam = xac.copy()
-        Xa = np.transpose(xam + np.transpose(Xap))
+            # update the central background
+            if ( fdvar ): xacwin, Ac, niters = update_varDA(xbcwin, Bc, ywin, R, H, varDA, model=model)
+            else:         xac,    Ac, niters = update_varDA(xbc,    Bc, y,    R, H, varDA, model=model)
 
-        # error statistics for ensemble mean
-        xbe[:,k]  = xbm - ver
-        xae[:,k]  = xam - ver
-        xye[:,k]  = y   - ver
-        xbev[:,k] = np.diag(B)
-        xaev[:,k] = np.diag(A)
+            # if doing 4Dvar, step to the next assimilation time from the beginning of assimilation window
+            if ( fdvar ):
+                exec('xs = integrate.odeint(%s, xacwin, varDA.fdvar.tanal, (model.Par,0.0))' % (model.Name))
+                xac = xs[-1,:].copy()
 
-        # history (for plotting)
-        hist_ver[:,k] = ver
-        hist_obs[:,k] = y
-        hist_xbm[:,k] = xbm
-        hist_xam[:,k] = xam
-
-        # check for filter divergence
-        if ( np.abs(xae[1,k]) > 10 and np.abs(xae[2,k]) > 10 ):
-            print 'filter divergence'
-            sys.exit(2)
-
-    # make some plots
-    plot_L63(truth,segment=xs)
-    plot_trace(hist_obs, hist_ver, hist_xbm, hist_xam, label=lab, N=Ndof)
-    plot_abs_error(xbe,xae,label=lab,N=Ndof)
-    plot_abs_error_var(xbev,xaev,label=lab,N=Ndof)
-
-    pyplot.show()
-###############################################################
-
-###############################################################
-def update_ensDA(xbm, Xbp, Xb, B, y, R, H):
-
-    Nobs = np.shape(y)[0]
-
-    if ( Eupdate == 1 ):   # update using perturbed observations
-        Xa  = PerturbedObs(Xb, B, y, H, R)
-        xam = np.mean(Xa,axis=1)
-        [tmp, Xam] = np.meshgrid(np.ones(Nens),xam)
-        Xap = Xa - Xam
-
-    elif ( Eupdate == 2 ): # update using the Potter algorithm
-        [xam, Xap] = Potter(xbm, Xbp, y, H, R)
-        [tmp, Xam] = np.meshgrid(np.ones(Nens),xam)
-        Xa = Xam + Xap
-
-    elif ( Eupdate == 3 ): # update using the EnKF algorithm
-        loc = np.ones((Nobs,Ndof)) # this does no localization
-        [xam, Xap] = EnKF(xbm, Xbp, y, H, R, loc)
-        [tmp, Xam] = np.meshgrid(np.ones(Nens),xam)
-        Xa = Xam + Xap
-
-    else:
-        print 'invalid ensemble update algorithm ...'
-        sys.exit(2)
-
-    # Must inflate if using EnKF flavors
-    if ( Eupdate > 1 ):
-
-        if   ( infl == 1 ): # multiplicative inflation
-            Xap = infl_fac * Xap
-
-        elif ( infl == 2 ): # additive zero-mean white model error
-            Xap = Xap + infl_fac * np.random.randn(Ndof,Nens)
-
-        elif ( infl == 3 ): # covariance relaxation (Zhang, Snyder)
-            Xap = Xbp * infl_fac + Xap * (1 - infl_fac)
-
-        elif ( infl == 4 ): # posterior spread restoration (Whitaker & Hammill)
-            xbs = np.std(Xb,axis=1)
-            xas = np.std(Xa,axis=1)
-            for dof in np.arange(0,Ndof):
-                Xap[dof,:] =  np.sqrt((infl_fac * (xbs[dof] - xas[dof])/xas[dof]) + 1) * Xap[dof,:]
-
-        elif ( infl == 5 ): # adaptive (Anderson)
-            print 'adaptive inflation is not implemented yet'
-            sys.exit(2)
-
+        # write diagnostics to disk before recentering
+        if ( DA.do_hybrid ):
+            write_diag(diag_file.filename, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, H, np.diag(R), central_prior=xbc, central_posterior=xac, evratio=evratio, niters=niters)
         else:
-            print 'invalid inflation algorithm ...'
-            sys.exit(2)
+            write_diag(diag_file.filename, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, H, np.diag(R), evratio=evratio)
 
-        # add inflated perturbation back to analysis mean
-        Xa = Xam + Xap
+        # recenter ensemble about central analysis
+        if ( DA.do_hybrid ):
+            if ( DA.hybrid_rcnt ): Xa = np.transpose(np.transpose(Xa) - np.mean(Xa,axis=1) + xac)
 
-    # compute analysis error covariance matrix
-    A = np.dot(Xap,np.transpose(Xap)) / (Nens - 1)
-
-    print 'trace of B and A: %7.4f  %7.4f' % ( np.trace(B), np.trace(A) )
-
-    return xam, Xap, Xa, A
-###############################################################
-
-###############################################################
-def update_varDA(xb, B, y, R, H):
-
-    if ( Vupdate == 1 ):
-        [xa, A] = ThreeDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=True)
-
-    elif ( Vupdate == 2 ):
-        [xa, A] = FourDvar(xb, B, y, R, H, maxiter=maxiter, alpha=alpha, cg=True)
-
-    else:
-        print 'invalid variational update algorithm ...'
-        sys.exit(2)
-
-    return xa, A
+    print '... all done ...'
+    sys.exit(0)
 ###############################################################
 
 ###############################################################

@@ -37,9 +37,10 @@ def main():
 
     # some more arguments, currently hard-coded
     save_figures = False
-    model  = 'L96'
-    yscale = 'linear'
-    yFix   = None
+    mFix         = 'L96'         # model for which RMSE plots to be drawn
+    yscale       = 'linear'      # y-axis of RMSE plots (linear/semilog)
+    yFix         = None          # fix the y-axis of RMSE plots
+    fOrient      = 'portrait'    # figure orientation (landscape/portrait)
 
     if ( not measure ): measure = 'truth'
 
@@ -59,6 +60,10 @@ def main():
 
         ntimes = nc.ntimes
         dt     = nc.dt
+
+        # in future, all nc4 files will have 'model' global attribute
+        if ( 'model' in nc.ncattrs() ): model = nc.model
+        else:                           model = mFix
 
         Vupdate = nc.Vupdate
 
@@ -161,7 +166,7 @@ def main():
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_%dDhybDA_RMSE_EnKF_Prior.eps' % (model, varDA),dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_%dDhybDA_RMSE_EnKF_Prior.eps' % (model, varDA),dpi=300,orientation=fOrient,format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -195,7 +200,7 @@ def main():
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_%dDhybDA_RMSE_%dDVar_Prior.eps' % (model, varDA, varDA),dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_%dDhybDA_RMSE_%dDVar_Prior.eps' % (model, varDA, varDA),dpi=300,orientation=fOrient,format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -229,7 +234,7 @@ def main():
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_%dDhybDA_RMSE_EnKF_Posterior.eps' % (model, varDA),dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_%dDhybDA_RMSE_EnKF_Posterior.eps' % (model, varDA),dpi=300,orientation=fOrient,format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -263,7 +268,7 @@ def main():
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_%dDhybDA_RMSE_%dDVar_Posterior.eps' % (model, varDA, varDA),dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_%dDhybDA_RMSE_%dDVar_Posterior.eps' % (model, varDA, varDA),dpi=300,orientation=fOrient,format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -284,7 +289,7 @@ def main():
     pyplot.title('RMSE - EnKF',fontweight='bold',fontsize=14)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_%dDhybDA_RMSE_EnKF.eps' % (model, varDA),dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_%dDhybDA_RMSE_EnKF.eps' % (model, varDA),dpi=300,orientation=fOrient,format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -302,7 +307,7 @@ def main():
     pyplot.title('RMSE - %dDVar' % (varDA),fontweight='bold',fontsize=14)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_%dDhybDA_RMSE_%dDVar.eps' % (model, varDA, varDA),dpi=300,orientation='landscape',format='eps')
+        fig.savefig('%s_%dDhybDA_RMSE_%dDVar.eps' % (model, varDA, varDA),dpi=300,orientation=fOrient,format='eps')
     #-----------------------------------------------------------
 
     if not save_figures: pyplot.show()

@@ -75,7 +75,8 @@ if ( fdvar ):
 
 diag_file            = type('', (), {})  # diagnostic file Class
 diag_file.filename   = model.Name + '_varDA_diag.nc4'
-diag_file.attributes = {'F'       : str(model.Par[0]),
+diag_file.attributes = {'model'   : str(model.Name),
+                        'F'       : str(model.Par[0]),
                         'dF'      : str(model.Par[1]),
                         'ntimes'  : str(DA.ntimes),
                         'dt'      : str(model.dt),

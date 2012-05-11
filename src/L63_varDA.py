@@ -63,13 +63,8 @@ varDA.minimization.alpha   = 4e-4           # size of step in direction of norma
 varDA.minimization.cg      = True           # True = Use conjugate gradient; False = Perform line search
 varDA.minimization.tol     = 1e-4           # tolerance to end the variational minimization iteration
 
-if ( (varDA.update == 2) or (varDA.update == 4) ):
-    varDA.name = '4D'
-    fdvar      = True
-else:
-    varDA.name = '3D'
-    fdvar      = False
-
+if ( (varDA.update == 2) or (varDA.update == 4) ): fdvar = True
+else:                                              fdvar = False
 
 if ( fdvar ):
     varDA.fdvar                = type('',(),{}) # 4DVar class
@@ -79,8 +74,9 @@ if ( fdvar ):
     varDA.fdvar.nobstimes      = 2              # no. of evenly spaced obs. times in the window
 
 diag_file            = type('', (), {})  # diagnostic file Class
-diag_file.filename   = model.Name + '_%svarDA_diag.nc4' % (varDA.name)
-diag_file.attributes = {'sigma'   : str(model.Par[0]),
+diag_file.filename   = model.Name + '_varDA_diag.nc4'
+diag_file.attributes = {'model'   : str(model.Name),
+                        'sigma'   : str(model.Par[0]),
                         'rho'     : str(model.Par[1]),
                         'beta'    : str(model.Par[2]),
                         'ntimes'  : str(DA.ntimes),

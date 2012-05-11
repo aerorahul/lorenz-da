@@ -89,7 +89,7 @@ if ( fdvar ):
 # name and attributes of/in the output diagnostic file
 diag_file            = type('', (), {})  # diagnostic file Class
 diag_file.filename   = model.Name + '_hybDA_diag.nc4'
-diag_file.attributes = {'F'           : str(model.Par[0]),
+diag_file.attributes = {'model'       : str(model.Name),
                         'sigma'       : str(model.Par[1]),
                         'rho'         : str(model.Par[1]),
                         'beta'        : str(model.Par[2]),

@@ -68,11 +68,12 @@ def main():
     width = 0.45
     color_adj = 'c'
     color_ens = 'm'
+    fOrient = 'portrait'
 
     fig1 = pyplot.figure()
     pyplot.hold(True)
-    r1 = pyplot.bar(index,       adJ[sOI:eOI], width, color=color_adj, edgecolor=color_adj)
-    r2 = pyplot.bar(index+width, edJ[sOI:eOI], width, color=color_ens, edgecolor=color_ens)
+    r1 = pyplot.bar(index,       adJ[sOI:eOI], width, color=color_adj, edgecolor=color_adj, linewidth=0.0)
+    r2 = pyplot.bar(index+width, edJ[sOI:eOI], width, color=color_ens, edgecolor=color_ens, linewidth=0.0)
     pyplot.plot(np.zeros(eOI-sOI+1),'k-')
     stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJ[sOI:eOI]), np.std(adJ[sOI:eOI],ddof=1))
     stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJ[sOI:eOI]), np.std(edJ[sOI:eOI],ddof=1))
@@ -89,8 +90,8 @@ def main():
 
     fig2 = pyplot.figure()
     pyplot.hold(True)
-    r1 = pyplot.bar(index,       adJa[sOI:eOI], width, color=color_adj, edgecolor=color_adj)
-    r2 = pyplot.bar(index+width, edJa[sOI:eOI], width, color=color_ens, edgecolor=color_ens)
+    r1 = pyplot.bar(index,       adJa[sOI:eOI], width, color=color_adj, edgecolor=color_adj, linewidth=0.0)
+    r2 = pyplot.bar(index+width, edJa[sOI:eOI], width, color=color_ens, edgecolor=color_ens, linewidth=0.0)
     pyplot.plot(np.zeros(eOI-sOI+1),'k-')
     stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJa[sOI:eOI]), np.std(adJa[sOI:eOI],ddof=1))
     stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJa[sOI:eOI]), np.std(edJa[sOI:eOI],ddof=1))
@@ -107,8 +108,8 @@ def main():
 
     fig3 = pyplot.figure()
     pyplot.hold(True)
-    r1 = pyplot.bar(index,       adJa[sOI:eOI], width, color=color_adj, edgecolor=color_adj)
-    r2 = pyplot.bar(index+width, edJa[sOI:eOI], width, color=color_ens, edgecolor=color_ens)
+    r1 = pyplot.bar(index,       adJa[sOI:eOI], width, color=color_adj, edgecolor=color_adj, linewidth=0.0)
+    r2 = pyplot.bar(index+width, edJa[sOI:eOI], width, color=color_ens, edgecolor=color_ens, linewidth=0.0)
     pyplot.plot(np.zeros(eOI-sOI+1),'k-')
     stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJb[sOI:eOI]), np.std(adJb[sOI:eOI],ddof=1))
     stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJb[sOI:eOI]), np.std(edJb[sOI:eOI],ddof=1))
@@ -124,9 +125,10 @@ def main():
     pyplot.hold(False)
 
     if ( save_fig ):
-        fig1.savefig(fname_fig + '-dJ.eps', dpi=300,orientation='landscape',format='eps')
-        fig2.savefig(fname_fig + '-dJa.eps',dpi=300,orientation='landscape',format='eps')
-        fig3.savefig(fname_fig + '-dJb.eps',dpi=300,orientation='landscape',format='eps')
+        fig1.savefig(fname_fig + '-dJ.eps', dpi=300,orientation=fOrient,format='eps')
+        fig2.savefig(fname_fig + '-dJa.eps',dpi=300,orientation=fOrient,format='eps')
+        fig3.savefig(fname_fig + '-dJb.eps',dpi=300,orientation=fOrient,format='eps')
+        print 'all done ...'
     else:
         pyplot.show()
 ###############################################################

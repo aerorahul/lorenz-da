@@ -319,3 +319,153 @@ def get_input_arguments():
 
 # }}}
 ###############################################################
+
+###############################################################
+def create_truth(tfile, ndof, nobs=None):
+# {{{
+    '''
+    create a truth file for writing truth and observations
+
+    create_truth(tfile, ndof, nobs=None)
+
+    tfile - truth file Class
+     ndof - number of degrees of freedom in the model
+     nobs - number of observations (None)
+    '''
+
+    source = 'create_truth'
+
+    if ( nobs == None ): nobs = ndof
+
+    try:
+
+        nc  = Dataset(tfile.filename, mode='w', clobber=True, format='NETCDF4')
+
+        Dim = nc.createDimension('ntime',size=None)
+        Dim = nc.createDimension('ndof', size=ndof)
+        Dim = nc.createDimension('nobs', size=nobs)
+
+        Var = nc.createVariable('truth',       'f8',('ntime','ndof',))
+        Var = nc.createVariable('obs',         'f8',('ntime','ndof',))
+        Var = nc.createVariable('obs_operator','f8',('ntime','nobs','ndof',))
+        Var = nc.createVariable('obs_err_var', 'f8',('ntime','nobs',))
+
+        for (key,value) in tfile.attributes.items():
+            exec( 'nc.%s = %s' % (key,value) )
+
+        nc.close()
+
+    except Exception as Instance:
+
+        print 'Exception occured in %s of %s' % (source, module)
+        print 'Exception occured during creating  %s' % (tfile.filename)
+        print type(Instance)
+        print Instance.args
+        print Instance
+        sys.exit(1)
+
+    return
+# }}}
+###############################################################
+
+###############################################################
+def write_truth(tname, time, truth, obs, obs_operator, obs_err_var):
+# {{{
+    '''
+    write the truth and observations to the output file
+
+    write_truth(tname, time, truth, obs, obs_operator, obs_err_var)
+
+              tname - name of the output file, must already exist
+               time - time index to write diagnostics for
+              truth - truth
+                obs - observations
+       obs_operator - forward observation operator
+        obs_err_var - observation error variance
+    '''
+
+    source = 'write_truth'
+
+    if not os.path.isfile(tname):
+        print 'file does not exist ' + tname
+        sys.exit(2)
+
+    try:
+
+        nc = Dataset(tname, mode='a', clobber=True, format='NETCDF4')
+
+        nc.variables['truth'][       time,:] =        truth.copy()
+        nc.variables['obs'][         time,:] =          obs.copy()
+        nc.variables['obs_operator'][time,:] = obs_operator.copy()
+        nc.variables['obs_err_var'][ time,:] =  obs_err_var.copy()
+
+        nc.close()
+
+    except Exception as Instance:
+
+        print 'Exception occured in %s of %s' % (source, module)
+        print 'Exception occured during writing to %s' % (fname)
+        print type(Instance)
+        print Instance.args
+        print Instance
+        sys.exit(1)
+
+    return
+# }}}
+###############################################################
+
+###############################################################
+def read_truth(fname, time, end_time=None):
+# {{{
+    '''
+    read the truth and observations from an output file given name and time index
+
+    read_truth(fname, time, end_time=None)
+
+              fname - name of the file to read from, must already exist
+               time - time index to read diagnostics
+           end_time - return chunk of data from time to end_time (None)
+              truth - truth
+                obs - observations
+       obs_operator - forward observation operator
+        obs_err_var - observation error variance
+    '''
+
+    source = 'read_truth'
+
+    if not os.path.isfile(fname):
+        print 'file does not exist ' + fname
+        sys.exit(2)
+
+    if ( end_time == None ): end_time = time + 1
+
+    try:
+
+        nc = Dataset(fname, mode='r', format='NETCDF4')
+
+        truth        = np.squeeze(nc.variables['truth'][time:end_time,])
+        obs          = np.squeeze(nc.variables['obs'][time:end_time,])
+        obs_operator = np.squeeze(nc.variables['obs_operator'][time:end_time,])
+        tmp          = np.squeeze(nc.variables['obs_err_var'][time:end_time,])
+
+        if ( end_time - time == 1 ):
+            obs_err_var = np.diag(tmp)
+        else:
+            obs_err_var = np.zeros((np.shape(tmp)[0],np.shape(tmp)[1],np.shape(tmp)[1]))
+            for k in range(0, np.shape(tmp)[0]):
+                obs_err_var[k,] = np.diag(tmp[k,])
+
+        nc.close()
+
+    except Exception as Instance:
+
+        print 'Exception occured in %s of %s' % (source, module)
+        print 'Exception occured during reading of %s' % (fname)
+        print type(Instance)
+        print Instance.args
+        print Instance
+        sys.exit(1)
+
+    return truth, obs, obs_operator, obs_err_var
+# }}}
+###############################################################

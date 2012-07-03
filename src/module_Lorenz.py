@@ -245,7 +245,7 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None):
     else:
         fig = pyplot.figure(figNum)
     pyplot.clf()
-    mean_dist = 35
+    mean_dist = 35.0
     ax = fig.add_axes([0.1, 0.1, 0.8, 0.8], polar=True)
     theta = np.linspace(0.0,2*np.pi,N+1)
     pyplot.hold(True)
@@ -267,7 +267,9 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None):
         ax.plot(theta, tmp+mean_dist, 'k-', linewidth=2)
     if ( obs != None ):
         tmp = np.zeros(N+1) ; tmp[1:] = obs ; tmp[0] = obs[-1]
-        ax.plot(theta, tmp+mean_dist, 'yo')
+        tmp[tmp != 0.0 ] += mean_dist
+        tmp[tmp == 0.0 ]  = np.NaN
+        ax.plot(theta, tmp, 'yo', markeredgecolor='y')
 
     ax.set_rmin(0)
     ax.set_rmax(mean_dist+25)

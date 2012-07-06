@@ -45,9 +45,20 @@ model.Ndof = 40                 # model degrees of freedom
 model.Par  = [8.0, 0.4]         # model parameters F, dF
 model.dt   = 1.0e-4             # model time-step
 
-Q = np.eye(model.Ndof)*0.0      # model error variance (covariance model is white for now)
-H = np.eye(model.Ndof)          # obs operator ( eye(Ndof) gives identity obs )
-R = np.eye(model.Ndof)*(1.0**2) # observation error covariance
+Q = np.diag(np.ones(model.Ndof)*0.0)      # model error variance (covariance model is white for now)
+
+H = np.ones(model.Ndof)                   # obs operator ( eye(Ndof) gives identity obs )
+H[6:10]  =  0.0
+H[13:17] =  0.0
+H[17:21] =  0.0
+H[25:29] =  0.0
+H = np.diag(H) # 1.0 ... 0.0 ... 1.0 ... 0.0 ... 1.0 ... 0.0 ... 1.0
+
+R = np.ones(model.Ndof)*(1.0**2)          # observation error covariance
+R[8:16]  = np.sqrt(2.0)
+R[16:24] = np.sqrt(3.0)
+R[24:32] = np.sqrt(2.0)
+R = np.diag(R) # 1.000 ... 1.414 ... 1.732 ... 1.414 ... 1.000
 
 DA        = type('', (), {})    # data assimilation Class
 DA.nassim = 2000                # no. of assimilation cycles
@@ -68,8 +79,7 @@ ensDA.localization.cov_cutoff = 1.0    # normalized covariance cutoff = cutoff /
 # name and attributes of/in the output diagnostic file
 diag_file            = type('', (), {})  # diagnostic file Class
 diag_file.filename   = model.Name + '_ensDA_diag.nc4'
-diag_file.attributes = {'model'       : str(model.Name),
-                        'F'           : str(model.Par[0]),
+diag_file.attributes = {'F'           : str(model.Par[0]),
                         'dF'          : str(model.Par[1]),
                         'ntimes'      : str(DA.ntimes),
                         'dt'          : str(model.dt),
@@ -117,7 +127,7 @@ def main():
         xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values
-        y   = np.dot(H,xt) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
+        y   = np.dot(H,xt + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
         ver = xt.copy()
 
         # advance analysis ensemble with the full nonlinear model

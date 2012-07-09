@@ -45,26 +45,27 @@ model.Ndof = 40              # model degrees of freedom
 model.Par  = [8.0, 0.4]      # model parameters F, dF
 model.dt   = 1.0e-4          # model time-step
 
+DA        = type('',(),{})      # DA class
+DA.nassim = 2000                # no. of assimilation cycles
+DA.ntimes = 0.05                # do assimilation every ntimes non-dimensional time units
+DA.t0     = 0.0                 # initial time
+DA.Nobs   = 10                  # no. of obs to assimilate ( DA.Nobs <= model.Ndof)
+
 A = np.diag(np.ones(model.Ndof))          # initial analysis error covariance
 Q = np.diag(np.ones(model.Ndof)*0.0)      # model error covariance ( covariance model is white for now)
 
 H = np.ones(model.Ndof)                   # obs operator ( eye(Ndof) gives identity obs )
-H[6:10]  =  0.0
-H[13:17] =  0.0
-H[17:21] =  0.0
-H[25:29] =  0.0
-H = np.diag(H) # 1.0 ... 0.0 ... 1.0 ... 0.0 ... 1.0 ... 0.0 ... 1.0
+if ( DA.Nobs != model.Ndof ):
+    index = np.arange(model.Ndof)
+    np.random.shuffle(index)
+    H[index[:-DA.Nobs]] = np.NaN
+H = np.diag(H)
 
 R = np.ones(model.Ndof)*(1.0**2)          # observation error covariance
 R[8:16]  = np.sqrt(2.0)
 R[16:24] = np.sqrt(3.0)
 R[24:32] = np.sqrt(2.0)
 R = np.diag(R) # 1.000 ... 1.414 ... 1.732 ... 1.414 ... 1.000
-
-DA        = type('',(),{})      # DA class
-DA.nassim = 2000                # no. of assimilation cycles
-DA.ntimes = 0.05                # do assimilation every ntimes non-dimensional time units
-DA.t0     = 0.0                 # initial time
 
 varDA                      = type('',(),{}) # VarDA class
 varDA.minimization         = type('',(),{}) # minimization class

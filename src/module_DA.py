@@ -157,10 +157,12 @@ def update_ensDA(Xb, y, R, H, ensDA):
 
     for ob in range(0, Nobs):
 
+        if ( np.isnan(y[ob]) ): continue
+
         ye = np.dot(H[ob,:],temp_ens)
 
         if   ( ensDA.update == 0 ): # no assimilation
-            obs_inc, innov[ob], totvar[ob] = np.zeros(Ndof), 0.0, 0.0
+            obs_inc, innov[ob], totvar[ob] = np.zeros(Ndof), np.NaN, np.NaN
 
         elif ( ensDA.update == 1 ): # update using the EnKF
             obs_inc, innov[ob], totvar[ob] = obs_increment_EnKF(y[ob], R[ob,ob], ye)
@@ -210,7 +212,7 @@ def update_ensDA(Xb, y, R, H, ensDA):
     Xa = np.transpose(np.transpose(Xap) + xam)
 
     # check for filter divergence
-    error_variance_ratio = np.sum(innov**2) / np.sum(totvar)
+    error_variance_ratio = np.nansum(innov**2) / np.nansum(totvar)
     if not ( 0.5 < error_variance_ratio < 2.0 ):
         print 'FILTER DIVERGENCE : ERROR / TOTAL VARIANCE = %f' % (error_variance_ratio)
         #break
@@ -496,6 +498,8 @@ minimization - minimization class
     Binv    = np.linalg.inv(B)
     Rinv    = np.linalg.inv(R)
 
+    valInd  = np.isfinite(y)
+
     while ( np.abs(Jold - J) > minimization.tol ):
 
         if ( niters > minimization.maxiter ):
@@ -515,9 +519,9 @@ minimization - minimization class
         Jb  = 0.5 * np.dot(np.transpose(dx),np.dot(Binv,dx))
         gJb = np.dot(Binv,dx)
 
-        dy  = np.dot(H,x) - y
-        Jy  = 0.5 * np.dot(np.transpose(dy),np.dot(Rinv,dy))
-        gJy = np.dot(np.transpose(H),np.dot(Rinv,dy))
+        dy  = np.dot(H[valInd,:],x) - y[valInd]
+        Jy  = 0.5 * np.dot(np.transpose(dy),np.dot(np.diag(Rinv[valInd,valInd]),dy))
+        gJy = np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),dy))
 
         J  =  Jb +  Jy
         gJ = gJb + gJy
@@ -565,9 +569,11 @@ minimization - minimization class
       niters - number of iterations required for minimizing the cost function
     '''
 
+    valInd  = np.isfinite(y)
+
     # start with zero analysis increment
     dx      = np.zeros(np.shape(xb))
-    d       = y - np.dot(H,xb)
+    d       = y[valInd] - np.dot(H[valInd,:],xb)
     niters  = 0
     Jold    = 1e6
     J       = 0
@@ -590,11 +596,11 @@ minimization - minimization class
         # gJy = H^T R^{-1} [Hdx-d]
 
         Jb = 0.5 * np.dot(np.transpose(dx),np.dot(Binv,dx))
-        Jy = 0.5 * np.dot(np.transpose(np.dot(H,dx)-d),np.dot(Rinv,np.dot(H,dx)-d))
+        Jy = 0.5 * np.dot(np.transpose(np.dot(H[valInd,:],dx)-d),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],dx)-d))
         J = Jb + Jy
 
         gJb = np.dot(Binv,dx)
-        gJy = np.dot(np.transpose(H),np.dot(Rinv,np.dot(H,dx)-d))
+        gJy = np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],dx)-d))
         gJ  = gJb + gJy
 
         if ( niters == 0 ): print 'initial cost = %10.5f' % J

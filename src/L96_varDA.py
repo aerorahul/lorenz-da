@@ -65,7 +65,7 @@ R = np.ones(model.Ndof)*(1.0**2)          # observation error covariance
 R[8:16]  = np.sqrt(2.0)
 R[16:24] = np.sqrt(3.0)
 R[24:32] = np.sqrt(2.0)
-R = np.diag(R) # 1.000 ... 1.414 ... 1.732 ... 1.414 ... 1.000
+R = np.diag(R)
 
 varDA                      = type('',(),{}) # VarDA class
 varDA.minimization         = type('',(),{}) # minimization class
@@ -157,7 +157,7 @@ def main():
 
     # create diagnostic file
     create_diag(diag_file, model.Ndof)
-    write_diag(diag_file.filename, 0, xt, xb, xa, np.dot(H,xt), H, np.diag(R), niters=np.NaN)
+    write_diag(diag_file.filename, 0, xt, xb, xa, np.dot(H,xt), np.diag(H), np.diag(R), niters=np.NaN)
 
     print 'Cycling ON the attractor ...'
 
@@ -202,7 +202,7 @@ def main():
             xa = xs[-1,:].copy()
 
         # write diagnostics to disk
-        write_diag(diag_file.filename, k+1, ver, xb, xa, y, H, np.diag(R), niters=niters)
+        write_diag(diag_file.filename, k+1, ver, xb, xa, y, np.diag(H), np.diag(R), niters=niters)
 
     print '... all done ...'
     sys.exit(0)

@@ -79,7 +79,7 @@ def create_diag(dfile, ndof, nobs=None, nens=None, hybrid=False):
             Var = nc.createVariable('evratio',  'f8',('ntime',))
 
         Var = nc.createVariable('obs',         'f8',('ntime','nobs',))
-        Var = nc.createVariable('obs_operator','f8',('ntime','nobs','ndof',))
+        Var = nc.createVariable('obs_operator','f8',('ntime','ndof',))
         Var = nc.createVariable('obs_err_var', 'f8',('ntime','nobs',))
 
         if ( hybrid ):
@@ -347,7 +347,7 @@ def create_truth(tfile, ndof, nobs=None):
 
         Var = nc.createVariable('truth',       'f8',('ntime','ndof',))
         Var = nc.createVariable('obs',         'f8',('ntime','ndof',))
-        Var = nc.createVariable('obs_operator','f8',('ntime','nobs','ndof',))
+        Var = nc.createVariable('obs_operator','f8',('ntime','nobs',))
         Var = nc.createVariable('obs_err_var', 'f8',('ntime','nobs',))
 
         for (key,value) in tfile.attributes.items():

@@ -267,9 +267,7 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None):
         ax.plot(theta, tmp+mean_dist, 'k-', linewidth=2)
     if ( obs != None ):
         tmp = np.zeros(N+1) ; tmp[1:] = obs ; tmp[0] = obs[-1]
-        tmp[tmp != 0.0 ] += mean_dist
-        tmp[tmp == 0.0 ]  = np.NaN
-        ax.plot(theta, tmp, 'yo', markeredgecolor='y')
+        ax.plot(theta, tmp+mean_dist, 'yo', markeredgecolor='y')
 
     ax.set_rmin(0)
     ax.set_rmax(mean_dist+25)

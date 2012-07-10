@@ -64,7 +64,7 @@ R = np.ones(model.Ndof)*(1.0**2)          # observation error covariance
 R[8:16]  = np.sqrt(2.0)
 R[16:24] = np.sqrt(3.0)
 R[24:32] = np.sqrt(2.0)
-R = np.diag(R) # 1.000 ... 1.414 ... 1.732 ... 1.414 ... 1.000
+R = np.diag(R)
 
 ensDA              = type('', (), {})  # ensemble data assimilation Class
 ensDA.inflation    = type('', (), {})  # inflation Class
@@ -115,7 +115,7 @@ def main():
 
     # create diagnostic file
     create_diag(diag_file, model.Ndof, nens=ensDA.Nens)
-    write_diag(diag_file.filename, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), H, np.diag(R), evratio = np.NaN)
+    write_diag(diag_file.filename, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), np.diag(H), np.diag(R), evratio = np.NaN)
 
     print 'Cycling ON the attractor ...'
 
@@ -141,7 +141,7 @@ def main():
         Xa, evratio = update_ensDA(Xb, y, R, H, ensDA)
 
         # write diagnostics to disk
-        write_diag(diag_file.filename, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, H, np.diag(R), evratio = evratio)
+        write_diag(diag_file.filename, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, np.diag(H), np.diag(R), evratio = evratio)
 
     print '... all done ...'
     sys.exit(0)

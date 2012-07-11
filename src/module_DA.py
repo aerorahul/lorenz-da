@@ -694,12 +694,16 @@ minimization - minimization class
         for j in range(0,fdvar.nobstimes):
 
             i = fdvar.nobstimes - j - 1
-            dy = np.dot(H,xnl[fdvar.twind_obsIndex[i],:]) - y[i,:]
+
+            valInd = np.isfinite(np.squeeze(y[i,]))
+
+            dy = np.dot(H[valInd,:],xnl[fdvar.twind_obsIndex[i],:]) - y[i,valInd]
+
+            Jy  = Jy  + 0.5 * np.dot(np.transpose(dy),np.dot(np.diag(Rinv[valInd,valInd]),dy))
+            gJy = gJy + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),dy))
+
             tint = fdvar.twind[fdvar.twind_obsIndex[i-1]:fdvar.twind_obsIndex[i]+1]
 
-            Jy = Jy + 0.5 * np.dot(np.transpose(dy),np.dot(Rinv,dy))
-
-            gJy = gJy + np.dot(np.transpose(H),np.dot(Rinv,dy))
             if ( len(tint) != 0 ):
                 if   ( model.Name == 'L63' ):
                     exec('sxi = integrate.odeint(%s_tlm, gJy, tint, (model.Par,np.flipud(xnl),fdvar.twind, True))' % (model.Name))
@@ -833,12 +837,16 @@ minimization - minimization class
             for j in range(0,fdvar.nobstimes):
 
                 i = fdvar.nobstimes - j - 1
-                dy = np.dot(H,dxtl[fdvar.twind_obsIndex[i],:]) - d[i,:]
+
+                valInd = np.isfinite(np.squeeze(y[i,]))
+
+                dy = np.dot(H[valInd,:],dxtl[fdvar.twind_obsIndex[i],:]) - d[i,valInd]
+
+                Jy  = Jy  + 0.5 * np.dot(np.transpose(dy),np.dot(np.diag(Rinv[valInd,valInd]),dy))
+                gJy = gJy + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),dy))
+
                 tint = fdvar.twind[fdvar.twind_obsIndex[i-1]:fdvar.twind_obsIndex[i]+1]
 
-                Jy = Jy + 0.5 * np.dot(np.transpose(dy),np.dot(Rinv,dy))
-
-                gJy = gJy + np.dot(np.transpose(H),np.dot(Rinv,dy))
                 if ( len(tint) != 0 ):
                     if   ( model.Name == 'L63'):
                         exec('sxi = integrate.odeint(%s_tlm, gJy, tint, (model.Par,np.flipud(xnl),fdvar.twind, True))' % (model.Name))

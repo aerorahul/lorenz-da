@@ -36,13 +36,15 @@ def main():
     [measure, fname, sOI, nf] = get_input_arguments()
 
     # some more arguments, currently hard-coded
-    save_figures = False
+    save_figures = False         # save plots as eps
     mFix         = 'L96'         # model for which RMSE plots to be drawn
     yscale       = 'linear'      # y-axis of RMSE plots (linear/semilog)
-    yFix         = None          # fix the y-axis of RMSE plots
+    yFix         = None          # fix the y-axis of RMSE plots ( None = automatic )
     fOrient      = 'portrait'    # figure orientation (landscape/portrait)
 
     if ( not measure ): measure = 'truth'
+
+    if ( sOI == -1 ): sOI = 0
 
     fnames = []
     for i in range(0,nf): fnames.append(fname.replace('e0','e%d'%i))

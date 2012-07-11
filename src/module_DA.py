@@ -544,7 +544,7 @@ minimization - minimization class
     xa = x.copy()
 
     # analysis error covariance from Hessian
-    A = np.linalg.inv(Binv + np.dot(np.transpose(H),np.dot(Rinv,H)))
+    A = np.linalg.inv(Binv + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),H[valInd,:])))
 
     return xa, A, niters
 # }}}
@@ -621,7 +621,7 @@ minimization - minimization class
     xa = xb + dx
 
     # analysis error covariance from Hessian
-    A = np.linalg.inv(Binv + np.dot(np.transpose(H),np.dot(Rinv,H)))
+    A = np.linalg.inv(Binv + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),H[valInd,:])))
 
     return xa, A, niters
 # }}}

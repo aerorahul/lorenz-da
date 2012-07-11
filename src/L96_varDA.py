@@ -51,8 +51,8 @@ DA.ntimes = 0.05                # do assimilation every ntimes non-dimensional t
 DA.t0     = 0.0                 # initial time
 DA.Nobs   = 10                  # no. of obs to assimilate ( DA.Nobs <= model.Ndof)
 
-A = np.diag(np.ones(model.Ndof))          # initial analysis error covariance
-Q = np.diag(np.ones(model.Ndof)*0.0)      # model error covariance ( covariance model is white for now)
+Q = np.ones(model.Ndof)                   # model error covariance ( covariance model is white for now )
+Q = np.diag(Q) * 0.0
 
 H = np.ones(model.Ndof)                   # obs operator ( eye(Ndof) gives identity obs )
 if ( DA.Nobs != model.Ndof ):
@@ -61,10 +61,8 @@ if ( DA.Nobs != model.Ndof ):
     H[index[:-DA.Nobs]] = np.NaN
 H = np.diag(H)
 
-R = np.ones(model.Ndof)*(1.0**2)          # observation error covariance
-R[8:16]  = np.sqrt(2.0)
-R[16:24] = np.sqrt(3.0)
-R[24:32] = np.sqrt(2.0)
+R = np.ones(model.Ndof)                   # observation error covariance
+R = R + np.random.rand(model.Ndof)
 R = np.diag(R)
 
 varDA                      = type('',(),{}) # VarDA class
@@ -180,6 +178,8 @@ def main():
             ywin = np.zeros((varDA.fdvar.nobstimes,model.Ndof))
             for i in range(0,varDA.fdvar.nobstimes):
                 ywin[i,:] = np.dot(H,xs[varDA.fdvar.twind_obsIndex[i]+varDA.fdvar.tb,:] + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
+            oind = np.where(varDA.fdvar.twind_obsIndex + varDA.fdvar.tb == varDA.fdvar.ta)
+            if ( len(oind[0]) != 0 ): y = ywin[oind[0][0],:].copy()
 
         # advance analysis with the full nonlinear model
         if ( fdvar ):
@@ -191,8 +191,8 @@ def main():
         xb = xs[-1,:].copy()
 
         # update step
-        if ( fdvar ): xa, A, niters = update_varDA(xb, Bc, ywin, R, H, varDA, model=model)
-        else:         xa, A, niters = update_varDA(xb, Bc, y,    R, H, varDA)
+        if ( fdvar ): xa, Ac, niters = update_varDA(xb, Bc, ywin, R, H, varDA, model=model)
+        else:         xa, Ac, niters = update_varDA(xb, Bc, y,    R, H, varDA)
 
         # if doing 4Dvar, step to the next assimilation time from the beginning of assimilation window
         if ( fdvar ):

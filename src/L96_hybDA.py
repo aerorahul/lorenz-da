@@ -54,7 +54,8 @@ DA.do_hybrid   = True             # True= run hybrid (varDA + ensDA) mode, False
 DA.hybrid_wght = 0.5              # weight for hybrid (0.0= Bstatic; 1.0= Bensemble)
 DA.hybrid_rcnt = True             # True= re-center ensemble about varDA, False= free ensDA
 
-Q = np.diag(np.ones(model.Ndof)*0.0)      # model error variance (covariance model is white for now)
+Q = np.ones(model.Ndof)                   # model error covariance ( covariance model is white for now )
+Q = np.diag(Q) * 0.0
 
 H = np.ones(model.Ndof)                   # obs operator ( eye(Ndof) gives identity obs )
 if ( DA.Nobs != model.Ndof ):
@@ -63,10 +64,8 @@ if ( DA.Nobs != model.Ndof ):
     H[index[:-DA.Nobs]] = np.NaN
 H = np.diag(H)
 
-R = np.ones(model.Ndof)*(1.0**2)          # observation error covariance
-R[8:16]  = np.sqrt(2.0)
-R[16:24] = np.sqrt(3.0)
-R[24:32] = np.sqrt(2.0)
+R = np.ones(model.Ndof)                   # observation error covariance
+R = R + np.random.rand(model.Ndof)
 R = np.diag(R)
 
 ensDA              = type('', (), {})  # ensemble data assimilation Class

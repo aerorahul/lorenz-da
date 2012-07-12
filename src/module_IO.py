@@ -181,6 +181,103 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_
 ###############################################################
 
 ###############################################################
+def read_diag_info(fname):
+# {{{
+    '''
+    read the meta data from an output diagnostic file given name
+    and reconstruct the classes for model, DA etc.
+
+    read_diag_info(fname)
+
+              fname - name of the file to read from, must already exist
+              model - model class
+                 DA - DA class
+              ensDA - ensemble DA class
+              varDA - variational DA class
+    '''
+
+    source = 'read_diag_info'
+
+    if not os.path.isfile(fname):
+        print 'error occured in %s of %s' % (source, module)
+        print 'during the reading of %s' % (fname)
+        print 'Error: File does not exist'
+        sys.exit(2)
+
+    model = type('',(),{})
+    DA    = type('',(),{})
+    ensDA = type('',(),{})
+    varDA = type('',(),{})
+
+    try:
+
+        nc = Dataset(fname, mode='r', format='NETCDF4')
+
+        model.Name = nc.model
+        model.Ndof = len(nc.dimensions['ndof'])
+        model.dt   = nc.dt
+        if   ( model.Name == 'L63' ):
+            model.Par = [nc.sigma, nc.rho, nc.beta]
+        elif ( model.Name == 'L96' ):
+            model.Par = [nc.F, nc.F+nc.dF]
+        else:
+            print 'model %s is not implemented' % (model.Name)
+            sys.exit(2)
+
+        DA.nassim = len(nc.dimensions['ntime'])
+        DA.ntimes = nc.ntimes
+        DA.Nobs   = len(nc.dimensions['nobs'])
+        DA.t0     = 0.0
+
+        if 'do_hybrid' in nc.ncattrs():
+            DA.do_hybrid   = nc.do_hybrid
+            DA.hybrid_wght = nc.hybrid_wght
+            DA.hybrid_rcnt = nc.hybrid_rcnt
+        else:
+            DA.do_hybrid   = False
+
+        if 'Eupdate' in nc.ncattrs():
+            ensDA.update = nc.Eupdate
+            ensDA.Nens   = len(nc.dimensions['ncopy'])
+            ensDA.inflation         = type('', (), {})
+            ensDA.inflation.infl_meth = nc.infl_meth
+            ensDA.inflation.infl_fac  = nc.infl_fac
+            ensDA.localization            = type('', (), {})
+            ensDA.localization.localize   = nc.localize
+            ensDA.localization.cov_cutoff = nc.cov_cutoff
+
+        if 'Vupdate' in nc.ncattrs():
+            varDA.update = nc.Vupdate
+            varDA.minimization = type('', (), {})
+            varDA.minimization.maxiter = nc.maxiter
+            varDA.minimization.alpha   = nc.alpha
+            varDA.minimization.cg      = nc.cg
+            varDA.minimization.tol     = nc.tol
+
+            if ( (varDA.update == 2) or (varDA.update == 4) ):
+                varDA.fdvar           = type('',(),{})
+                varDA.fdvar.offset    = nc.offset
+                varDA.fdvar.window    = nc.window
+                varDA.fdvar.nobstimes = nc.nobstimes
+                varDA.fdvar.maxouter  = nc.maxouter
+
+        nc.close()
+
+    except Exception as Instance:
+
+        print 'Exception occured in %s of %s' % (source, module)
+        print 'Exception occured during reading of %s' % (fname)
+        print type(Instance)
+        print Instance.args
+        print Instance
+        sys.exit(1)
+
+    return [model, DA, ensDA, varDA]
+
+# }}}
+###############################################################
+
+###############################################################
 def read_diag(fname, time, end_time=None):
 # {{{
     '''

@@ -36,16 +36,16 @@ np.random.seed(0)
 model      = type('',(),{})  # model Class
 model.Name = 'L96'           # model name
 model.Ndof = 40              # model degrees of freedom
-model.Par  = [8.0, 0.4]      # model parameters F, dF
+model.Par  = [8.0, 8.4]      # model parameters F, dF
 model.dt   = 1.0e-4          # model time-step
 
 # initial setup from LE1998
 IC          = type('',(),{})
-IC.time     = 0
+IC.time     = None
 IC.filename = ''
 [x0,_] = get_IC(model,IC)
 
-tf  = 0.05
+tf  = 4*0.05
 
 tol  = 1.0e-13
 pert = 1.0e-4
@@ -54,21 +54,21 @@ print 'spinning-up ON the attractor ...'
 print '--------------------------------'
 
 ts = np.rint(np.linspace(0,1000*tf/model.dt,1000*tf/model.dt+1)) * model.dt
-exec('xs = integrate.odeint(%s, x0, ts, (%f,0.0))' % (model.Name, model.Par[0]))
+xs = advance_model(model, x0, ts, perfect=True)
 exec('plot_%s(ver=xs[-1,:],obs=xs[-1,:],t=25,N=%d)' % (model.Name, model.Ndof))
 x0 = xs[-1,:].copy()
 
 ts = np.rint(np.linspace(0,tf/model.dt,tf/model.dt+1)) * model.dt
 
-exec('xs = integrate.odeint(%s, x0, ts, (%f,0.0),rtol=tol,atol=tol)' % (model.Name, model.Par[0]))
+xs = advance_model(model, x0, ts, perfect=True, rtol=tol, atol=tol)
 xsf = xs[-1,:].copy()
 
 xp0 = np.random.randn(model.Ndof) * pert
 
-exec('xsp = integrate.odeint(%s, x0+xp0, ts, (%f,0.0),rtol=tol,atol=tol)' % (model.Name, model.Par[0]))
+xsp = advance_model(model, x0+xp0, ts, perfect=True, rtol=tol, atol=tol)
 xspf = xsp[-1,:].copy()
 
-exec('xp = integrate.odeint(%s_tlm, xp0, ts, (%f, xs, ts, False),rtol=tol,atol=tol)' % (model.Name, model.Par[0]))
+xp = advance_model_tlm(model, xp0, ts, xs, ts, adjoint=False, perfect=True, rtol=tol, atol=tol)
 xpf = xp[-1,:].copy()
 
 print 'check TLM ..'
@@ -77,7 +77,7 @@ for j in range(0,model.Ndof):
 print '--------------------------------'
 
 xa0 = xpf.copy()
-exec('xa = integrate.odeint(%s_tlm, xa0, ts, (%f, np.flipud(xs), ts, True),rtol=tol,atol=tol)' % (model.Name, model.Par[0]))
+xa = advance_model_tlm(model, xa0, ts, xs, ts, adjoint=True, perfect=True, rtol=tol, atol=tol)
 xaf = xa[-1,:].copy()
 
 q1 = np.dot(np.transpose(xpf),xpf)

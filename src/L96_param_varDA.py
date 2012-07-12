@@ -73,20 +73,21 @@ if ( fdvar ):
 
 diag_file            = type('', (), {})  # diagnostic file Class
 diag_file.filename   = model.Name + '_varDA_diag.nc4'
-diag_file.attributes = {'F'       : str(model.Par[0]),
-                        'dF'      : str(model.Par[1]-model.Par[0]),
-                        'ntimes'  : str(DA.ntimes),
-                        'dt'      : str(model.dt),
-                        'Vupdate' : str(varDA.update),
-                        'maxiter' : str(varDA.minimization.maxiter),
-                        'alpha'   : str(varDA.minimization.alpha),
-                        'cg'      : str(int(varDA.minimization.cg)),
-                        'tol'     : str(int(varDA.minimization.tol))}
+diag_file.attributes = {'model'   : model.Name,
+                        'F'       : model.Par[0],
+                        'dF'      : model.Par[1]-model.Par[0],
+                        'ntimes'  : DA.ntimes,
+                        'dt'      : model.dt,
+                        'Vupdate' : varDA.update,
+                        'maxiter' : varDA.minimization.maxiter,
+                        'alpha'   : varDA.minimization.alpha,
+                        'cg'      : int(varDA.minimization.cg),
+                        'tol'     : int(varDA.minimization.tol)}
 if ( fdvar ):
-    diag_file.attributes.update({'offset'    : str(varDA.fdvar.offset),
-                                 'window'    : str(varDA.fdvar.window),
-                                 'nobstimes' : str(int(varDA.fdvar.nobstimes)),
-                                 'maxouter'  : str(int(varDA.fdvar.maxouter))})
+    diag_file.attributes.update({'offset'    : varDA.fdvar.offset,
+                                 'window'    : varDA.fdvar.window,
+                                 'nobstimes' : int(varDA.fdvar.nobstimes),
+                                 'maxouter'  : int(varDA.fdvar.maxouter)})
 
 # restart conditions
 restart          = type('', (), {})  # restart initial conditions Class

@@ -88,7 +88,7 @@ def create_diag(dfile, ndof, nobs=None, nens=None, hybrid=False):
             Var = nc.createVariable('niters',           'f8',('ntime',))
 
         for (key,value) in dfile.attributes.iteritems():
-            exec( 'nc.%s = %s' % (key,value) )
+            exec( 'nc.%s = value' % (key) )
 
         nc.close()
 

@@ -67,15 +67,16 @@ ensDA.localization.cov_cutoff = 0.0625 # normalized covariance cutoff = cutoff /
 # name and attributes of/in the output diagnostic file
 diag_file            = type('', (), {})  # diagnostic file Class
 diag_file.filename   = model.Name + '_ensDA_diag.nc4'
-diag_file.attributes = {'F'           : str(model.Par[0]),
-                        'dF'          : str(model.Par[1]-model.Par[0]),
-                        'ntimes'      : str(DA.ntimes),
-                        'dt'          : str(model.dt),
-                        'Eupdate'     : str(ensDA.update),
-                        'localize'    : str(int(ensDA.localization.localize)),
-                        'cov_cutoff'  : str(ensDA.localization.cov_cutoff),
-                        'infl_meth'   : str(ensDA.inflation.infl_meth),
-                        'infl_fac'    : str(ensDA.inflation.infl_fac)}
+diag_file.attributes = {'model'       : model.Name,
+                        'F'           : model.Par[0],
+                        'dF'          : model.Par[1]-model.Par[0],
+                        'ntimes'      : DA.ntimes,
+                        'dt'          : model.dt,
+                        'Eupdate'     : ensDA.update,
+                        'localize'    : int(ensDA.localization.localize),
+                        'cov_cutoff'  : ensDA.localization.cov_cutoff,
+                        'infl_meth'   : ensDA.inflation.infl_meth,
+                        'infl_fac'    : ensDA.inflation.infl_fac}
 
 # restart conditions
 restart          = type('', (), {})  # restart initial conditions Class

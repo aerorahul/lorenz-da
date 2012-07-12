@@ -88,28 +88,29 @@ if ( fdvar ):
 # name and attributes of/in the output diagnostic file
 diag_file            = type('', (), {})  # diagnostic file Class
 diag_file.filename   = model.Name + '_hybDA_diag.nc4'
-diag_file.attributes = {'F'           : str(model.Par[0]),
-                        'dF'          : str(model.Par[1]-model.Par[0]),
-                        'dt'          : str(model.dt),
-                        'ntimes'      : str(DA.ntimes),
-                        'do_hybrid'   : str(int(DA.do_hybrid)),
-                        'hybrid_wght' : str(DA.hybrid_wght),
-                        'hybrid_rcnt' : str(int(DA.hybrid_rcnt)),
-                        'Eupdate'     : str(ensDA.update),
-                        'infl_meth'   : str(ensDA.inflation.infl_meth),
-                        'infl_fac'    : str(ensDA.inflation.infl_fac),
-                        'localize'    : str(int(ensDA.localization.localize)),
-                        'cov_cutoff'  : str(ensDA.localization.cov_cutoff),
-                        'Vupdate'     : str(varDA.update),
-                        'maxiter'     : str(varDA.minimization.maxiter),
-                        'alpha'       : str(varDA.minimization.alpha),
-                        'cg'          : str(int(varDA.minimization.cg)),
-                        'tol'         : str(varDA.minimization.tol)}
+diag_file.attributes = {'model'       : model.Name,
+                        'F'           : model.Par[0],
+                        'dF'          : model.Par[1]-model.Par[0],
+                        'dt'          : model.dt,
+                        'ntimes'      : DA.ntimes,
+                        'do_hybrid'   : int(DA.do_hybrid),
+                        'hybrid_wght' : DA.hybrid_wght,
+                        'hybrid_rcnt' : int(DA.hybrid_rcnt),
+                        'Eupdate'     : ensDA.update,
+                        'infl_meth'   : ensDA.inflation.infl_meth,
+                        'infl_fac'    : ensDA.inflation.infl_fac,
+                        'localize'    : int(ensDA.localization.localize),
+                        'cov_cutoff'  : ensDA.localization.cov_cutoff,
+                        'Vupdate'     : varDA.update,
+                        'maxiter'     : varDA.minimization.maxiter,
+                        'alpha'       : varDA.minimization.alpha,
+                        'cg'          : int(varDA.minimization.cg),
+                        'tol'         : varDA.minimization.tol}
 if ( fdvar ):
-    diag_file.attributes.update({'offset'    : str(varDA.fdvar.offset),
-                                 'window'    : str(varDA.fdvar.window),
-                                 'nobstimes' : str(int(varDA.fdvar.nobstimes)),
-                                 'maxouter'  : str(int(varDA.fdvar.maxouter))})
+    diag_file.attributes.update({'offset'    : varDA.fdvar.offset,
+                                 'window'    : varDA.fdvar.window,
+                                 'nobstimes' : int(varDA.fdvar.nobstimes),
+                                 'maxouter'  : int(varDA.fdvar.maxouter)})
 
 # restart conditions
 restart          = type('', (), {})  # restart initial conditions Class

@@ -30,7 +30,7 @@ np.random.seed(0)
 model      = type('', (), {})   # model Class
 model.Name = 'L96'              # model name
 model.Ndof = 40                 # model degrees of freedom
-model.Par  = [8.0, 0.4]         # model parameters F, dF
+model.Par  = [8.0, 8.4]         # model parameters F, dF
 model.dt   = 1.0e-4             # model time-step
 
 DA        = type('', (), {})    # data assimilation Class

@@ -9,7 +9,7 @@
 ###############################################################
 
 ###############################################################
-# varDA.py - Variational DA on Lorenz 63 or Lorenz & Emanuel 96
+# varDA.py - driver script for variational DA
 ###############################################################
 
 ###############################################################
@@ -91,16 +91,10 @@ def main():
 
         # advance truth with the full nonlinear model
         if ( fdvar ):
-            if   ( model.Name == 'L63' ):
-                exec('xs = integrate.odeint(%s, xt, varDA.fdvar.tfore, (model.Par,   0.0))' % (model.Name))
-            elif ( model.Name == 'L96' ):
-                exec('xs = integrate.odeint(%s, xt, varDA.fdvar.tfore, (model.Par[0],0.0))' % (model.Name))
+            xs = advance_model(model, xt, varDA.fdvar.tfore, perfect=True)
             xt = xs[varDA.fdvar.ta,:].copy()
         else:
-            if   ( model.Name == 'L63' ):
-                exec('xs = integrate.odeint(%s, xt, DA.tanal, (model.Par,   0.0))' % (model.Name,))
-            elif ( model.Name == 'L96' ):
-                exec('xs = integrate.odeint(%s, xt, DA.tanal, (model.Par[0],0.0))' % (model.Name,))
+            xs = advance_model(model, xt, DA.tanal, perfect=True)
             xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values
@@ -116,16 +110,10 @@ def main():
         # advance analysis with the full nonlinear model
         if ( fdvar ):
             # step to the beginning of the assimilation window (varDA.fdvar.tbkgd)
-            if   ( model.Name == 'L63' ):
-                exec('xs = integrate.odeint(%s, xa, varDA.fdvar.tbkgd, (model.Par,   0.0))' % (model.Name))
-            elif ( model.Name == 'L96' ):
-                exec('xs = integrate.odeint(%s, xa, varDA.fdvar.tbkgd, (model.Par[1],0.0))' % (model.Name))
+            xs = advance_model(model, xa, varDA.fdvar.tbkgd, perfect=False)
         else:
             # step to the next assimilation time (DA.tanal)
-            if   ( model.Name == 'L63' ):
-                exec('xs = integrate.odeint(%s, xa, DA.tanal, (model.Par,   0.0))' % (model.Name))
-            elif ( model.Name == 'L96' ):
-                exec('xs = integrate.odeint(%s, xa, DA.tanal, (model.Par[1],0.0))' % (model.Name))
+            xs = advance_model(model, xa, DA.tanal, perfect=False)
         xb = xs[-1,:].copy()
 
         # update step
@@ -134,16 +122,10 @@ def main():
 
         # if doing 4Dvar, step to the next assimilation time from the beginning of assimilation window
         if ( fdvar ):
-            if   ( model.Name == 'L63' ):
-                exec('xs = integrate.odeint(%s, xb, varDA.fdvar.tanal, (model.Par,   0.0))' % (model.Name))
-                xb = xs[-1,:].copy()
-                exec('xs = integrate.odeint(%s, xa, varDA.fdvar.tanal, (model.Par,   0.0))' % (model.Name))
-                xa = xs[-1,:].copy()
-            elif ( model.Name == 'L96' ):
-                exec('xs = integrate.odeint(%s, xb, varDA.fdvar.tanal, (model.Par[1],0.0))' % (model.Name))
-                xb = xs[-1,:].copy()
-                exec('xs = integrate.odeint(%s, xa, varDA.fdvar.tanal, (model.Par[1],0.0))' % (model.Name))
-                xa = xs[-1,:].copy()
+            xs = advance_model(model, xb, varDA.fdvar.tanal, perfect=False)
+            xb = xs[-1,:].copy()
+            xs = advance_model(model, xa, varDA.fdvar.tanal, perfect=False)
+            xa = xs[-1,:].copy()
 
         # write diagnostics to disk
         write_diag(diag_file.filename, k+1, ver, xb, xa, y, np.diag(H), np.diag(R), niters=niters)

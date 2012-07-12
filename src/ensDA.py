@@ -9,7 +9,7 @@
 ###############################################################
 
 ###############################################################
-# ensDA.py - Ensemble DA on Lorenz 63 or Lorenz & Emanuel 96
+# ensDA.py - driver script for ensemble DA
 ###############################################################
 
 ###############################################################
@@ -61,10 +61,7 @@ def main():
         print '========== assimilation time = %5d ========== ' % (k+1)
 
         # advance truth with the full nonlinear model
-        if   ( model.Name == 'L63' ):
-            exec('xs = integrate.odeint(%s, xt, DA.tanal, (model.Par,   0.0))' % (model.Name))
-        elif ( model.Name == 'L96' ):
-            exec('xs = integrate.odeint(%s, xt, DA.tanal, (model.Par[0],0.0))' % (model.Name))
+        xs = advance_model(model, xt, DA.tanal, perfect=True)
         xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values
@@ -74,10 +71,7 @@ def main():
         # advance analysis ensemble with the full nonlinear model
         for m in range(0,ensDA.Nens):
             xa = Xa[:,m].copy()
-            if   ( model.Name == 'L63' ):
-                exec('xs = integrate.odeint(%s, xa, DA.tanal, (model.Par,   0.0))' % (model.Name))
-            elif ( model.Name == 'L96' ):
-                exec('xs = integrate.odeint(%s, xa, DA.tanal, (model.Par[1],0.0))' % (model.Name))
+            xs = advance_model(model, xa, DA.tanal, perfect=False)
             Xb[:,m] = xs[-1,:].copy()
 
         # update ensemble (mean and perturbations)

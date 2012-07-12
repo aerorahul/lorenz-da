@@ -34,6 +34,39 @@ from module_Lorenz import *
 module = 'module_Lorenz.py'
 
 ###############################################################
+def advance_model(model, x0, t, perfect=True):
+# {{{
+    '''
+    advance_model - function that integrates the model state, given initial conditions 'x0'
+    and length of the integration in t.
+    The nature of the model advance as specified by 'perfect' and is only valid
+    for L96 system.
+
+    xs = advance_model(model, x0, t, perfect=True)
+
+       xs - final state at time t = T
+    model - model class for the model containing model static parameter
+       x0 - initial state at time t = 0
+        t - vector of time from t = [0, T]
+  perfect - If perfect model run for L96, use model.Par[0], else use model.Par[1]
+    '''
+
+    if   ( model.Name == 'L63' ):
+        par = model.Par
+    elif ( model.Name == 'L96' ):
+        if ( perfect ): par = model.Par[0]
+        else:           par = model.Par[1]
+    else:
+        print '%s is an invalid model, exiting.' % model.Name
+        sys.exit(1)
+
+    exec('xs = integrate.odeint(%s, x0, t, (par, 0.0))' % (model.Name))
+
+    return xs
+# }}}
+###############################################################
+
+###############################################################
 def L63(x0, t, par, dummy):
 # {{{
     '''

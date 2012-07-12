@@ -9,7 +9,7 @@
 ###############################################################
 
 ###############################################################
-# hybDA.py - Hybrid DA on Lorenz 63 or Lorenz & Emanuel 96
+# hybDA.py - driver script for hybrid DA
 ###############################################################
 
 ###############################################################
@@ -99,16 +99,10 @@ def main():
 
         # advance truth with the full nonlinear model
         if ( fdvar ):
-            if   ( model.Name == 'L63' ):
-                exec('xs = integrate.odeint(%s, xt, varDA.fdvar.tfore, (model.Par,   0.0))' % (model.Name))
-            elif ( model.Name == 'L96' ):
-                exec('xs = integrate.odeint(%s, xt, varDA.fdvar.tfore, (model.Par[0],0.0))' % (model.Name))
+            xs = advance_model(model, xt, varDA.fdvar.tfore, perfect=True)
             xt = xs[varDA.fdvar.ta,:].copy()
         else:
-            if   ( model.Name == 'L63' ):
-                exec('xs = integrate.odeint(%s, xt, DA.tanal, (model.Par,   0.0))' % (model.Name))
-            elif ( model.Name == 'L96' ):
-                exec('xs = integrate.odeint(%s, xt, DA.tanal, (model.Par[0],0.0))' % (model.Name))
+            xs = advance_model(model, xt, DA.tanal, perfect=True)
             xt = xs[-1,:].copy()
 
         # new observations from noise about truth; set verification values
@@ -124,10 +118,7 @@ def main():
         # advance analysis ensemble with the full nonlinear model
         for m in range(0,ensDA.Nens):
             xa = Xa[:,m].copy()
-            if   ( model.Name == 'L63' ):
-                exec('xs = integrate.odeint(%s, xa, DA.tanal, (model.Par,   0.0))' % (model.Name))
-            elif ( model.Name == 'L96' ):
-                exec('xs = integrate.odeint(%s, xa, DA.tanal, (model.Par[1],0.0))' % (model.Name))
+            xs = advance_model(model, xa, DA.tanal, perfect=False)
             Xb[:,m] = xs[-1,:].copy()
             if ( (DA.do_hybrid) and (fdvar) ): Xbb[:,m] = xs[varDA.fdvar.tb,:].copy()
 
@@ -141,10 +132,7 @@ def main():
 
         if ( DA.do_hybrid ):
             # advance central analysis with the full nonlinear model
-            if   ( model.Name == 'L63' ):
-                exec('xs = integrate.odeint(%s, xac, DA.tanal, (model.Par,   0.0))' % (model.Name))
-            elif ( model.Name == 'L96' ):
-                exec('xs = integrate.odeint(%s, xac, DA.tanal, (model.Par[1],0.0))' % (model.Name))
+            xs = advance_model(model, xac, DA.tanal, perfect=False)
             xbc = xs[-1,:].copy()
             if ( fdvar ): xbcwin = xs[varDA.fdvar.tb,:].copy()
 
@@ -157,10 +145,7 @@ def main():
 
             # if doing 4Dvar, step to the next assimilation time from the beginning of assimilation window
             if ( fdvar ):
-                if   ( model.Name == 'L63' ):
-                    exec('xs = integrate.odeint(%s, xacwin, varDA.fdvar.tanal, (model.Par,   0.0))' % (model.Name))
-                elif ( model.Name == 'L96' ):
-                    exec('xs = integrate.odeint(%s, xacwin, varDA.fdvar.tanal, (model.Par[1],0.0))' % (model.Name))
+                xs = advance_model(model, xacwin, varDA.fdvar.tanal, perfect=False)
                 xac = xs[-1,:].copy()
 
         # write diagnostics to disk before recentering

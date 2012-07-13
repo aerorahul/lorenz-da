@@ -25,7 +25,7 @@ import sys
 import numpy         as     np
 from   module_Lorenz import *
 from   module_IO     import *
-from   param_truth   import *
+from   param_truthDA import *
 ###############################################################
 
 ###############################################################

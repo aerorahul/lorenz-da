@@ -105,6 +105,11 @@ def main():
         else:
             xti, Xbi, Xai, y, H, R, _  = read_diag(fname, k)
 
+        # This is only valid for now, when H and R are stored as diagonal (Ndof,Ndof) matrices
+        # It will eventually be phased out.
+        if ( len(np.shape(H)) == 1 ): H = np.diag(H)
+        if ( len(np.shape(R)) == 1 ): R = np.diag(R)
+
         # transpose required because of the way data is written to disk
         Xbi = np.transpose(Xbi)
         Xai = np.transpose(Xai)

@@ -315,14 +315,7 @@ def read_diag(fname, time, end_time=None):
         posterior    = np.squeeze(nc.variables['posterior'][time:end_time,])
         obs          = np.squeeze(nc.variables['obs'][time:end_time,])
         obs_operator = np.squeeze(nc.variables['obs_operator'][time:end_time,])
-        tmp          = np.squeeze(nc.variables['obs_err_var'][time:end_time,])
-
-        if ( end_time - time == 1 ):
-            obs_err_var = np.diag(tmp)
-        else:
-            obs_err_var = np.zeros((np.shape(tmp)[0],np.shape(tmp)[1],np.shape(tmp)[1]))
-            for k in range(0, np.shape(tmp)[0]):
-                obs_err_var[k,] = np.diag(tmp[k,])
+        obs_err_var   = np.squeeze(nc.variables['obs_err_var'][time:end_time,])
 
         if 'do_hybrid' in nc.ncattrs():
             hybrid = nc.do_hybrid

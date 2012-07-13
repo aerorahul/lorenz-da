@@ -225,42 +225,38 @@ def plot_error_variance_stats(evratio, figNum=None, sStat=100):
 ###############################################################
 
 ###############################################################
-def plot_ObImpact(dJa, dJe, figNum=None, sOI=0, eOI=None):
+def plot_ObImpact(dJa, dJe, sOI=None, eOI=None, title=None, xlabel=None, ylabel=None):
 
-    if ( figNum == None ): fig = pyplot.figure()
-    else: fig = pyplot.figure(figNum)
-    pyplot.clf()
+    color_adj = 'c'
+    color_ens = 'm'
+    width     = 0.45
+
+    if ( title  == None ): title   = ''
+    if ( xlabel == None ): xlabel  = ''
+    if ( ylabel == None ): ylabel  = ''
+
+    if ( (sOI == None)                ): sOI = 0
+    if ( (eOI == None) or (eOI == -1) ): eOI = len(dJa)
+
+    index = np.arange(eOI-sOI)
+    if   ( len(index) > 1000 ): inc = 1000
+    elif ( len(index) > 100  ): inc = 100
+    elif ( len(index) > 10   ): inc = 10
+    else:                       inc = 1
+
+    fig = pyplot.figure()
     pyplot.hold(True)
 
-    color_adj = 'b'
-    color_ens = 'r'
+    r0 = pyplot.plot(np.zeros(eOI-sOI+1),'k-')
+    r1 = pyplot.bar(index,       dJa, width, color=color_adj, edgecolor=color_adj, linewidth=0.0)
+    r2 = pyplot.bar(index+width, dJe, width, color=color_ens, edgecolor=color_ens, linewidth=0.0)
 
-    if eOI == None: eOI = len(dJa)
-    if eOI == -1:   eOI = len(dJa)
-    index = np.arange(eOI-sOI)
-    width = 0.49
-    zeroline = np.zeros(len(dJa[sOI:eOI+1]))
-
-    ra = pyplot.bar(index, dJa[sOI:eOI], width, color=color_adj, edgecolor=color_adj, label='ASA')
     stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(dJa), np.std(dJa,ddof=1))
-
-    re = pyplot.bar(index+width, dJe[sOI:eOI], width, color=color_ens, edgecolor=color_ens, label='ESA')
     stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(dJe), np.std(dJe,ddof=1))
 
-    pyplot.plot(zeroline,'k-',linewidth=1)
-
-    if   ( len(zeroline) >= 1000 ):
-        inc = 1000
-    elif ( len(zeroline) >= 100 ):
-        inc = 100
-    elif ( len(zeroline) >= 10 ):
-        inc = 10
-    else:
-        inc = 1
-
     locs, labels = pyplot.xticks()
-    newlocs   = np.arange(sOI,sOI+len(zeroline)+1,inc) - sOI
-    newlabels = np.arange(sOI,sOI+len(zeroline)+1,inc)
+    newlocs   = np.arange(sOI,sOI+len(index)+1,inc) - sOI
+    newlabels = np.arange(sOI,sOI+len(index)+1,inc)
     pyplot.xticks(newlocs, newlabels)
 
     yl = pyplot.get(pyplot.gca(),'ylim')
@@ -269,12 +265,12 @@ def plot_ObImpact(dJa, dJe, figNum=None, sOI=0, eOI=None):
     pyplot.text(5,yoff,stra,fontsize=10,color=color_adj)
     yoff = yl[0] + 0.2 * dyl
     pyplot.text(5,yoff,stre,fontsize=10,color=color_ens)
-    pyplot.xlim(newlabels[0], len(zeroline))
 
-    pyplot.xlabel('Assimilation Step', fontweight='bold',fontsize=12)
-    pyplot.ylabel(r'$\delta J$',       fontweight='bold',fontsize=12)
-    pyplot.title('Observation Impact',fontweight='bold',fontsize=14)
-    pyplot.legend(loc=0,ncol=2)
+    pyplot.title(title,   fontsize=14)
+    pyplot.xlabel(xlabel, fontsize=12)
+    pyplot.ylabel(ylabel, fontsize=12)
+
     pyplot.hold(False)
+
     return fig
 ###############################################################

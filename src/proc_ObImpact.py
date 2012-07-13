@@ -28,6 +28,7 @@ import numpy         as     np
 import cPickle       as     cPickle
 from   matplotlib    import pyplot
 from   module_IO     import *
+from   plot_stats    import *
 ###############################################################
 
 ###############################################################
@@ -66,67 +67,23 @@ def main():
     if ( sOI < 0 ): sOI = 0
     if ( eOI < 0 ): eOI = len(adJ)
 
-    index = np.arange(eOI-sOI)
-    width = 0.45
-    color_adj = 'c'
-    color_ens = 'm'
-    fOrient = 'portrait'
+    titlestr = '$\delta J$ = $\delta J_a$ + $\delta J_b$'
+    xlabstr  = 'Assimilation Step'
+    ylabstr  = '$\delta J$'
+    fig1 = plot_ObImpact(adJ[sOI:eOI],edJ[sOI:eOI],sOI=sOI,eOI=eOI,title=titlestr,xlabel=xlabstr,ylabel=ylabstr)
 
-    fig1 = pyplot.figure()
-    pyplot.hold(True)
-    r1 = pyplot.bar(index,       adJ[sOI:eOI], width, color=color_adj, edgecolor=color_adj, linewidth=0.0)
-    r2 = pyplot.bar(index+width, edJ[sOI:eOI], width, color=color_ens, edgecolor=color_ens, linewidth=0.0)
-    pyplot.plot(np.zeros(eOI-sOI+1),'k-')
-    stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJ[sOI:eOI]), np.std(adJ[sOI:eOI],ddof=1))
-    stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJ[sOI:eOI]), np.std(edJ[sOI:eOI],ddof=1))
-    yl = pyplot.get(pyplot.gca(),'ylim')
-    dyl = yl[1] - yl[0]
-    yoff = yl[0] + 0.1 * dyl
-    pyplot.text(5,yoff,stra,fontsize=10,color=color_adj)
-    yoff = yl[0] + 0.2 * dyl
-    pyplot.text(5,yoff,stre,fontsize=10,color=color_ens)
-    pyplot.title(r'$\delta J$ = $\delta J_a$ + $\delta J_b$', fontsize=14)
-    pyplot.xlabel('Assimilation Step', fontsize=12)
-    pyplot.ylabel(r'$\delta J$', fontsize=12)
-    pyplot.hold(False)
+    titlestr = '$\delta J_a$'
+    xlabstr  = 'Assimilation Step'
+    ylabstr  = '$\delta J_a$'
+    fig2 = plot_ObImpact(adJa[sOI:eOI],edJa[sOI:eOI],sOI=sOI,eOI=eOI,title=titlestr,xlabel=xlabstr,ylabel=ylabstr)
 
-    fig2 = pyplot.figure()
-    pyplot.hold(True)
-    r1 = pyplot.bar(index,       adJa[sOI:eOI], width, color=color_adj, edgecolor=color_adj, linewidth=0.0)
-    r2 = pyplot.bar(index+width, edJa[sOI:eOI], width, color=color_ens, edgecolor=color_ens, linewidth=0.0)
-    pyplot.plot(np.zeros(eOI-sOI+1),'k-')
-    stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJa[sOI:eOI]), np.std(adJa[sOI:eOI],ddof=1))
-    stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJa[sOI:eOI]), np.std(edJa[sOI:eOI],ddof=1))
-    yl = pyplot.get(pyplot.gca(),'ylim')
-    dyl = yl[1] - yl[0]
-    yoff = yl[0] + 0.1 * dyl
-    pyplot.text(5,yoff,stra,fontsize=10,color=color_adj)
-    yoff = yl[0] + 0.2 * dyl
-    pyplot.text(5,yoff,stre,fontsize=10,color=color_ens)
-    pyplot.title(r'$\delta J_a$', fontsize=14)
-    pyplot.xlabel('Assimilation Step', fontsize=12)
-    pyplot.ylabel(r'$\delta J_a$', fontsize=12)
-    pyplot.hold(False)
-
-    fig3 = pyplot.figure()
-    pyplot.hold(True)
-    r1 = pyplot.bar(index,       adJa[sOI:eOI], width, color=color_adj, edgecolor=color_adj, linewidth=0.0)
-    r2 = pyplot.bar(index+width, edJa[sOI:eOI], width, color=color_ens, edgecolor=color_ens, linewidth=0.0)
-    pyplot.plot(np.zeros(eOI-sOI+1),'k-')
-    stra = r'mean $\delta J_a$ : %5.4f +/- %5.4f' % (np.mean(adJb[sOI:eOI]), np.std(adJb[sOI:eOI],ddof=1))
-    stre = r'mean $\delta J_e$ : %5.4f +/- %5.4f' % (np.mean(edJb[sOI:eOI]), np.std(edJb[sOI:eOI],ddof=1))
-    yl = pyplot.get(pyplot.gca(),'ylim')
-    dyl = yl[1] - yl[0]
-    yoff = yl[0] + 0.1 * dyl
-    pyplot.text(5,yoff,stra,fontsize=10,color=color_adj)
-    yoff = yl[0] + 0.2 * dyl
-    pyplot.text(5,yoff,stre,fontsize=10,color=color_ens)
-    pyplot.title(r'$\delta J_b$', fontsize=14)
-    pyplot.xlabel('Assimilation Step', fontsize=12)
-    pyplot.ylabel(r'$\delta J_b$', fontsize=12)
-    pyplot.hold(False)
+    titlestr = '$\delta J_b$'
+    xlabstr  = 'Assimilation Step'
+    ylabstr  = '$\delta J_b$'
+    fig3 = plot_ObImpact(adJb[sOI:eOI],edJb[sOI:eOI],sOI=sOI,eOI=eOI,title=titlestr,xlabel=xlabstr,ylabel=ylabstr)
 
     if ( save_fig ):
+        fOrient = 'portrait'
         fig1.savefig(fname_fig + '-dJ.eps', dpi=300,orientation=fOrient,format='eps')
         fig2.savefig(fname_fig + '-dJa.eps',dpi=300,orientation=fOrient,format='eps')
         fig3.savefig(fname_fig + '-dJb.eps',dpi=300,orientation=fOrient,format='eps')

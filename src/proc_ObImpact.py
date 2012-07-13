@@ -33,6 +33,9 @@ from   module_IO     import *
 ###############################################################
 def main():
 
+    # save figure to disk
+    save_fig = False
+
     # get the name of .dat file to read and the start and end indices
     [_, fname, sOI, eOI] = get_input_arguments()
 
@@ -52,17 +55,16 @@ def main():
             sys.exit(1)
 
     fname_fig = fname.split('.dat')[0]
-    save_fig  = False
 
-    adJ  = object['adj_dJ']
-    edJ  = object['ens_dJ']
+    adJ  = object['adj_dJ' ]
+    edJ  = object['ens_dJ' ]
     adJa = object['adj_dJa']
     adJb = object['adj_dJb']
     edJa = object['ens_dJa']
     edJb = object['ens_dJb']
 
-    if sOI < 0: sOI = 0
-    if eOI < 0: eOI = len(adJ)
+    if ( sOI < 0 ): sOI = 0
+    if ( eOI < 0 ): eOI = len(adJ)
 
     index = np.arange(eOI-sOI)
     width = 0.45

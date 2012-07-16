@@ -213,8 +213,10 @@ def update_ensDA(Xb, y, R, H, ensDA):
 
     # check for filter divergence
     error_variance_ratio = np.nansum(innov**2) / np.nansum(totvar)
-    if not ( 0.5 < error_variance_ratio < 2.0 ):
-        print 'FILTER DIVERGENCE : ERROR / TOTAL VARIANCE = %f' % (error_variance_ratio)
+    if ( 0.5 < error_variance_ratio < 2.0 ):
+        print 'total error / total variance = %f' % (error_variance_ratio)
+    else:
+        print 'total error / total variance = %f | WARNING : filter divergence' % (error_variance_ratio)
         #break
 
     return Xa, error_variance_ratio

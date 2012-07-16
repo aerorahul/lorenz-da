@@ -374,115 +374,100 @@ def get_IC(model, restart, Nens=None):
            xa - analysis or analysis ensemble
     '''
 
-    source = 'get_initial_state'
+    def perturb_truth(xt, model, Nens=None):
+        '''
+        populate initial ensemble analysis by perturbing true state and recentering
+        '''
 
-    print 'Generating ICs for %s' % model.Name
+        if ( Nens == None ):
+            pert = 0.001 * ( np.random.randn(model.Ndof) )
+            xa = xt + pert
+        else:
+            pert = 0.001 * ( np.random.randn(model.Ndof,Nens) )
+            xa = np.transpose(xt + np.transpose(pert))
+            xa = np.transpose(np.transpose(xa) - np.mean(xa,axis=1) + xt)
+
+        return xa
+
+    def read_from_restart(restart, Nens=None):
+        '''
+        read from a specified restart file
+        '''
+
+        if not os.path.isfile(restart.filename):
+            print 'ERROR : %s does not exist ' % restart.filename
+            sys.exit(2)
+
+        try:
+            nc = Dataset(restart.filename, mode='r', format='NETCDF4')
+            ntime = len(nc.dimensions['ntime'])
+            if   ( restart.time == 0 ): read_index = 0
+            elif ( restart.time >  0 ): read_index = restart.time - 1
+            elif ( restart.time <  0 ): read_index = ntime + restart.time
+            if ( (read_index < 0) or (read_index >= ntime) ):
+                print 'ERROR : t = %d does not exist in %s' % (read_index+1, restart.filename)
+                print '        valid options are t = +/- [1 ... %d]' % ntime
+                sys.exit(2)
+            else:
+                print '... from t = %d in %s' % (read_index+1, restart.filename)
+                xt = np.squeeze(nc.variables['truth'][read_index,])
+                xa = np.transpose(np.squeeze(nc.variables['posterior'][read_index,]))
+            nc.close()
+        except Exception as Instance:
+            print 'Exception occured during reading of %s' % (restart.filename)
+            print type(Instance)
+            print Instance.args
+            print Instance
+            sys.exit(1)
+
+        if ( (len(np.shape(xa)) == 1) and (Nens != None) ):
+            # populate initial ensemble analysis by perturbing the analysis and re-centering
+            pert = 0.001 * ( np.random.randn(model.Ndof,Nens) )
+            tmp = np.transpose(xa + np.transpose(pert))
+            xa = np.transpose(np.transpose(tmp) - np.mean(tmp,axis=1) + xa)
+        elif ( (len(np.shape(xa)) != 1) and (Nens != np.shape(xa)[1]) ):
+            # populate initial ensemble analysis by picking a subset from the analysis ensemble
+            if ( Nens <= np.shape(xa)[1] ):
+                xa = np.squeeze(xa[:,0:Nens])
+            else:
+                print 'size(Xa) = [%d, %d]' % (np.shape(xa)[0], np.shape(xa)[1])
+                sys.exit(1)
+
+        return [xt,xa]
 
     # insure the same sequence of random numbers EVERY TIME
     np.random.seed(0)
+
+    source = 'get_IC'
+
+    print 'Generating ICs for %s' % model.Name
 
     if (   model.Name == 'L63' ):
 
         if ( restart.time == None ):
             print '... from Miller et al., 1994'
 
-            x0 = np.array([1.508870, -1.531271, 25.46091])
-            ts = np.arange(0.0,100.01,0.01)
-            exec('xs = integrate.odeint(%s, x0, ts, (%s,0.0))' % (model.Name,model.Par))
-            xt = xs[-1,:].copy()
+            xt = np.array([1.508870, -1.531271, 25.46091])
 
-            if ( Nens == None ):
-                pert = 0.001 * ( np.random.randn(model.Ndof) )
-                xa = xt + pert
-            else:
-                # populate initial ensemble analysis by perturbing true state and recentering
-                pert = 0.001 * ( np.random.randn(model.Ndof,Nens) )
-                xa = np.transpose(xt + np.transpose(pert))
-                xa = np.transpose(np.transpose(xa) - np.mean(xa,axis=1) + xt)
+            xa = perturb_truth(xt, model, Nens=Nens)
+
         else:
-            if not os.path.isfile(restart.filename):
-                print 'ERROR : %s does not exist ' % restart.filename
-                sys.exit(2)
 
-            try:
-                nc = Dataset(restart.filename, mode='r', format='NETCDF4')
-                ntime = len(nc.dimensions['ntime'])
-                if   ( restart.time == 0 ): read_index = 0
-                elif ( restart.time >  0 ): read_index = restart.time - 1
-                elif ( restart.time <  0 ): read_index = ntime + restart.time
-                if ( (read_index < 0) or (read_index >= ntime) ):
-                    print 'ERROR : t = %d does not exist in %s' % (read_index+1, restart.filename)
-                    print '        valid options are t = +/- [1 ... %d]' % ntime
-                    sys.exit(2)
-                else:
-                    print '... from t = %d in %s' % (read_index+1, restart.filename)
-                    xt = np.squeeze(nc.variables['truth'][read_index,])
-                    xa = np.transpose(np.squeeze(nc.variables['posterior'][read_index,]))
-                nc.close()
-            except Exception as Instance:
-                print 'Exception occured in %s of %s' % (source, module)
-                print 'Exception occured during reading of %s' % (restart.filename)
-                print type(Instance)
-                print Instance.args
-                print Instance
-                sys.exit(1)
-
-            if ( (len(np.shape(xa)) == 1) and (Nens != None) ):
-                # populate initial ensemble analysis by perturbing the analysis and re-centering
-                pert = 0.001 * ( np.random.randn(model.Ndof,Nens) )
-                tmp = np.transpose(xa + np.transpose(pert))
-                xa = np.transpose(np.transpose(tmp) - np.mean(tmp,axis=1) + xa)
+            [xt, xa] = read_from_restart(restart, Nens=Nens)
 
     elif ( model.Name == 'L96' ):
 
         if ( restart.time == None ):
-            print '... from LE 1998'
+            print '... from Lorenz and Emanuel, 1998'
 
             xt    = np.ones(model.Ndof) * model.Par[0]
             xt[0] = 1.001 * model.Par[0]
 
-            if ( Nens == None ):
-                pert = 0.001 * ( np.random.randn(model.Ndof) )
-                xa = xt + pert
-            else:
-                # populate initial ensemble analysis by perturbing true state and recentering
-                pert = 0.001 * ( np.random.randn(model.Ndof,Nens) )
-                xa = np.transpose(xt + np.transpose(pert))
-                xa = np.transpose(np.transpose(xa) - np.mean(xa,axis=1) + xt)
+            xa = perturb_truth(xt, model, Nens=Nens)
 
         else:
-            if not os.path.isfile(restart.filename):
-                print 'ERROR : %s does not exist ' % restart.filename
-                sys.exit(2)
 
-            try:
-                nc = Dataset(restart.filename, mode='r', format='NETCDF4')
-                ntime = len(nc.dimensions['ntime'])
-                if   ( restart.time == 0 ): read_index = 0
-                elif ( restart.time >  0 ): read_index = restart.time - 1
-                elif ( restart.time <  0 ): read_index = ntime + restart.time
-                if ( (read_index < 0) or (read_index >= ntime) ):
-                    print 'ERROR : t = %d does not exist in %s' % (read_index+1, restart.filename)
-                    print '        valid options are t = +/- [1 ... %d]' % ntime
-                    sys.exit(2)
-                else:
-                    print '... from t = %d in %s' % (read_index+1, restart.filename)
-                    xt = np.squeeze(nc.variables['truth'][read_index,])
-                    xa = np.transpose(np.squeeze(nc.variables['posterior'][read_index,]))
-                nc.close()
-            except Exception as Instance:
-                print 'Exception occured in %s of %s' % (source, module)
-                print 'Exception occured during reading of %s' % (restart.filename)
-                print type(Instance)
-                print Instance.args
-                print Instance
-                sys.exit(1)
-
-            if ( (len(np.shape(xa)) == 1) and (Nens != None) ):
-                # populate initial ensemble analysis by perturbing the analysis and re-centering
-                pert = 0.001 * ( np.random.randn(model.Ndof,Nens) )
-                tmp = np.transpose(xa + np.transpose(pert))
-                xa = np.transpose(np.transpose(tmp) - np.mean(tmp,axis=1) + xa)
+            [xt, xa] = read_from_restart(restart, Nens=Nens)
 
     return [xt, xa]
 # }}}

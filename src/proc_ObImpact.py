@@ -87,6 +87,9 @@ def main():
         fig1.savefig(fname_fig + '-dJ.eps', dpi=300,orientation=fOrient,format='eps')
         fig2.savefig(fname_fig + '-dJa.eps',dpi=300,orientation=fOrient,format='eps')
         fig3.savefig(fname_fig + '-dJb.eps',dpi=300,orientation=fOrient,format='eps')
+        fig1.savefig(fname_fig + '-dJ.png', dpi=100,orientation=fOrient,format='png')
+        fig2.savefig(fname_fig + '-dJa.png',dpi=100,orientation=fOrient,format='png')
+        fig3.savefig(fname_fig + '-dJb.png',dpi=100,orientation=fOrient,format='png')
         print 'all done ...'
     else:
         pyplot.show()

@@ -53,12 +53,10 @@ def main():
     if ( eOI < 0 ): eOI = DA.nassim
 
     # allocate appropriate space for variables upfront:
-    e_dJb = np.zeros(eOI - sOI) * np.NaN
-    e_dJa = np.zeros(eOI - sOI) * np.NaN
-    e_dJ  = np.zeros(eOI - sOI) * np.NaN
-    a_dJb = np.zeros(eOI - sOI) * np.NaN
-    a_dJa = np.zeros(eOI - sOI) * np.NaN
-    a_dJ  = np.zeros(eOI - sOI) * np.NaN
+    e_dJb = np.zeros(((eOI - sOI), model.Ndof)) * np.NaN
+    e_dJa = np.zeros(((eOI - sOI), model.Ndof)) * np.NaN
+    a_dJb = np.zeros(((eOI - sOI), model.Ndof)) * np.NaN
+    a_dJa = np.zeros(((eOI - sOI), model.Ndof)) * np.NaN
 
     # time-vector for DA.t0 to nf*DA.ntimes:
     tf = np.arange(DA.t0,nf*DA.ntimes+model.dt,model.dt)
@@ -149,18 +147,17 @@ def main():
         Jbp = Jb - np.mean(Jb,axis=0)
         JbHXb = np.dot(Jbp,np.transpose(np.dot(H[valInd,:],Xbpi))) / (ensDA.Nens - 1)
         Kmb = np.linalg.inv(np.cov(np.dot(H[valInd,:],Xbi),ddof=1) + np.diag(R[valInd,valInd]))
-        e_dJb[index] = np.dot(JbHXb,np.dot(Kmb,dy))
 
         xfmet = np.transpose(mxf * (np.transpose(Xaf) - xtf))
         Ja = 0.5 * np.diag(np.dot(np.transpose(xfmet), xfmet))
         Jap = Ja - np.mean(Ja,axis=0)
         JaHXa = np.dot(Jap,np.transpose(np.dot(H[valInd,:],Xapi))) / (ensDA.Nens - 1)
         Kma = np.linalg.inv(np.diag(R[valInd,valInd]))
-        e_dJa[index] = np.dot(JaHXa,np.dot(Kma,dy))
 
-        e_dJ[index] = e_dJb[index] + e_dJa[index]
+        e_dJb[index,valInd] = JbHXb * np.dot(Kmb,dy)
+        e_dJa[index,valInd] = JaHXa * np.dot(Kma,dy)
 
-        print 'dJe = %5.4f | dJe_a = %5.4f | dJe_b = %5.4f ' % (e_dJ[index], e_dJa[index], e_dJb[index] )
+        print 'dJe = %12.5f | dJe_a = %12.5f | dJe_b = %12.5f ' % ( np.nansum(e_dJa[index,:] + e_dJb[index,:]), np.nansum(e_dJa[index,:]), np.nansum(e_dJb[index,:]) )
 
         # A D J O I N T - based observation impact
 
@@ -172,20 +169,19 @@ def main():
         Jxbf = mxf * (xbmf[-1,:] - xtf)
         Jxb  = advance_model_tlm(model, Jxbf, tf, xbmf, tf, adjoint=True, perfect=False)
         Jxbi = Jxb[-1,:].copy()
-        a_dJb[index] = np.dot(Jxbi,np.dot(K,dy))
 
         Jxaf = mxf * (xamf[-1,:] - xtf)
         Jxa  = advance_model_tlm(model, Jxaf, tf, xamf, tf, adjoint=True, perfect=False)
         Jxai = Jxa[-1,:].copy()
-        a_dJa[index] = np.dot(Jxai,np.dot(K,dy))
 
-        a_dJ[index] = a_dJb[index] + a_dJa[index]
+        a_dJb[index,:] = Jxbi * np.dot(K,dy)
+        a_dJa[index,:] = Jxai * np.dot(K,dy)
 
-        print 'dJa = %5.4f | dJa_a = %5.4f | dJa_b = %5.4f ' % (a_dJ[index], a_dJa[index], a_dJb[index] )
+        print 'dJa = %12.5f | dJa_a = %12.5f | dJa_b = %12.5f ' % (np.nansum(a_dJa[index,:]+a_dJb[index,:]), np.nansum(a_dJa[index,:]), np.nansum(a_dJb[index,:]) )
 
     # write the observation impact to disk:
-    object = {'ens_dJ' : e_dJ, 'ens_dJb' : e_dJb, 'ens_dJa' : e_dJa,
-              'adj_dJ' : a_dJ, 'adj_dJb' : a_dJb, 'adj_dJa' : a_dJa}
+    object = {'ens_dJb' : e_dJb, 'ens_dJa' : e_dJa,
+              'adj_dJb' : a_dJb, 'adj_dJa' : a_dJa}
 
     fname_ObImpact = fname.replace('.nc4','.dat')
     fname_ObImpact = fname_ObImpact.replace('diag','ObImpact')

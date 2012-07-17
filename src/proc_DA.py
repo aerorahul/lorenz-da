@@ -55,8 +55,8 @@ def main():
     else:
         xt, Xb, Xa, y, H, R, tmpvar                    = read_diag(fname, 0, end_time=DA.nassim)
 
-    if ( ( not DA.do_hybrid ) and ( hasttr(ensDA,'update') ) ): evratio = tmpvar
-    if ( ( not DA.do_hybrid ) and ( hasttr(varDA,'update') ) ): niters  = tmpvar
+    if ( ( not DA.do_hybrid ) and ( hasattr(ensDA,'update') ) ): evratio = tmpvar
+    if ( ( not DA.do_hybrid ) and ( hasattr(varDA,'update') ) ): niters  = tmpvar
 
     if ( hasattr(ensDA,'update') ):
         Xb      = np.transpose(Xb, (0,2,1))

@@ -57,12 +57,29 @@ def main():
 
     fname_fig = fname.split('.dat')[0]
 
-    adJ  = object['adj_dJ' ]
-    edJ  = object['ens_dJ' ]
-    adJa = object['adj_dJa']
-    adJb = object['adj_dJb']
-    edJa = object['ens_dJa']
-    edJb = object['ens_dJb']
+    old_format = False
+    if ( ('ens_dJ' in object.keys()) or ('adj_dJ' in object.keys()) ): old_format = True
+
+    if ( old_format ):
+        adJa = object['adj_dJa']
+        adJb = object['adj_dJb']
+        edJa = object['ens_dJa']
+        edJb = object['ens_dJb']
+        adJ  = object['adj_dJ' ]
+        edJ  = object['ens_dJ' ]
+    else:
+        adJai = object['adj_dJa']
+        adJbi = object['adj_dJb']
+        edJai = object['ens_dJa']
+        edJbi = object['ens_dJb']
+
+        adJa  = np.nansum(adJai,axis=1)
+        adJb  = np.nansum(adJbi,axis=1)
+        edJa  = np.nansum(edJai,axis=1)
+        edJb  = np.nansum(edJbi,axis=1)
+
+        adJ   = adJa + adJb
+        edJ   = edJa + edJb
 
     if ( sOI < 0 ): sOI = 0
     if ( eOI < 0 ): eOI = len(adJ)

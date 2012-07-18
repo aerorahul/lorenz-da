@@ -21,8 +21,9 @@ __status__    = "Prototype"
 ###############################################################
 
 ###############################################################
-import numpy      as     np
-from   matplotlib import pyplot
+import numpy         as     np
+from   matplotlib    import pyplot, cm
+from   module_Lorenz import *
 ###############################################################
 
 ###############################################################
@@ -269,6 +270,31 @@ def plot_ObImpact(dJa, dJe, sOI=None, eOI=None, title=None, xlabel=None, ylabel=
     pyplot.title(title,   fontsize=14)
     pyplot.xlabel(xlabel, fontsize=12)
     pyplot.ylabel(ylabel, fontsize=12)
+
+    pyplot.hold(False)
+
+    return fig
+###############################################################
+
+###############################################################
+def plot_ObImpact_L96(dJ, N=1, t=0):
+
+    fig = plot_L96(N=N, t=t)
+
+    theta = np.linspace(0.0,2*np.pi,N+1)
+    r = np.ones(N+1) * 35.0
+
+    tmp = np.zeros(N+1) ; tmp[1:] = dJ ; tmp[0] = dJ[-1]
+
+    sort_ind = np.flipud(np.argsort(tmp))
+
+    cmax = np.nanmax(np.abs(tmp))
+    area = ( np.abs(tmp) / cmax ) * 5000
+
+    pyplot.scatter(theta[sort_ind],r[sort_ind],s=area[sort_ind],c=tmp[sort_ind],alpha=0.75,cmap=cm.get_cmap(name='PuOr_r',lut=20))
+
+    pyplot.colorbar()
+    pyplot.clim(-cmax,cmax)
 
     pyplot.hold(False)
 

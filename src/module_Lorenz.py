@@ -317,31 +317,34 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None):
         fig = pyplot.figure(figNum)
     pyplot.clf()
     mean_dist = 35.0
-    ax = fig.add_axes([0.1, 0.1, 0.8, 0.8], polar=True)
+    pyplot.subplot(111, polar=True)
     theta = np.linspace(0.0,2*np.pi,N+1)
     pyplot.hold(True)
+
+    # start by plotting a dummy tiny white dot dot at 0,0
+    pyplot.plot(0, 0, 'w.', markeredgecolor='w', markersize=0.0)
 
     if ( xb != None ):
         if ( len(xb.shape) == 1 ):
             tmp = np.zeros((N,1)) ; tmp[:,0] = xb ; xb = tmp
         for M in range(0, xb.shape[1]):
             tmp = np.zeros(N+1) ; tmp[1:] = xb[:,M] ; tmp[0] = xb[-1,M]
-            ax.plot(theta, tmp+mean_dist, 'b-')
+            pyplot.plot(theta, tmp+mean_dist, 'b-')
     if ( xa != None ):
         if ( len(xa.shape) == 1 ):
             tmp = np.zeros((N,1)) ; tmp[:,0] = xa ; xa = tmp
         for M in range(0, xa.shape[1]):
             tmp = np.zeros(N+1) ; tmp[1:] = xa[:,M] ; tmp[0] = xa[-1,M]
-            ax.plot(theta, tmp+mean_dist, 'r-')
+            pyplot.plot(theta, tmp+mean_dist, 'r-')
     if ( ver != None ):
         tmp = np.zeros(N+1) ; tmp[1:] = ver ; tmp[0]= ver[-1]
-        ax.plot(theta, tmp+mean_dist, 'k-', linewidth=2)
+        pyplot.plot(theta, tmp+mean_dist, 'k-', linewidth=2)
     if ( obs != None ):
         tmp = np.zeros(N+1) ; tmp[1:] = obs ; tmp[0] = obs[-1]
-        ax.plot(theta, tmp+mean_dist, 'yo', markeredgecolor='y')
+        pyplot.plot(theta, tmp+mean_dist, 'yo', markeredgecolor='y')
 
-    ax.set_rmin(0)
-    ax.set_rmax(mean_dist+25)
+    pyplot.gca().set_rmin(0.0)
+    pyplot.gca().set_rmax(mean_dist+25.0)
     rgrid  = np.array(np.linspace(10,mean_dist+25,5,endpoint=False),dtype=int)
     rlabel = []
     rgrid, rlabel = pyplot.rgrids(rgrid, rlabel)
@@ -351,11 +354,10 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None):
     tlabel = np.array(np.linspace(0, 40,20,endpoint=False),dtype=int)
     tgrid, tlabel = pyplot.thetagrids(tgrid, tlabel)
 
-    pyplot.hold(False)
     title_str = 'k = %d' % (t)
-    ax.set_title(title_str,fontweight='bold',fontsize=14)
+    pyplot.title(title_str,fontweight='bold',fontsize=14)
 
-    return
+    return fig
 # }}}
 ###############################################################
 

@@ -58,10 +58,10 @@ def main():
 
     fig = pyplot.figure()
     pyplot.hold(True)
-    pyplot.imshow(Matrix, cmap=cm.get_cmap(name='PuOr_r',lut=16), interpolation='nearest')
+    pyplot.imshow(Matrix, cmap=cm.get_cmap(name='PuOr_r',lut=64), interpolation='nearest')
     pyplot.gca().invert_yaxis()
     pyplot.colorbar()
-    pyplot.clim(-1.4,1.4)
+    pyplot.clim(-1.6,1.6)
 
     locs, labs = pyplot.xticks()
     newlocs = np.arange(0,nH)

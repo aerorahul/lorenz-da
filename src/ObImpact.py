@@ -154,8 +154,8 @@ def main():
         JaHXa = np.dot(Jap,np.transpose(np.dot(H[valInd,:],Xapi))) / (ensDA.Nens - 1)
         Kma = np.linalg.inv(np.diag(R[valInd,valInd]))
 
-        e_dJb[index,valInd] = JbHXb * np.dot(Kmb,dy)
-        e_dJa[index,valInd] = JaHXa * np.dot(Kma,dy)
+        e_dJb[index,valInd] = np.dot(np.transpose(Kmb),JbHXb) * dy
+        e_dJa[index,valInd] = np.dot(np.transpose(Kma),JaHXa) * dy
 
         print 'dJe = %12.5f | dJe_a = %12.5f | dJe_b = %12.5f ' % ( np.nansum(e_dJa[index,:] + e_dJb[index,:]), np.nansum(e_dJa[index,:]), np.nansum(e_dJb[index,:]) )
 
@@ -174,8 +174,8 @@ def main():
         Jxa  = advance_model_tlm(model, Jxaf, tf, xamf, tf, adjoint=True, perfect=False)
         Jxai = Jxa[-1,:].copy()
 
-        a_dJb[index,:] = Jxbi * np.dot(K,dy)
-        a_dJa[index,:] = Jxai * np.dot(K,dy)
+        a_dJb[index,valInd] = np.dot(np.transpose(K),Jxbi) * dy
+        a_dJa[index,valInd] = np.dot(np.transpose(K),Jxai) * dy
 
         print 'dJa = %12.5f | dJa_a = %12.5f | dJa_b = %12.5f ' % (np.nansum(a_dJa[index,:]+a_dJb[index,:]), np.nansum(a_dJa[index,:]), np.nansum(a_dJb[index,:]) )
 

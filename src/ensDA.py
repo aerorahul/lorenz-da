@@ -23,13 +23,9 @@ __status__    = "Prototype"
 ###############################################################
 import sys
 import numpy         as     np
-from   scipy         import integrate, io
-from   matplotlib    import pyplot
-from   netCDF4       import Dataset
 from   module_Lorenz import *
 from   module_DA     import *
 from   module_IO     import *
-from   plot_stats    import *
 from   param_ensDA   import *
 ###############################################################
 
@@ -85,6 +81,5 @@ def main():
 ###############################################################
 
 ###############################################################
-if __name__ == "__main__":
-	main()
+if __name__ == "__main__": main()
 ###############################################################

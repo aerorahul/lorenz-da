@@ -22,9 +22,9 @@ __status__    = "Prototype"
 ###############################################################
 
 ###############################################################
-import os, sys
+import os
+import sys
 import numpy         as     np
-import cPickle       as     cPickle
 from   matplotlib    import pyplot, cm
 from   module_IO     import *
 ###############################################################
@@ -37,41 +37,28 @@ def main():
 
     [dir_ObImp,fprefix,nH,nR] = get_input_arguments()
 
-    fname_fig = dir_ObImp + os.sep + fprefix + 'varyHR'
+    fname_fig = dir_ObImp + os.sep + fprefix + 'HR'
     save_fig  = False
 
-    HRMatrix = np.zeros((nR,nH)) * np.NaN
+    Matrix = np.zeros((nR,nH)) * np.NaN
 
     for h in range(0,nH):
         for r in range(0,nR):
 
-            fname = dir_ObImp + os.sep + fprefix + 'H' + str(h+1) + 'R' + str(r+1) + '.dat'
+            fname = dir_ObImp + os.sep + fprefix + 'H' + str(h+1) + 'R' + str(r+1) + '.nc4'
 
-            if ( not os.path.isfile(fname) ):
-                print '%s does not exist' % fname
-                sys.exit(1)
-            else:
-                try:
-                    fh = open(fname,'rb')
-                    object = cPickle.load(fh)
-                    fh.close()
-                except Exception as Instance:
-                    print 'Exception occured during read of %s' % fname
-                    print type(Instance)
-                    print Instance.args
-                    print Instance
-                    sys.exit(1)
+            if ( (h == 0) and (r == 0) ): [model, DA, ensDA, varDA] = read_diag_info(fname)
 
-                adJ  = object['adj_dJ']
-                edJ  = object['ens_dJ']
-                mean_adJ = np.mean(adJ)
-                mean_edJ = np.mean(edJ)
+            [edJai, edJbi, adJai, adJbi] = read_ObImpact_diag(fname,0,end_time=DA.nassim)
 
-                HRMatrix[r,h] = mean_edJ - mean_adJ
+            mean_adJ = np.mean( np.nansum(adJai,axis=1) + np.nansum(adJbi,axis=1) )
+            mean_edJ = np.mean( np.nansum(edJai,axis=1) + np.nansum(edJbi,axis=1) )
+
+            Matrix[r,h] = mean_edJ - mean_adJ
 
     fig = pyplot.figure()
     pyplot.hold(True)
-    pyplot.imshow(HRMatrix, cmap=cm.get_cmap(name='PuOr_r',lut=16), interpolation='nearest')
+    pyplot.imshow(Matrix, cmap=cm.get_cmap(name='PuOr_r',lut=16), interpolation='nearest')
     pyplot.gca().invert_yaxis()
     pyplot.colorbar()
     pyplot.clim(-1.4,1.4)
@@ -91,9 +78,9 @@ def main():
 
     for h in range(0,nH):
         for r in range(0,nR):
+            pyplot.text(h-0.225, r-0.0625, '%5.4f' % Matrix[r,h])
 
-            txtstr = '%5.4f' % HRMatrix[r,h]
-            pyplot.text(h-0.225,r-0.0625,txtstr)
+    pyplot.hold(False)
 
     if ( save_fig ):
         fOrient = 'portrait'
@@ -106,6 +93,5 @@ def main():
 ###############################################################
 
 ###############################################################
-if __name__ == "__main__":
-	main()
+if __name__ == "__main__": main()
 ###############################################################

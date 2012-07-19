@@ -23,13 +23,9 @@ __status__    = "Prototype"
 ###############################################################
 import sys
 import numpy         as     np
-from   scipy         import integrate, io
-from   matplotlib    import pyplot
-from   netCDF4       import Dataset
 from   module_Lorenz import *
 from   module_DA     import *
 from   module_IO     import *
-from   plot_stats    import *
 from   param_hybDA   import *
 ###############################################################
 
@@ -52,11 +48,8 @@ def main():
         xbc = np.mean(Xb,axis=1)
         if ( fdvar ): Xbb = Xa.copy()
 
-    if ( DA.do_hybrid ):
-        print 'load climatological covariance ...'
-        nc = Dataset(model.Name + '_climo_B.nc4','r')
-        Bs = nc.variables['B'][:]
-        nc.close()
+    # load climatological covariance once and for all ...
+    if ( DA.do_hybrid ): Bs = read_clim_cov(model)
 
     if ( fdvar ):
         # check length of assimilation window
@@ -163,6 +156,5 @@ def main():
 ###############################################################
 
 ###############################################################
-if __name__ == "__main__":
-	main()
+if __name__ == "__main__": main()
 ###############################################################

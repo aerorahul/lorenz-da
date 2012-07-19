@@ -38,7 +38,7 @@ model.Name = 'L63'           # model name
 
 if   ( model.Name == 'L63' ):
     model.Ndof = 3                          # model degrees of freedom
-    model.Par  = [10.0, 28.0, 8.0/3.0]      # model parameters F, dF
+    model.Par  = [10.0, 28.0, 8.0/3.0]      # model parameters [sigma, rho, beta]
     model.dt   = 1.0e-3                     # model time-step
 elif ( model.Name == 'L96' ):
     model.Ndof = 40                         # model degrees of freedom

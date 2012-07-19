@@ -559,3 +559,228 @@ def read_truth(fname, time, end_time=None):
     return truth, obs, obs_operator, obs_err_var
 # }}}
 ###############################################################
+
+###############################################################
+def transfer_ga(file_src, file_dst):
+# {{{
+    '''
+    transfer global attributes from one netCDF file to another
+
+    transfer_ga(file_src, file_dst)
+
+    file_src - global attributes to read from ( file_src must exist )
+    file_dst - global attributes to write to  ( file_dst must exist )
+    '''
+
+    source = 'transfer_ga'
+
+    if not os.path.isfile(file_src):
+        print 'file to read global attributes from does not exist ' + file_src
+        sys.exit(2)
+
+    if not os.path.isfile(file_dst):
+        print 'file to write global attributes to does not exist ' + file_dst
+        sys.exit(2)
+
+    try:
+
+        nc_src = Dataset(file_src, mode='r', clobber=False, format='NETCDF4')
+        nc_dst = Dataset(file_dst, mode='a', clobber=False, format='NETCDF4')
+
+        for attr_name in nc_src.ncattrs():
+            exec( 'attr_value = nc_src.%s' % (attr_name) )
+            exec( 'nc_dst.%s = attr_value' % (attr_name) )
+
+        nc_src.close()
+        nc_dst.close()
+
+    except Exception as Instance:
+
+        print 'Exception occured in %s of %s' % (source, module)
+        print 'Exception occured during transfering global attributes from %s to %s' % ( file_src, file_dst )
+        print type(Instance)
+        print Instance.args
+        print Instance
+        sys.exit(1)
+
+    return
+# }}}
+###############################################################
+
+###############################################################
+def create_ObImpact_diag(fname, model, DA, ensDA, varDA):
+# {{{
+    '''
+    create an output file for writing observation impact diagnostics
+
+    create_ObImpact_diag(dfile, model)
+
+    fname - name of the observation impact file to create
+    model - model Class
+       DA - DA Class
+    ensDA - ensemble DA Class
+    varDA - variational DA Class
+    '''
+
+    source = 'create_ObImpact_diag'
+
+    try:
+
+        nc  = Dataset(fname, mode='w', clobber=True, format='NETCDF4')
+
+        Dim = nc.createDimension('ntime', size=None      )
+        Dim = nc.createDimension('ndof',  size=model.Ndof)
+        Dim = nc.createDimension('nobs',  size=DA.Nobs   )
+        Dim = nc.createDimension('ncopy', size=ensDA.Nens)
+
+        Var = nc.createVariable('ens_dJa','f8',('ntime','nobs',))
+        Var = nc.createVariable('ens_dJb','f8',('ntime','nobs',))
+        Var = nc.createVariable('adj_dJa','f8',('ntime','nobs',))
+        Var = nc.createVariable('adj_dJb','f8',('ntime','nobs',))
+
+        nc.close()
+
+    except Exception as Instance:
+
+        print 'Exception occured in %s of %s' % (source, module)
+        print 'Exception occured during creating %s' % (fname)
+        print type(Instance)
+        print Instance.args
+        print Instance
+        sys.exit(1)
+
+    return
+# }}}
+###############################################################
+
+###############################################################
+def write_ObImpact_diag(fname, time, ens_dJa=None, ens_dJb=None, adj_dJa=None, adj_dJb=None):
+# {{{
+    '''
+    write the observation impact diagnostics to an output file
+
+    write_ObImpact_diag(fname, time, ens_dJa=None, ens_dJb=None, adj_dJa=None, adj_dJb=None)
+
+      fname - name of the output file, must already exist
+       time - time index to write diagnostics for
+    ens_dJa - 2nd order correction to ensemble estimate of observation impact
+    ens_dJb - 1st order ensemble estimate of observation impact
+    adj_dJa - 2nd order correction to adjoint estimate of observation impact
+    adj_dJb - 1st order adjoint estimate of observation impact
+    '''
+
+    source = 'write_ObImpact_diag'
+
+    if not os.path.isfile(fname):
+        print 'file does not exist ' + fname
+        sys.exit(2)
+
+    try:
+
+        nc = Dataset(fname, mode='a', clobber=True, format='NETCDF4')
+
+        if ( ens_dJa != None ): nc.variables['ens_dJa'][time,:] = ens_dJa.copy()
+        if ( ens_dJb != None ): nc.variables['ens_dJb'][time,:] = ens_dJb.copy()
+        if ( adj_dJa != None ): nc.variables['adj_dJa'][time,:] = adj_dJa.copy()
+        if ( adj_dJb != None ): nc.variables['adj_dJb'][time,:] = adj_dJb.copy()
+
+        nc.close()
+
+    except Exception as Instance:
+
+        print 'Exception occured in %s of %s' % (source, module)
+        print 'Exception occured during writing to %s' % (fname)
+        print type(Instance)
+        print Instance.args
+        print Instance
+        sys.exit(1)
+
+    return
+# }}}
+###############################################################
+
+###############################################################
+def read_ObImpact_diag(fname, time, end_time=None):
+# {{{
+    '''
+    read the observation impact diagnostics from an output file given name and time index
+
+    read_ObImpact_diag(fname, time, end_time=None)
+
+       fname - name of the file to read from, must already exist
+        time - time index to read diagnostics
+    end_time - return chunk of data from time to end_time (None)
+     ens_dJa - 2nd order correction to ensemble estimate of observation impact
+     ens_dJb - 1st order ensemble estimate of observation impact
+     adj_dJa - 2nd order correction to adjoint estimate of observation impact
+     adj_dJb - 1st order adjoint estimate of observation impact
+    '''
+
+    source = 'read_ObImpact_diag'
+
+    if not os.path.isfile(fname):
+        print 'file does not exist ' + fname
+        sys.exit(2)
+
+    if ( end_time == None ): end_time = time + 1
+
+    try:
+
+        nc = Dataset(fname, mode='r', format='NETCDF4')
+
+        ens_dJa = nc.variables['ens_dJa'][time:end_time,]
+        ens_dJb = nc.variables['ens_dJb'][time:end_time,]
+        adj_dJa = nc.variables['adj_dJa'][time:end_time,]
+        adj_dJb = nc.variables['adj_dJb'][time:end_time,]
+
+        nc.close()
+
+    except Exception as Instance:
+
+        print 'Exception occured in %s of %s' % (source, module)
+        print 'Exception occured during reading of %s' % (fname)
+        print type(Instance)
+        print Instance.args
+        print Instance
+        sys.exit(1)
+
+    return [ens_dJa, ens_dJb, adj_dJa, adj_dJb]
+# }}}
+###############################################################
+
+###############################################################
+def read_clim_cov(model):
+# {{{
+    '''
+    read the climatological covariance from file
+
+    Bc = read_clim_cov(model)
+
+    model - model Class
+       Bc - climatological covariance
+    '''
+
+    source = 'read_clim_cov'
+
+    print 'load climatological covariance for %s ...' % (model.Name)
+
+    try:
+
+        fname = '%s_climo_B.nc4' % model.Name
+
+        nc = Dataset(fname,'r')
+        Bc = nc.variables['B'][:]
+        nc.close()
+
+    except Exception as Instance:
+
+        print 'Exception occured in %s of %s' % (source, module)
+        print 'Exception occured during reading of %s' % (fname)
+        print type(Instance)
+        print Instance.args
+        print Instance
+        sys.exit(1)
+
+    return Bc
+# }}}
+###############################################################

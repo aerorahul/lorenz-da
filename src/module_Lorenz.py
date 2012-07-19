@@ -354,7 +354,8 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None):
     tlabel = np.array(np.linspace(0, 40,20,endpoint=False),dtype=int)
     tgrid, tlabel = pyplot.thetagrids(tgrid, tlabel)
 
-    title_str = 'k = %d' % (t)
+    if ( np.isreal(t) ): title_str = 'k = %d' % (t)
+    else:                title_str = str(t)
     pyplot.title(title_str,fontweight='bold',fontsize=14)
 
     return fig

@@ -24,9 +24,6 @@ __status__    = "Prototype"
 ###############################################################
 import sys
 import numpy          as     np
-import cPickle        as     cPickle
-from   matplotlib     import pyplot
-from   netCDF4        import Dataset
 from   module_Lorenz  import *
 from   module_IO      import *
 ###############################################################
@@ -38,10 +35,10 @@ def main():
     nf = 4
 
     # read in input arguments:
-    [_, fname, sOI, eOI] = get_input_arguments()
+    [_, fname_diag, sOI, eOI] = get_input_arguments()
 
     # get model, DA class data and necessary attributes from the diagnostic file:
-    [model, DA, ensDA, varDA] = read_diag_info(fname)
+    [model, DA, ensDA, varDA] = read_diag_info(fname_diag)
 
     # choose metric:
     mxf    = np.zeros(model.Ndof)
@@ -53,20 +50,20 @@ def main():
     if ( eOI < 0 ): eOI = DA.nassim
 
     # allocate appropriate space for variables upfront:
-    e_dJb = np.zeros(((eOI - sOI), model.Ndof)) * np.NaN
-    e_dJa = np.zeros(((eOI - sOI), model.Ndof)) * np.NaN
-    a_dJb = np.zeros(((eOI - sOI), model.Ndof)) * np.NaN
-    a_dJa = np.zeros(((eOI - sOI), model.Ndof)) * np.NaN
+    e_dJb = np.zeros(model.Ndof) * np.NaN
+    e_dJa = np.zeros(model.Ndof) * np.NaN
+    a_dJb = np.zeros(model.Ndof) * np.NaN
+    a_dJa = np.zeros(model.Ndof) * np.NaN
 
     # time-vector for DA.t0 to nf*DA.ntimes:
     tf = np.arange(DA.t0,nf*DA.ntimes+model.dt,model.dt)
 
     # load climatological covariance once and for all:
-    if ( DA.do_hybrid ):
-        print 'load climatological covariance for %s ...' % (model.Name)
-        nc = Dataset(model.Name + '_climo_B.nc4','r')
-        Bc = nc.variables['B'][:]
-        nc.close()
+    if ( DA.do_hybrid ): Bc = read_clim_cov(model)
+
+    fname_ObImpact = fname_diag.replace('diag','ObImpact')
+    create_ObImpact_diag(fname_ObImpact, model, DA, ensDA, varDA)
+    transfer_ga(fname_diag, fname_ObImpact)
 
     for k in range(sOI,eOI):
 
@@ -74,9 +71,9 @@ def main():
 
         # read diagnostics from file
         if ( DA.do_hybrid ):
-            xti, Xbi, Xai, y, H, R, xbci, xaci, _, _ = read_diag(fname, k)
+            xti, Xbi, Xai, y, H, R, xbci, xaci, _, _ = read_diag(fname_diag, k)
         else:
-            xti, Xbi, Xai, y, H, R, _                = read_diag(fname, k)
+            xti, Xbi, Xai, y, H, R, _                = read_diag(fname_diag, k)
 
         # This is only applicable, when H and R are stored as (Ndof,Ndof) matrices in diag files.
         # Newer versions save H and R and vectors of length (Ndof)
@@ -136,8 +133,6 @@ def main():
             xbmf = advance_model(model, xbmi, tf,  perfect=False)
             xamf = advance_model(model, xami, tf,  perfect=False)
 
-        index = k - sOI
-
         # metric : J = (x^T)Wx ; dJ/dx = J_x = 2Wx ; choose W = I, x = xfmet, J_x = Jxf
 
         # E N S E M B L E - based observation impact
@@ -154,10 +149,10 @@ def main():
         JaHXa = np.dot(Jap,np.transpose(np.dot(H[valInd,:],Xapi))) / (ensDA.Nens - 1)
         Kma = np.linalg.inv(np.diag(R[valInd,valInd]))
 
-        e_dJb[index,valInd] = np.dot(np.transpose(Kmb),JbHXb) * dy
-        e_dJa[index,valInd] = np.dot(np.transpose(Kma),JaHXa) * dy
+        e_dJb[valInd] = np.dot(np.transpose(Kmb),JbHXb) * dy
+        e_dJa[valInd] = np.dot(np.transpose(Kma),JaHXa) * dy
 
-        print 'dJe = %12.5f | dJe_a = %12.5f | dJe_b = %12.5f ' % ( np.nansum(e_dJa[index,:] + e_dJb[index,:]), np.nansum(e_dJa[index,:]), np.nansum(e_dJb[index,:]) )
+        print 'dJe = %12.5f | dJe_a = %12.5f | dJe_b = %12.5f ' % ( np.nansum(e_dJa + e_dJb), np.nansum(e_dJa), np.nansum(e_dJb) )
 
         # A D J O I N T - based observation impact
 
@@ -174,21 +169,12 @@ def main():
         Jxa  = advance_model_tlm(model, Jxaf, tf, xamf, tf, adjoint=True, perfect=False)
         Jxai = Jxa[-1,:].copy()
 
-        a_dJb[index,valInd] = np.dot(np.transpose(K),Jxbi) * dy
-        a_dJa[index,valInd] = np.dot(np.transpose(K),Jxai) * dy
+        a_dJb[valInd] = np.dot(np.transpose(K),Jxbi) * dy
+        a_dJa[valInd] = np.dot(np.transpose(K),Jxai) * dy
 
-        print 'dJa = %12.5f | dJa_a = %12.5f | dJa_b = %12.5f ' % (np.nansum(a_dJa[index,:]+a_dJb[index,:]), np.nansum(a_dJa[index,:]), np.nansum(a_dJb[index,:]) )
+        print 'dJa = %12.5f | dJa_a = %12.5f | dJa_b = %12.5f ' % (np.nansum(a_dJa + a_dJb), np.nansum(a_dJa), np.nansum(a_dJb) )
 
-    # write the observation impact to disk:
-    object = {'ens_dJb' : e_dJb, 'ens_dJa' : e_dJa,
-              'adj_dJb' : a_dJb, 'adj_dJa' : a_dJa}
-
-    fname_ObImpact = fname.replace('.nc4','.dat')
-    fname_ObImpact = fname_ObImpact.replace('diag','ObImpact')
-
-    fh = open(fname_ObImpact, 'wb')
-    cPickle.dump(object,fh,2)
-    fh.close()
+        write_ObImpact_diag(fname_ObImpact, k-sOI, ens_dJa=e_dJa, ens_dJb=e_dJb, adj_dJa=a_dJa, adj_dJb=a_dJb)
 
     sys.exit(0)
 ###############################################################

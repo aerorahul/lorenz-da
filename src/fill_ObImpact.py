@@ -40,7 +40,7 @@ def main():
     fname_fig = dir_ObImp + os.sep + fprefix + 'varyHR'
     save_fig  = False
 
-    HRMatrix = np.zeros((5,5)) * np.NaN
+    HRMatrix = np.zeros((nR,nH)) * np.NaN
 
     for h in range(0,nH):
         for r in range(0,nR):
@@ -71,10 +71,10 @@ def main():
 
     fig = pyplot.figure()
     pyplot.hold(True)
-    pyplot.imshow(HRMatrix, cmap=cm.get_cmap(name='Oranges',lut=16), interpolation='nearest')
+    pyplot.imshow(HRMatrix, cmap=cm.get_cmap(name='PuOr_r',lut=16), interpolation='nearest')
     pyplot.gca().invert_yaxis()
     pyplot.colorbar()
-    pyplot.clim(-0.2,1.4)
+    pyplot.clim(-1.4,1.4)
 
     locs, labs = pyplot.xticks()
     newlocs = np.arange(0,nH)

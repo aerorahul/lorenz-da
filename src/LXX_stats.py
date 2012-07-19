@@ -9,7 +9,7 @@
 ###############################################################
 
 ###############################################################
-# LXX_stats.py - compute climatological covariance for the
+# LXX_stats.py - compute climatological covariances for the
 #                1963 Lorenz and 1998 Lorenz & Emanuel systems
 ###############################################################
 

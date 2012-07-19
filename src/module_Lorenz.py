@@ -252,17 +252,19 @@ def L96_tlm(x0, t, F, xsave, tsave, adjoint):
 ###############################################################
 
 ###############################################################
-def plot_L63(attractor,xdim=0,ydim=2,segment=None):
+def plot_L63(obs=None, ver=None, xb=None, xa=None, xdim=0, ydim=2, **kwargs):
 # {{{
     '''
     Plot the Lorenz 1963 attractor in 2D
 
-    plot_L63(attractor, xdim=0, ydim=2, segment=None)
+    plot_L63(obs=None, ver=None, xb=None, xa=None, xdim=0, ydim=2, **kwargs)
 
-    attractor - x,y,z from t = [0, T]
-         xdim - variable along x-axis (X)
-         ydim - variable along y-axis (Z)
-      segment - overlay segment on attractor (None)
+        obs - x,y,z from t = [0, T]
+        ver - x,y,z from t = [0, T]
+         xb - prior x,y,z from t = [0, T]
+         xa - posterior x,y,z from t = [0, T]
+       xdim - variable along x-axis (X)
+       ydim - variable along y-axis (Z)
     '''
 
     if ( xdim == ydim ):
@@ -283,24 +285,32 @@ def plot_L63(attractor,xdim=0,ydim=2,segment=None):
     fig = pyplot.figure()
     pyplot.clf()
     pyplot.hold(True)
-    pyplot.plot(attractor[:,xdim],attractor[:,ydim],color='gray',linewidth=1)
+
+    att = None
+    for key in kwargs:
+        if ( key == 'att' ): att = kwargs[key]
+
+    if ( att != None ): pyplot.plot(att[:,xdim], att[:,ydim], color='gray', linewidth=1)
+    if ( xb  != None ): pyplot.plot(xb[ :,xdim], xb[ :,ydim], 'b-', linewidth=1)
+    if ( xa  != None ): pyplot.plot(xa[ :,xdim], xa[ :,ydim], 'r-', linewidth=1)
+    if ( ver != None ): pyplot.plot(ver[:,xdim], ver[:,ydim], 'k-', linewidth=1)
+    if ( obs != None ): pyplot.plot(obs[:,xdim], obs[:,ydim], 'yo', markeredgecolor='y')
+
     pyplot.xlabel(xlab,fontweight='bold',fontsize=12)
     pyplot.ylabel(ylab,fontweight='bold',fontsize=12)
     pyplot.title('Lorenz attractor',fontweight='bold',fontsize=14)
-    if ( segment != None ):
-        pyplot.plot(segment[:,0],segment[:,2],'ro',linewidth=2)
-    pyplot.hold(False)
-    return
+
+    return fig
 # }}}
 ###############################################################
 
 ###############################################################
-def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None):
+def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwargs):
 # {{{
     '''
     Plot the Lorenz 1996 attractor in polar coordinates
 
-    plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None)
+    plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwargs)
 
          obs - observations [None]
          ver - truth [None]

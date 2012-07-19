@@ -286,7 +286,7 @@ def plot_ObImpact_L96(dJ, N=1, t=0):
 
     tmp = np.zeros(N+1) ; tmp[1:] = dJ ; tmp[0] = dJ[-1]
 
-    sort_ind = np.flipud(np.argsort(tmp))
+    sort_ind = np.argsort(tmp)
 
     cmax = np.nanmax(np.abs(tmp))
     area = ( np.abs(tmp) / cmax ) * 5000

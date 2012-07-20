@@ -24,6 +24,7 @@ __status__    = "Prototype"
 ###############################################################
 import sys
 import numpy         as     np
+from   commands      import getstatusoutput
 from   matplotlib    import pyplot
 from   module_IO     import *
 from   plot_stats    import *
@@ -92,8 +93,16 @@ def main():
         fig2.savefig(fname_fig + '-dJa.png',  dpi=100,orientation=fOrient,format='png')
         fig3.savefig(fname_fig + '-dJb.png',  dpi=100,orientation=fOrient,format='png')
 
-        fig4.savefig(fname_fig + '-ens_dJm.eps', dpi=300,orientation=fOrient,format='eps')
-        fig5.savefig(fname_fig + '-adj_dJm.eps', dpi=300,orientation=fOrient,format='eps')
+        # Fig 4. and 5. don't save well as transparent eps images, so save them as pdf and convert
+        # to eps after
+        fig4.savefig(fname_fig + '-ens_dJm.pdf', dpi=300,orientation=fOrient,format='pdf')
+        fig5.savefig(fname_fig + '-adj_dJm.pdf', dpi=300,orientation=fOrient,format='pdf')
+        cmd = 'pdftops -eps %s - | ps2eps > %s' % (fname_fig+'-ens_dJm.pdf',fname_fig+'-ens_dJm.eps')
+        [s,o] = getstatusoutput(cmd)
+        if ( s != 0 ): print 'Error : %s' % o
+        cmd = 'pdftops -eps %s - | ps2eps > %s' % (fname_fig+'-adj_dJm.pdf',fname_fig+'-adj_dJm.eps')
+        [s,o] = getstatusoutput(cmd)
+        if ( s != 0 ): print 'Error : %s' % o
 
         fig4.savefig(fname_fig + '-ens_dJm.png', dpi=100,orientation=fOrient,format='png')
         fig5.savefig(fname_fig + '-adj_dJm.png', dpi=100,orientation=fOrient,format='png')

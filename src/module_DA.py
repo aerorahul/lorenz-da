@@ -23,7 +23,6 @@ __status__    = "Prototype"
 ###############################################################
 import sys
 import numpy         as     np
-from   scipy         import integrate
 from   module_Lorenz import *
 ###############################################################
 
@@ -672,13 +671,7 @@ minimization - minimization class
         Jold = J
 
         # advance the background through the assimilation window with the full non-linear model
-        if   ( model.Name == 'L63'):
-            exec('xnl = integrate.odeint(%s, x, fdvar.twind, (model.Par,0.0))' % (model.Name))
-        elif ( model.Name == 'L96'):
-            exec('xnl = integrate.odeint(%s, x, fdvar.twind, (model.Par[0]+model.Par[1],0.0))' % (model.Name))
-        else:
-            print 'model %s is not defined' % model.Name
-            sys.exit(2)
+        xnl = advance_model(model, x, fdvar.twind, perfect=False)
 
         # cost function : J(x) = Jb + Jo
         # Jb = 0.5 * [x-xb]^T B^(-1) [x-xb]
@@ -707,10 +700,7 @@ minimization - minimization class
             tint = fdvar.twind[fdvar.twind_obsIndex[i-1]:fdvar.twind_obsIndex[i]+1]
 
             if ( len(tint) != 0 ):
-                if   ( model.Name == 'L63' ):
-                    exec('sxi = integrate.odeint(%s_tlm, gJy, tint, (model.Par,np.flipud(xnl),fdvar.twind, True))' % (model.Name))
-                elif ( model.Name == 'L96' ):
-                    exec('sxi = integrate.odeint(%s_tlm, gJy, tint, (model.Par[0]+model.Par[1],np.flipud(xnl),fdvar.twind, True))' % (model.Name))
+                sxi = advance_model_tlm(model, gJy, tint, xnl, fdvar.twind, adjoint=True, perfect=False))
                 gJy = sxi[-1,:].copy()
 
         J  =  Jb +  Jy
@@ -798,13 +788,7 @@ minimization - minimization class
         alpha_r = minimization.alpha
 
         # advance the background through the assimilation window with full non-linear model
-        if   ( model.Name == 'L63'):
-            exec('xnl = integrate.odeint(%s, xa, fdvar.twind, (model.Par,0.0))' % (model.Name))
-        elif ( model.Name == 'L96'):
-            exec('xnl = integrate.odeint(%s, xa, fdvar.twind, (model.Par[0]+model.Par[1],0.0))' % (model.Name))
-        else:
-            print 'model %s is not defined' % model.Name
-            sys.exit(2)
+        xnl = advance_model(model, xa, fdvar.twind, perfect=False)
 
         # get observational increment at all observation times
         for i in range(0,fdvar.nobstimes):
@@ -819,10 +803,7 @@ minimization - minimization class
             Jold = J
 
             # advance the increment through the assimilation window with TL model
-            if   ( model.Name == 'L63'):
-                exec('dxtl = integrate.odeint(%s_tlm, dxo, fdvar.twind, (model.Par,xnl,fdvar.twind,False))' % (model.Name))
-            elif ( model.Name == 'L96'):
-                exec('dxtl = integrate.odeint(%s_tlm, dxo, fdvar.twind, (model.Par[0]+model.Par[1],xnl,fdvar.twind,False))' % (model.Name))
+            dxtl = advance_model_tlm(model, dxo, fdvar.twind, xnl, fdvar.twind, adjoint=False, perfect=False)
 
             # cost function : J(dx_o) = Jb + Jy
             # Jb = 0.5 * [dx_o]^T B^(-1) [dx_o]
@@ -850,10 +831,7 @@ minimization - minimization class
                 tint = fdvar.twind[fdvar.twind_obsIndex[i-1]:fdvar.twind_obsIndex[i]+1]
 
                 if ( len(tint) != 0 ):
-                    if   ( model.Name == 'L63'):
-                        exec('sxi = integrate.odeint(%s_tlm, gJy, tint, (model.Par,np.flipud(xnl),fdvar.twind, True))' % (model.Name))
-                    elif   ( model.Name == 'L96'):
-                        exec('sxi = integrate.odeint(%s_tlm, gJy, tint, (model.Par[0]+model.Par[1],np.flipud(xnl),fdvar.twind, True))' % (model.Name))
+                    sxi = advance_model_tlm(model, gJy, tint, xnl, fdvar.twind, adjoint=True, perfect=False)
                     gJy = sxi[-1,:].copy()
 
             J  =  Jb +  Jy

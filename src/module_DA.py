@@ -181,7 +181,7 @@ def update_ensDA(Xb, y, R, H, ensDA):
 
             # localization
             if ( ensDA.localization.localize ):
-                dist = np.abs( ob - i ) / Ndof
+                dist = np.float( np.abs( ob - i ) ) / Ndof
                 if ( dist > 0.5 ): dist = 1.0 - dist
                 cov_factor = compute_cov_factor(dist, ensDA.localization.cov_cutoff)
             else:
@@ -700,7 +700,7 @@ minimization - minimization class
             tint = fdvar.twind[fdvar.twind_obsIndex[i-1]:fdvar.twind_obsIndex[i]+1]
 
             if ( len(tint) != 0 ):
-                sxi = advance_model_tlm(model, gJy, tint, xnl, fdvar.twind, adjoint=True, perfect=False))
+                sxi = advance_model_tlm(model, gJy, tint, xnl, fdvar.twind, adjoint=True, perfect=False)
                 gJy = sxi[-1,:].copy()
 
         J  =  Jb +  Jy

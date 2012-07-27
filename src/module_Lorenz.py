@@ -298,7 +298,9 @@ def plot_L63(obs=None, ver=None, xb=None, xa=None, xdim=0, ydim=2, **kwargs):
 
     pyplot.xlabel(xlab,fontweight='bold',fontsize=12)
     pyplot.ylabel(ylab,fontweight='bold',fontsize=12)
-    pyplot.title('Lorenz attractor',fontweight='bold',fontsize=14)
+    title_str = 'Lorenz attractor'
+    pyplot.title(title_str,fontweight='bold',fontsize=14)
+    fig.canvas.set_window_title(title_str)
 
     return fig
 # }}}
@@ -367,6 +369,7 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwar
     if ( np.isreal(t) ): title_str = 'k = %d' % (t)
     else:                title_str = str(t)
     pyplot.title(title_str,fontweight='bold',fontsize=14)
+    fig.canvas.set_window_title(title_str)
 
     return fig
 # }}}

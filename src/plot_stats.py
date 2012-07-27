@@ -42,11 +42,13 @@ def plot_trace(obs=None, ver=None, xb=None, xa=None, N=1, figNum=None):
         pyplot.ylabel('x' + str(k+1),fontweight='bold',fontsize=12)
         pyplot.hold(False)
         if ( k == 0 ):
-            pyplot.title('Time trace',fontweight='bold',fontsize=14)
+            title = 'Time trace'
+            pyplot.title(title,fontweight='bold',fontsize=14)
         if ( k == 1 ):
             pyplot.legend(loc=0,ncol=2)
         if ( k == N-1 ):
             pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
+    fig.canvas.set_window_title(title)
     return fig
 ###############################################################
 
@@ -80,11 +82,13 @@ def plot_abs_error(xbe, xae, label=['x'], N=1, yscale='semilog', figNum=None):
         pyplot.text(0,yoffb,strb,fontsize=10)
         pyplot.text(0,yoffa,stra,fontsize=10)
         if ( k == 0 ):
-            pyplot.title('Absolute Error',fontweight='bold',fontsize=14)
+            title = 'Absolute Error'
+            pyplot.title(title,fontweight='bold',fontsize=14)
         if ( k == 1 ):
             pyplot.legend(loc=0)
         if ( k == N-1 ):
             pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
+    fig.canvas.set_window_title(title)
     return fig
 ###############################################################
 
@@ -127,6 +131,7 @@ def plot_rmse(xbrmse=None, xarmse=None, xyrmse=None, yscale='semilog', figNum=No
     pyplot.title(title,fontweight='bold',fontsize=14)
     pyplot.legend(loc=0,ncol=2)
     pyplot.hold(False)
+    fig.canvas.set_window_title(title)
     return fig
 ###############################################################
 
@@ -161,11 +166,13 @@ def plot_abs_error_var(xbev, xaev, label=['x'], N=1, yscale='semilog', figNum=No
         pyplot.text(0,yoffa,stra,fontsize=10)
         pyplot.hold(False)
         if ( k == 0 ):
-            pyplot.title('Ensemble Kalman Filter Error Variance ',fontweight='bold',fontsize=14)
+            title = 'Ensemble Kalman Filter Error Variance'
+            pyplot.title(title,fontweight='bold',fontsize=14)
         if ( k == 1 ):
             pyplot.legend(loc=1)
         if ( k == N-1 ):
             pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
+    fig.canvas.set_window_title(title)
     return fig
 ###############################################################
 
@@ -193,7 +200,9 @@ def plot_iteration_stats(itstats, figNum=None):
     pyplot.text(0.05*len(itstats),yoff,str,fontsize=10)
     pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
     pyplot.ylabel('# Iterations',     fontweight='bold',fontsize=12)
-    pyplot.title('# Iterations for cost function',fontweight='bold',fontsize=14)
+    title = '# Iterations for cost function'
+    pyplot.title(title,fontweight='bold',fontsize=14)
+    fig.canvas.set_window_title(title)
     pyplot.hold(False)
     return fig
 ###############################################################
@@ -219,7 +228,9 @@ def plot_error_variance_stats(evratio, figNum=None, sStat=100):
 
     pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
     pyplot.ylabel('Innovation Variance / Total Variance',fontweight='bold',fontsize=12)
-    pyplot.title('Innovation Variance / Total Variance',fontweight='bold',fontsize=14)
+    title = 'Innovation Variance / Total Variance'
+    pyplot.title(title,fontweight='bold',fontsize=14)
+    fig.canvas.set_window_title(title)
     pyplot.hold(False)
 
     return fig
@@ -267,9 +278,10 @@ def plot_ObImpact(dJa, dJe, sOI=None, eOI=None, title=None, xlabel=None, ylabel=
     yoff = yl[0] + 0.2 * dyl
     pyplot.text(5,yoff,stre,fontsize=10,color=color_ens)
 
-    pyplot.title(title,   fontsize=14)
     pyplot.xlabel(xlabel, fontsize=12)
     pyplot.ylabel(ylabel, fontsize=12)
+    pyplot.title(title,   fontsize=14)
+    fig.canvas.set_window_title(title)
 
     pyplot.hold(False)
 
@@ -295,6 +307,7 @@ def plot_ObImpact_L96(dJ, N=1, t=0):
 
     pyplot.colorbar()
     pyplot.clim(-cmax,cmax)
+    fig.canvas.set_window_title(t)
 
     pyplot.hold(False)
 

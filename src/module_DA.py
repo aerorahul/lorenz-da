@@ -87,24 +87,34 @@ def check_ensDA(ensDA):
         print 'No Assimilation | EnKF | EnSRF | EAKF'
         fail = True
 
-    if   ( ensDA.inflation.infl_meth == 1 ):
+    if   ( ensDA.inflation.inflate == 0 ):
+        print 'Doing no inflation at all'
+    elif ( ensDA.inflation.inflate == 1 ):
         print 'Inflating the Prior using multiplicative inflation with a factor of %f' % ensDA.inflation.infl_fac
-    elif ( ensDA.inflation.infl_meth == 2 ):
+    elif ( ensDA.inflation.inflate == 2 ):
         print 'Inflating the Prior by adding white-noise with zero-mean and %f spread' % ensDA.inflation.infl_fac
-    elif ( ensDA.inflation.infl_meth == 3 ):
+    elif ( ensDA.inflation.inflate == 3 ):
         print 'Inflating the Posterior by covariance relaxation method with weight %f to the prior' % ensDA.inflation.infl_fac
-    elif ( ensDA.inflation.infl_meth == 4 ):
+    elif ( ensDA.inflation.inflate == 4 ):
         print 'Inflating the Posterior by spread restoration method with a factor of %f' % ensDA.inflation.infl_fac
     else:
         print 'Invalid inflation method'
-        print 'ensDA.inflation.infl_meth must be one of : 1 | 2 | 3 | 4'
+        print 'ensDA.inflation.inflate must be one of : 0 | 1 | 2 | 3 | 4'
         print 'Multiplicative | Additive | Covariance Relaxation | Spread Restoration'
         fail = True
 
-    if   ( ensDA.localization.localize == True ):
-        print 'Localizing using Gaspari-Cohn with a covariance cutoff of %f' % ensDA.localization.cov_cutoff
+    if   ( ensDA.localization.localize == 0 ): loc_type = 'No localization'
+    elif ( ensDA.localization.localize == 1 ): loc_type = 'Gaspari & Cohn polynomial function'
+    elif ( ensDA.localization.localize == 2 ): loc_type = 'Boxcar function'
+    elif ( ensDA.localization.localize == 3 ): loc_type = 'Ramped boxcar function'
     else:
-        print 'No localization'
+        print 'Invalid localization method'
+        print 'ensDA.localization.localize must be one of : 0 | 1 | 2 | 3 '
+        print 'None | Gaspari & Cohn | Boxcar | Ramped Boxcar'
+        loc_type = 'None'
+        fail = True
+    if ( loc_type != 'None' ):
+        print 'Localizing using an %s with a covariance cutoff of %f' % (loc_type, ensDA.localization.cov_cutoff)
 
     print '==========================================='
 
@@ -139,15 +149,15 @@ def update_ensDA(Xb, y, R, H, ensDA):
     totvar = np.zeros(Nobs) * np.NaN
 
     # prior inflation
-    if ( (ensDA.inflation.infl_meth == 1) or (ensDA.inflation.infl_meth == 2) ):
+    if ( (ensDA.inflation.inflate == 1) or (ensDA.inflation.inflate == 2) ):
 
         xbm = np.mean(Xb,axis=1)
         Xbp = np.transpose(np.transpose(Xb) - xbm)
 
-        if   ( ensDA.inflation.infl_meth == 1 ): # multiplicative inflation
+        if   ( ensDA.inflation.inflate == 1 ): # multiplicative inflation
             Xbp = ensDA.inflation.infl_fac * Xbp
 
-        elif ( inflation.infl_meth == 2 ): # additive white model error (mean:zero, spread:ensDA.inflation.infl_fac)
+        elif ( inflation.inflate == 2 ): # additive white model error (mean:zero, spread:ensDA.inflation.infl_fac)
             Xbp = Xbp + inflation.infl_fac * np.random.randn(Ndof,Nens)
 
         Xb = np.transpose(np.transpose(Xbp) + xbm)
@@ -180,12 +190,9 @@ def update_ensDA(Xb, y, R, H, ensDA):
             state_inc = state_increment(obs_inc, temp_ens[i,:], ye)
 
             # localization
-            if ( ensDA.localization.localize ):
-                dist = np.float( np.abs( ob - i ) ) / Ndof
-                if ( dist > 0.5 ): dist = 1.0 - dist
-                cov_factor = compute_cov_factor(dist, ensDA.localization.cov_cutoff)
-            else:
-                cov_factor = 1.0
+            dist = np.float( np.abs( ob - i ) ) / Ndof
+            if ( dist > 0.5 ): dist = 1.0 - dist
+            cov_factor = compute_cov_factor(dist, ensDA.localization)
 
             temp_ens[i,:] = temp_ens[i,:] + state_inc * cov_factor
 
@@ -196,12 +203,12 @@ def update_ensDA(Xb, y, R, H, ensDA):
     Xap = np.transpose(np.transpose(Xa) - xam)
 
     # posterior inflation
-    if   ( ensDA.inflation.infl_meth == 3 ): # covariance relaxation (Zhang & Snyder)
+    if   ( ensDA.inflation.inflate == 3 ): # covariance relaxation (Zhang & Snyder)
         xbm = np.mean(Xb,axis=1)
         Xbp = np.transpose(np.transpose(Xb) - xbm)
         Xap = Xbp * ensDA.inflation.infl_fac + Xap * (1.0 - ensDA.inflation.infl_fac)
 
-    elif ( ensDA.inflation.infl_meth == 4 ): # posterior spread restoration (Whitaker & Hamill)
+    elif ( ensDA.inflation.inflate == 4 ): # posterior spread restoration (Whitaker & Hamill)
         xbs = np.std(Xb,axis=1,ddof=1)
         xas = np.std(Xa,axis=1,ddof=1)
         for i in range(0,Ndof):
@@ -363,28 +370,63 @@ def state_increment(obs_inc, pr, pr_obs_est):
 ###############################################################
 
 ###############################################################
-def compute_cov_factor(dist, cov_cutoff):
+def compute_cov_factor(dist, localization):
 # {{{
     '''
-    compute the covariance factor using Gaspari & Cohn polynomial function
+    compute the covariance factor given distance and localization information
 
-    cov_factor = compute_cov_factor(dist, cov_cutoff)
+    cov_factor = compute_cov_factor(dist, localization)
 
           dist - distance between "points"
-    cov_cutoff - normalized cutoff distance = cutoff_distance / (2 * normalization_factor)
-                 Eg. normalized cutoff distance = 1 / (2 * 40)
-                     localize at 1 point in the 40-variable LE98 model
+  localization - localization class
     cov_factor - covariance factor
+
+    localization.localize
+        0 : no localization
+        1 : Gaspari & Cohn polynomial function
+        2 : Boxcar
+        3 : Ramped Boxcar
+    localization.cov_cutoff
+        normalized cutoff distance = cutoff_distance / (2 * normalization_factor)
+        Eg. normalized cutoff distance = 1 / (2 * 40)
+        localize at 1 point in the 40-variable LE96 model
     '''
 
-    if ( np.abs(dist) >= 2.0*cov_cutoff ):
-        cov_factor = 0.0
-    elif ( np.abs(dist) <= cov_cutoff ):
-        r = np.abs(dist) / cov_cutoff
-        cov_factor = ( ( ( -0.25*r + 0.5 )*r + 0.625 )*r - 5.0/3.0 )*(r**2) + 1.0
+    if   ( localization.localize == 0 ): # No localization
+
+        cov_factor = 1.0
+
+    elif ( localization.localize == 1 ): # Gaspari & Cohn localization
+
+        if   ( np.abs(dist) >= 2.0*localization.cov_cutoff ):
+            cov_factor = 0.0
+        elif ( np.abs(dist) <= localization.cov_cutoff ):
+            r = np.abs(dist) / localization.cov_cutoff
+            cov_factor = ( ( ( -0.25*r + 0.5 )*r + 0.625 )*r - 5.0/3.0 )*(r**2) + 1.0
+        else:
+            r = np.abs(dist) / localization.cov_cutoff
+            cov_factor = ( ( ( ( r/12 - 0.5 )*r +0.625 )*r + 5.0/3.0 )*r -5.0 )*r + 4.0 - 2.0 / (3.0 * r)
+
+    elif ( localization.localize == 2 ): # Boxcar localization
+
+        if ( np.abs(dist) >= 2.0*localization.cov_cutoff ):
+            cov_factor = 0.0
+        else:
+            cov_factor = 1.0
+
+    elif ( localization.localize == 3 ): # Ramped localization
+
+        if   ( np.abs(dist) >= 2.0*localization.cov_cutoff ):
+            cov_factor = 0.0
+        elif ( np.abs(dist) <= localization.cov_cutoff ):
+            cov_factor = 1.0
+        else:
+            cov_factor = (2.0 * localization.cov_cutoff - np.abs(dist)) / localization.cov_cutoff
+
     else:
-        r = np.abs(dist) / cov_cutoff
-        cov_factor = ( ( ( ( r/12 - 0.5 )*r +0.625 )*r + 5.0/3.0 )*r -5.0 )*r + 4.0 - 2.0 / (3.0 * r)
+
+        print '%d is an invalid localization method' % localization.localize
+        sys.exit(1)
 
     return cov_factor
 # }}}
@@ -915,5 +957,30 @@ minimization - minimization class
         cgJold = None
 
     return [x, gJold, cgJold]
+# }}}
+###############################################################
+
+###############################################################
+def localization_operator(model, localization):
+# {{{
+    '''
+    Get localization operator given model and localization classes
+
+    L = localization_operator(model, localization)
+
+       model - model class
+localization - localization class
+           L - localization operator | size(L) == [model.Ndof,model.Ndof]
+    '''
+
+    L = np.ones((model.Ndof,model.Ndof))
+
+    for i in range(0,model.Ndof):
+        for j in range(0,model.Ndof):
+            dist = np.float( np.abs( i - j ) ) / model.Ndof
+            if ( dist > 0.5 ): dist = 1.0 - dist
+            L[i,j] = compute_cov_factor(dist, localization)
+
+    return L
 # }}}
 ###############################################################

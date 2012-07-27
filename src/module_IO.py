@@ -189,11 +189,11 @@ def read_diag_info(fname):
 
     read_diag_info(fname)
 
-              fname - name of the file to read from, must already exist
-              model - model class
-                 DA - DA class
-              ensDA - ensemble DA class
-              varDA - variational DA class
+    fname - name of the file to read from, must already exist
+    model - model class
+       DA - DA class
+    ensDA - ensemble DA class
+    varDA - variational DA class
     '''
 
     source = 'read_diag_info'
@@ -237,22 +237,25 @@ def read_diag_info(fname):
             DA.do_hybrid   = False
 
         if 'Eupdate' in nc.ncattrs():
-            ensDA.update = nc.Eupdate
-            ensDA.Nens   = len(nc.dimensions['ncopy'])
-            ensDA.inflation         = type('', (), {})
-            ensDA.inflation.infl_meth = nc.infl_meth
-            ensDA.inflation.infl_fac  = nc.infl_fac
+            ensDA.update                  = nc.Eupdate
+            ensDA.Nens                    = len(nc.dimensions['ncopy'])
+            ensDA.inflation               = type('', (), {})
+            ensDA.inflation.inflate       = nc.inflate
+            ensDA.inflation.infl_fac      = nc.infl_fac
             ensDA.localization            = type('', (), {})
-            ensDA.localization.localize   = nc.localize
-            ensDA.localization.cov_cutoff = nc.cov_cutoff
+            ensDA.localization.localize   = nc.Elocalize
+            ensDA.localization.cov_cutoff = nc.Ecov_cutoff
 
         if 'Vupdate' in nc.ncattrs():
-            varDA.update = nc.Vupdate
-            varDA.minimization = type('', (), {})
-            varDA.minimization.maxiter = nc.maxiter
-            varDA.minimization.alpha   = nc.alpha
-            varDA.minimization.cg      = nc.cg
-            varDA.minimization.tol     = nc.tol
+            varDA.update                  = nc.Vupdate
+            varDA.minimization            = type('', (), {})
+            varDA.minimization.maxiter    = nc.maxiter
+            varDA.minimization.alpha      = nc.alpha
+            varDA.minimization.cg         = nc.cg
+            varDA.minimization.tol        = nc.tol
+            varDA.localization            = type('', (), {})
+            varDA.localization.localize   = nc.Vlocalize
+            varDA.localization.cov_cutoff = nc.Vcov_cutoff
 
             if ( (varDA.update == 2) or (varDA.update == 4) ):
                 varDA.fdvar           = type('',(),{})

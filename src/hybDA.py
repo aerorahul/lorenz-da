@@ -51,6 +51,9 @@ def main():
     # load climatological covariance once and for all ...
     if ( DA.do_hybrid ): Bs = read_clim_cov(model)
 
+    # construct localization matrix once and for all ...
+    L = localization_operator(model,varDA.localization)
+
     if ( fdvar ):
         # check length of assimilation window
         if ( varDA.fdvar.offset * DA.ntimes + varDA.fdvar.window - DA.ntimes < 0.0 ):
@@ -130,7 +133,7 @@ def main():
             if ( fdvar ): xbcwin = xs[varDA.fdvar.tb,:].copy()
 
             # blend covariance from flow-dependent (ensemble) and static (climatology)
-            Bc = (1.0 - DA.hybrid_wght) * Bs + DA.hybrid_wght * Be
+            Bc = (1.0 - DA.hybrid_wght) * Bs + DA.hybrid_wght * (Be*L)
 
             # update the central background
             if ( fdvar ): xacwin, Ac, niters = update_varDA(xbcwin, Bc, ywin, R, H, varDA, model=model)

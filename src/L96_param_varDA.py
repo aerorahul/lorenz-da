@@ -33,11 +33,11 @@ model.Ndof = 40              # model degrees of freedom
 model.Par  = [8.0, 8.4]      # model parameters F, dF
 model.dt   = 1.0e-4          # model time-step
 
-DA        = type('',(),{})      # DA class
-DA.nassim = 2000                # no. of assimilation cycles
-DA.ntimes = 0.05                # do assimilation every ntimes non-dimensional time units
-DA.t0     = 0.0                 # initial time
-DA.Nobs   = 20                  # no. of obs to assimilate ( DA.Nobs <= model.Ndof)
+DA        = type('',(),{})   # DA class
+DA.nassim = 2000             # no. of assimilation cycles
+DA.ntimes = 0.05             # do assimilation every ntimes non-dimensional time units
+DA.t0     = 0.0              # initial time
+DA.Nobs   = 20               # no. of obs to assimilate ( DA.Nobs <= model.Ndof)
 
 Q = np.ones(model.Ndof)                   # model error covariance ( covariance model is white for now )
 Q = np.diag(Q) * 0.0
@@ -53,13 +53,16 @@ R = np.ones(model.Ndof)                   # observation error covariance
 R = R + np.random.rand(model.Ndof)
 R = np.diag(R)
 
-varDA                      = type('',(),{}) # VarDA class
-varDA.minimization         = type('',(),{}) # minimization class
-varDA.update               = 1              # DA method (1= 3Dvar; 2= 4Dvar)
-varDA.minimization.maxiter = 1000           # maximum iterations
-varDA.minimization.alpha   = 4e-4           # size of step in direction of normalized J
-varDA.minimization.cg      = True           # True = Use conjugate gradient; False = Perform line search
-varDA.minimization.tol     = 1e-4           # tolerance to end the variational minimization iteration
+varDA                         = type('',(),{}) # VarDA class
+varDA.minimization            = type('',(),{}) # minimization class
+varDA.localization            = type('',(),{}) # localization Class
+varDA.update                  = 1              # DA method (1= 3Dvar; 2= 4Dvar)
+varDA.minimization.maxiter    = 1000           # maximum iterations
+varDA.minimization.alpha      = 4e-4           # size of step in direction of normalized J
+varDA.minimization.cg         = True           # True = Use conjugate gradient; False = Perform line search
+varDA.minimization.tol        = 1e-4           # tolerance to end the variational minimization iteration
+varDA.localization.localize   = 0              # localization (0= None, 1= Gaspari-Cohn, 2= Boxcar, 3= Ramped)
+varDA.localization.cov_cutoff = 1.0            # normalized covariance cutoff = cutoff / ( 2*normalized_dist )
 
 if ( (varDA.update == 2) or (varDA.update == 4) ): fdvar = True
 else:                                              fdvar = False
@@ -71,18 +74,20 @@ if ( fdvar ):
     varDA.fdvar.offset         = 0.5            # time offset: forecast from analysis to background time
     varDA.fdvar.nobstimes      = 5              # no. of evenly spaced obs. times in the window
 
-diag_file            = type('', (), {})  # diagnostic file Class
+diag_file            = type('',(),{})  # diagnostic file Class
 diag_file.filename   = model.Name + '_varDA_diag.nc4'
-diag_file.attributes = {'model'   : model.Name,
-                        'F'       : model.Par[0],
-                        'dF'      : model.Par[1]-model.Par[0],
-                        'ntimes'  : DA.ntimes,
-                        'dt'      : model.dt,
-                        'Vupdate' : varDA.update,
-                        'maxiter' : varDA.minimization.maxiter,
-                        'alpha'   : varDA.minimization.alpha,
-                        'cg'      : int(varDA.minimization.cg),
-                        'tol'     : int(varDA.minimization.tol)}
+diag_file.attributes = {'model'       : model.Name,
+                        'F'           : model.Par[0],
+                        'dF'          : model.Par[1]-model.Par[0],
+                        'ntimes'      : DA.ntimes,
+                        'dt'          : model.dt,
+                        'Vupdate'     : varDA.update,
+                        'Vlocalize'   : varDA.localization.localize,
+                        'Vcov_cutoff' : varDA.localization.cov_cutoff,
+                        'maxiter'     : varDA.minimization.maxiter,
+                        'alpha'       : varDA.minimization.alpha,
+                        'cg'          : int(varDA.minimization.cg),
+                        'tol'         : int(varDA.minimization.tol)}
 if ( fdvar ):
     diag_file.attributes.update({'offset'    : varDA.fdvar.offset,
                                  'window'    : varDA.fdvar.window,
@@ -90,6 +95,6 @@ if ( fdvar ):
                                  'maxouter'  : int(varDA.fdvar.maxouter)})
 
 # restart conditions
-restart          = type('', (), {})  # restart initial conditions Class
+restart          = type('',(),{})    # restart initial conditions Class
 restart.time     = None              # None == default | -1...-N 0 1...N
 restart.filename = ''

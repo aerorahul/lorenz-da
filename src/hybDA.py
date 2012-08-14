@@ -136,8 +136,8 @@ def main():
             Bc = (1.0 - DA.hybrid_wght) * Bs + DA.hybrid_wght * (Be*L)
 
             # update the central background
-            if ( fdvar ): xacwin, Ac, niters = update_varDA(xbcwin, Bc, ywin, R, H, varDA, model=model)
-            else:         xac,    Ac, niters = update_varDA(xbc,    Bc, y,    R, H, varDA, model=model)
+            if ( fdvar ): xacwin, niters = update_varDA(xbcwin, Bc, ywin, R, H, varDA, model=model)
+            else:         xac,    niters = update_varDA(xbc,    Bc, y,    R, H, varDA, model=model)
 
             # if doing 4Dvar, step to the next assimilation time from the beginning of assimilation window
             if ( fdvar ):

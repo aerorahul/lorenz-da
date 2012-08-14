@@ -248,10 +248,10 @@ def read_diag_info(fname):
 
         if 'Vupdate' in nc.ncattrs():
             varDA.update                  = nc.Vupdate
+            varDA.precondition            = nc.precondition
+            varDA.maxouter                = nc.maxouter
             varDA.minimization            = type('', (), {})
             varDA.minimization.maxiter    = nc.maxiter
-            varDA.minimization.alpha      = nc.alpha
-            varDA.minimization.cg         = nc.cg
             varDA.minimization.tol        = nc.tol
             varDA.localization            = type('', (), {})
             varDA.localization.localize   = nc.Vlocalize
@@ -262,7 +262,6 @@ def read_diag_info(fname):
                 varDA.fdvar.offset    = nc.offset
                 varDA.fdvar.window    = nc.window
                 varDA.fdvar.nobstimes = nc.nobstimes
-                varDA.fdvar.maxouter  = nc.maxouter
 
         nc.close()
 

@@ -66,19 +66,18 @@ varDA                      = type('',(),{})   # variational data assimilation Cl
 varDA.minimization         = type('',(),{})   # minimization Class
 varDA.localization         = type('',(),{})   # localization Class
 varDA.update               = 1                # variational-based DA method (1 = 3Dvar; 2= 4Dvar)
+varDA.precondition         = True             # precondition before minimization
+varDA.maxouter             = 1                # no. of outer loops
 varDA.minimization.maxiter = 1000             # maximum iterations for minimization
-varDA.minimization.alpha   = 4e-4             # size of step in direction of normalized J
-varDA.minimization.cg      = True             # True = Use conjugate gradient; False = Perform line search
 varDA.minimization.tol     = 1e-4             # tolerance to end the variational minimization iteration
 ensDA.localization.localize   = 0             # localization (0= None, 1= Gaspari-Cohn, 2= Boxcar, 3= Ramped)
 ensDA.localization.cov_cutoff = 1.0           # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
 
-if ( (varDA.update == 2) or (varDA.update == 4) ): fdvar = True
-else:                                              fdvar = False
+if ( varDA.update == 2 ): fdvar = True
+else:                     fdvar = False
 
 if ( fdvar ):
     varDA.fdvar                = type('',(),{}) # 4DVar class
-    varDA.fdvar.maxouter       = 1              # no. of outer loops for 4DVar
     varDA.fdvar.window         = 0.025          # length of the 4Dvar assimilation window
     varDA.fdvar.offset         = 0.5            # time offset: forecast from analysis to background time
     varDA.fdvar.nobstimes      = 2              # no. of evenly spaced obs. times in the window
@@ -101,17 +100,16 @@ diag_file.attributes = {'model'       : model.Name,
                         'inflate'     : ensDA.inflation.inflate,
                         'infl_fac'    : ensDA.inflation.infl_fac,
                         'Vupdate'     : varDA.update,
+                        'precondition': int(varDA.precondition),
+                        'maxouter'    : varDA.maxouter,
                         'Vlocalize'   : varDA.localization.localize,
                         'Vcov_cutoff' : varDA.localization.cov_cutoff,
                         'maxiter'     : varDA.minimization.maxiter,
-                        'alpha'       : varDA.minimization.alpha,
-                        'cg'          : int(varDA.minimization.cg),
                         'tol'         : varDA.minimization.tol}
 if ( fdvar ):
     diag_file.attributes.update({'offset'    : varDA.fdvar.offset,
                                  'window'    : varDA.fdvar.window,
-                                 'nobstimes' : int(varDA.fdvar.nobstimes),
-                                 'maxouter'  : int(varDA.fdvar.maxouter)})
+                                 'nobstimes' : varDA.fdvar.nobstimes})
 
 # restart conditions
 restart          = type('',(),{})    # restart initial conditions Class

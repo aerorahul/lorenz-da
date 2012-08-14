@@ -36,7 +36,7 @@ from   module_IO     import *
 ###############################################################
 def main():
 
-    fdiag = '/home/rmahajan/svn-work/lorenz1963/data/varyHR_beta=0.75/diag/L96_hybDA_diag_H1R1.nc4'
+    fdiag = '/home/rmahajan/svn-work/lorenz1963/test/localization/L96_hybDA_diag_H1R1.nc4'
 
     [model, DA, ensDA, varDA]       = read_diag_info(fdiag)
     [_, Xb, _, _, _, _, _, _, _, _] = read_diag(fdiag, 0)

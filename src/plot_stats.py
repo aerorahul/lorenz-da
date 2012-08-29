@@ -313,3 +313,31 @@ def plot_ObImpact_L96(dJ, N=1, t=0):
 
     return fig
 ###############################################################
+
+###############################################################
+def save_figure(fhandle, fname='test', orientation='landscape', \
+                eps=True, epsdpi=300, png=True, pngdpi=100, \
+                **kwargs):
+# {{{
+    '''
+    Save a figure handle into a paper figure.
+
+    save_figure(fhandle, fname='test', orientation='landscape', \
+                epsfig=True, epsdpi=300, pngfig=True, pngdpi=100, \
+                **kwargs):
+
+    fhandle - figure handle to save
+      fname - name of the figure to save as ['test']
+orientation - orientation of the figure ['landscape']
+        eps - save the figure in EPS format [True]
+     epsdpi - dots per inch for an EPS figure [300]
+        png - save the figure in PNG format [True]
+     pngdpi - dots per inch for an PNG figure [100]
+   **kwargs - any other arguments
+    '''
+
+    if ( eps ): fhandle.savefig(fname + '.eps', dpi=epsdpi, orientation=orientation, format='eps', **kwargs)
+    if ( png ): fhandle.savefig(fname + '.png', dpi=pngdpi, orientation=orientation, format='png', **kwargs)
+
+    return
+###############################################################

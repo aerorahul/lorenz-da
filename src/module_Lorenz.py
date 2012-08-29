@@ -49,6 +49,7 @@ def advance_model(model, x0, t, perfect=True, **kwargs):
        x0 - initial state at time t = 0
         t - vector of time from t = [0, T]
   perfect - If perfect model run for L96, use model.Par[0], else use model.Par[1]
+ **kwargs - any additional arguments that need to go in the model advance call
     '''
 
     if   ( model.Name == 'L63' ):
@@ -441,13 +442,15 @@ def get_IC(model, restart, Nens=None):
             pert = 0.001 * ( np.random.randn(model.Ndof,Nens) )
             tmp = np.transpose(xa + np.transpose(pert))
             xa = np.transpose(np.transpose(tmp) - np.mean(tmp,axis=1) + xa)
-        elif ( (len(np.shape(xa)) != 1) and (Nens != np.shape(xa)[1]) ):
+        elif ( (len(np.shape(xa)) != 1) and (Nens != None) ):
             # populate initial ensemble analysis by picking a subset from the analysis ensemble
             if ( Nens <= np.shape(xa)[1] ):
                 xa = np.squeeze(xa[:,0:Nens])
             else:
                 print 'size(Xa) = [%d, %d]' % (np.shape(xa)[0], np.shape(xa)[1])
                 sys.exit(1)
+        elif ( (len(np.shape(xa)) != 1) and (Nens == None) ):
+            xa = np.mean(xa, axis=1)
 
         return [xt,xa]
 

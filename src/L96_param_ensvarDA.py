@@ -9,7 +9,8 @@
 ###############################################################
 
 ###############################################################
-# L96_param_varDA.py - parameters for variational DA on L96
+# L96_param_ensvarDA.py - parameters for Ensemble-Var DA on
+#                         on L96
 ###############################################################
 
 ###############################################################
@@ -37,6 +38,9 @@ DA             = type('',(),{}) # data assimilation Class
 DA.nassim      = 1000           # no. of assimilation cycles
 DA.ntimes      = 0.1            # do assimilation every ntimes non-dimensional time units
 DA.t0          = 0.0            # initial time
+DA.do_hybrid   = True           # True= run hybrid (varDA + ensDA) mode, False= run ensDA mode
+DA.hybrid_rcnt = True           # True= re-center ensemble about varDA, False= free ensDA
+DA.hybrid_wght = 1.0            # weight for hybrid (0.0= Bstatic; 1.0= Bensemble)
 
 Q = np.ones(model.Ndof)                   # model error covariance ( covariance model is white for now )
 Q = np.diag(Q) * 0.0
@@ -49,6 +53,18 @@ R = np.ones(model.Ndof)                   # observation error covariance
 R[1::2] = np.sqrt(2.0)
 R[1::4] = np.sqrt(3.0)
 R = np.diag(R)
+
+ensDA              = type('',(),{})            # ensemble data assimilation Class
+ensDA.inflation    = type('',(),{})            # inflation Class
+ensDA.localization = type('',(),{})            # localization Class
+ensDA.update                  = 2              # ensemble-based DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
+ensDA.Nens                    = 30             # number of ensemble members
+ensDA.inflation.inflate       = 1              # inflation (0= None, 1= Multiplicative [1.01], 2= Additive [0.01],
+                                               # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0])
+ensDA.inflation.infl_fac      = 1.06           # Depends on inflation method (see values in [] above)
+ensDA.localization.localize   = 1              # localization (0= None, 1= Gaspari-Cohn, 2= Boxcar, 3= Ramped)
+ensDA.localization.cov_cutoff = 0.0625         # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
+ensDA.localization.cov_trunc  = model.Ndof     # truncate localization matrix (cov_trunc <= model.Ndof)
 
 varDA                         = type('',(),{}) # variational data assimilation Class
 varDA.minimization            = type('',(),{}) # minimization Class
@@ -70,12 +86,21 @@ if ( varDA.update == 2 ):
 
 # name and attributes of/in the output diagnostic file
 diag_file            = type('',(),{})  # diagnostic file Class
-diag_file.filename   = model.Name + '_varDA_diag.nc4'
+diag_file.filename   = model.Name + '_ensvarDA_diag.nc4'
 diag_file.attributes = {'model'       : model.Name,
                         'F'           : model.Par[0],
                         'dF'          : model.Par[1]-model.Par[0],
                         'dt'          : model.dt,
                         'ntimes'      : DA.ntimes,
+                        'do_hybrid'   : int(DA.do_hybrid),
+                        'hybrid_rcnt' : int(DA.hybrid_rcnt),
+                        'hybrid_wght' : DA.hybrid_wght,
+                        'Eupdate'     : ensDA.update,
+                        'Elocalize'   : ensDA.localization.localize,
+                        'Ecov_cutoff' : ensDA.localization.cov_cutoff,
+                        'Ecov_trunc'  : ensDA.localization.cov_trunc,
+                        'inflate'     : ensDA.inflation.inflate,
+                        'infl_fac'    : ensDA.inflation.infl_fac,
                         'Vupdate'     : varDA.update,
                         'Vlocalize'   : varDA.localization.localize,
                         'Vcov_cutoff' : varDA.localization.cov_cutoff,

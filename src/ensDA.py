@@ -65,13 +65,10 @@ def main():
         ver = xt.copy()
 
         # advance analysis ensemble with the full nonlinear model
-        for m in range(0,ensDA.Nens):
-            xa = Xa[:,m].copy()
-            xs = advance_model(model, xa, DA.tanal, perfect=False)
-            Xb[:,m] = xs[-1,:].copy()
+        Xb = advance_ensemble(Xa, DA.tanal, model, perfect=False)
 
         # update ensemble (mean and perturbations)
-        Xa, evratio = update_ensDA(Xb, y, R, H, ensDA)
+        Xa, evratio = update_ensDA(Xb, y, R, H, ensDA, model)
 
         # write diagnostics to disk
         write_diag(diag_file.filename, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, np.diag(H), np.diag(R), evratio = evratio)

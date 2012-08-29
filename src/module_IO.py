@@ -245,6 +245,7 @@ def read_diag_info(fname):
             ensDA.localization            = type('', (), {})
             ensDA.localization.localize   = nc.Elocalize
             ensDA.localization.cov_cutoff = nc.Ecov_cutoff
+            ensDA.localization.cov_trunc  = nc.Ecov_trunc
 
         if 'Vupdate' in nc.ncattrs():
             varDA.update                  = nc.Vupdate
@@ -256,6 +257,7 @@ def read_diag_info(fname):
             varDA.localization            = type('', (), {})
             varDA.localization.localize   = nc.Vlocalize
             varDA.localization.cov_cutoff = nc.Vcov_cutoff
+            varDA.localization.cov_trunc  = nc.Vcov_trunc
 
             if ( (varDA.update == 2) or (varDA.update == 4) ):
                 varDA.fdvar           = type('',(),{})

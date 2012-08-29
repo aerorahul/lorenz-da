@@ -48,16 +48,17 @@ R = np.ones(model.Ndof)                # observation error covariance
 R = 2.0 * R
 R = np.diag(R)
 
-ensDA              = type('',(),{})    # ensemble data assimilation Class
-ensDA.inflation    = type('',(),{})    # inflation Class
-ensDA.localization = type('',(),{})    # localization Class
-ensDA.update                  = 2      # DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
-ensDA.Nens                    = 100    # number of ensemble members
-ensDA.inflation.inflate       = 1      # inflation (0= None, 1= Multiplicative [1.01], 2= Additive [0.01],
-                                       # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0])
-ensDA.inflation.infl_fac      = 1.1    # Depends on inflation method (see values in [] above)
-ensDA.localization.localize   = 0      # localization (0= None, 1= Gaspari-Cohn, 2= Boxcar, 3= Ramped)
-ensDA.localization.cov_cutoff = 1.0    # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
+ensDA              = type('',(),{})         # ensemble data assimilation Class
+ensDA.inflation    = type('',(),{})         # inflation Class
+ensDA.localization = type('',(),{})         # localization Class
+ensDA.update                  = 2           # DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
+ensDA.Nens                    = 100         # number of ensemble members
+ensDA.inflation.inflate       = 1           # inflation (0= None, 1= Multiplicative [1.01], 2= Additive [0.01],
+                                            # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0])
+ensDA.inflation.infl_fac      = 1.1         # Depends on inflation method (see values in [] above)
+ensDA.localization.localize   = 0           # localization (0= None, 1= Gaspari-Cohn, 2= Boxcar, 3= Ramped)
+ensDA.localization.cov_cutoff = 1.0         # normalized covariance cutoff = cutoff / ( 2*normalized_dist)
+ensDA.localization.cov_trunc  = model.Ndof  # truncate localization matrix (cov_trunc <= model.Ndof)
 
 # name and attributes of/in the output diagnostic file
 diag_file            = type('',(),{})  # diagnostic file Class
@@ -71,6 +72,7 @@ diag_file.attributes = {'model'       : model.Name,
                         'Eupdate'     : ensDA.update,
                         'Elocalize'   : ensDA.localization.localize,
                         'Ecov_cutoff' : ensDA.localization.cov_cutoff,
+                        'Ecov_trunc'  : ensDA.localization.cov_trunc,
                         'inflate'     : ensDA.inflation.inflate,
                         'infl_fac'    : ensDA.inflation.infl_fac}
 

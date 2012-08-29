@@ -58,11 +58,9 @@ varDA.minimization.maxiter    = 1000           # maximum iterations
 varDA.minimization.tol        = 1e-4           # tolerance to end the variational minimization iteration
 varDA.localization.localize   = 1              # localization (0= None, 1= Gaspari-Cohn, 2= Boxcar, 3= Ramped)
 varDA.localization.cov_cutoff = 0.0625         # normalized covariance cutoff = cutoff / ( 2*normalized_dist )
+varDA.localization.cov_trunc  = model.Ndof     # truncate localization matrix (cov_trunc <= model.Ndof)
 
-if ( varDA.update == 2 ): fdvar = True
-else:                     fdvar = False
-
-if ( fdvar ):
+if ( varDA.update == 2 ):
     varDA.fdvar                = type('',(),{}) # 4DVar class
     varDA.fdvar.window         = DA.ntimes      # length of the 4Dvar assimilation window
     varDA.fdvar.offset         = 0.5            # time offset: forecast from analysis to background time
@@ -81,9 +79,10 @@ diag_file.attributes = {'model'       : model.Name,
                         'precondition': int(varDA.precondition),
                         'Vlocalize'   : varDA.localization.localize,
                         'Vcov_cutoff' : varDA.localization.cov_cutoff,
+                        'Vcov_trunc'  : varDA.localization.cov_trunc,
                         'maxiter'     : varDA.minimization.maxiter,
                         'tol'         : varDA.minimization.tol}
-if ( fdvar ):
+if ( varDA.update == 2 ):
     diag_file.attributes.update({'offset'    : varDA.fdvar.offset,
                                  'window'    : varDA.fdvar.window,
                                  'nobstimes' : varDA.fdvar.nobstimes})

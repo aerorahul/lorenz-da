@@ -125,28 +125,22 @@ def check_ensDA(ensDA):
 ###############################################################
 
 ###############################################################
-def update_ensDA(Xb, y, R, H, ensDA):
+def update_ensDA(Xb, y, R, H, ensDA, model):
 # {{{
     '''
     Update the prior with an ensemble-based state estimation algorithm to produce a posterior
 
-    Xa, A, error_variance_ratio = update_ensDA(Xb, B, y, R, H, ensDA)
+    Xa, A, error_variance_ratio = update_ensDA(Xb, B, y, R, H, ensDA, model)
 
           Xb - prior ensemble
            y - observations
            R - observation error covariance
            H - forward operator
        ensDA - ensemble data assimilation class
+       model - model class
           Xa - posterior ensemble
      evratio - ratio of innovation variance to total variance
     '''
-
-    Nobs = np.shape(y)[0]
-    Ndof = np.shape(Xb)[0]
-    Nens = np.shape(Xb)[1]
-
-    innov  = np.zeros(Nobs) * np.NaN
-    totvar = np.zeros(Nobs) * np.NaN
 
     # prior inflation
     if ( (ensDA.inflation.inflate == 1) or (ensDA.inflation.inflate == 2) ):
@@ -158,20 +152,25 @@ def update_ensDA(Xb, y, R, H, ensDA):
             Xbp = ensDA.inflation.infl_fac * Xbp
 
         elif ( inflation.inflate == 2 ): # additive white model error (mean:zero, spread:ensDA.inflation.infl_fac)
-            Xbp = Xbp + inflation.infl_fac * np.random.randn(Ndof,Nens)
+            Xbp = Xbp + inflation.infl_fac * np.random.randn(model.Ndof,ensDA.Nens)
 
         Xb = np.transpose(np.transpose(Xbp) + xbm)
 
     temp_ens = Xb.copy()
 
-    for ob in range(0, Nobs):
+    # initialize innovation and total variance
+    innov  = np.zeros(np.shape(y)[0]) * np.NaN
+    totvar = np.zeros(np.shape(y)[0]) * np.NaN
+
+    # assimilate all obs., one-by-one
+    for ob in range(0, np.shape(y)[0]):
 
         if ( np.isnan(y[ob]) ): continue
 
         ye = np.dot(H[ob,:],temp_ens)
 
         if   ( ensDA.update == 0 ): # no assimilation
-            obs_inc, innov[ob], totvar[ob] = np.zeros(Ndof), np.NaN, np.NaN
+            obs_inc, innov[ob], totvar[ob] = np.zeros(model.Ndof), np.NaN, np.NaN
 
         elif ( ensDA.update == 1 ): # update using the EnKF
             obs_inc, innov[ob], totvar[ob] = obs_increment_EnKF(y[ob], R[ob,ob], ye)
@@ -186,11 +185,11 @@ def update_ensDA(Xb, y, R, H, ensDA):
             print 'invalid update algorithm ...'
             sys.exit(2)
 
-        for i in range(0,Ndof):
+        for i in range(0,model.Ndof):
             state_inc = state_increment(obs_inc, temp_ens[i,:], ye)
 
             # localization
-            dist = np.float( np.abs( ob - i ) ) / Ndof
+            dist = np.float( np.abs( ob - i ) ) / model.Ndof
             if ( dist > 0.5 ): dist = 1.0 - dist
             cov_factor = compute_cov_factor(dist, ensDA.localization)
 
@@ -211,7 +210,7 @@ def update_ensDA(Xb, y, R, H, ensDA):
     elif ( ensDA.inflation.inflate == 4 ): # posterior spread restoration (Whitaker & Hamill)
         xbs = np.std(Xb,axis=1,ddof=1)
         xas = np.std(Xa,axis=1,ddof=1)
-        for i in range(0,Ndof):
+        for i in range(0,model.Ndof):
             Xap[i,:] =  np.sqrt((ensDA.inflation.infl_fac * (xbs[i] - xas[dof])/xas[i]) + 1.0) * Xap[i,:]
 
     # add inflated perturbations back to analysis mean
@@ -222,7 +221,7 @@ def update_ensDA(Xb, y, R, H, ensDA):
     if ( 0.5 < error_variance_ratio < 2.0 ):
         print 'total error / total variance = %f' % (error_variance_ratio)
     else:
-        print 'total error / total variance = %f | WARNING : filter divergence' % (error_variance_ratio)
+        print "\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" % (error_variance_ratio)
         #break
 
     return Xa, error_variance_ratio
@@ -455,7 +454,6 @@ def check_varDA(varDA):
     elif ( varDA.update == 2 ):
         if ( varDA.precondition ): print 'Assimilate observations using 4DVar [using incremental formulation] with preconditioning'
         else:                      print 'Assimilate observations using 4DVar [using incremental formulation] without preconditioning'
-        print 'Assimilate observations using 4DVar [using incremental formulation]'
     else:
         print 'Invalid assimilation algorithm'
         print 'varDA.update must be one of : 0 | 1 | 2'
@@ -471,7 +469,7 @@ def check_varDA(varDA):
 ###############################################################
 
 ###############################################################
-def update_varDA(xb, B, y, R, H, varDA, model=None):
+def update_varDA(xb, B, y, R, H, varDA, model):
 # {{{
     '''
     Update the prior with a variational-based state estimation algorithm to produce a posterior
@@ -493,8 +491,8 @@ def update_varDA(xb, B, y, R, H, varDA, model=None):
         xa, niters = xb, np.NaN
 
     elif ( varDA.update == 1 ):
-        if ( varDA.precondition ): xa, niters = ThreeDvar_pc(xb, B, y, R, H, varDA)
-        else:                      xa, niters = ThreeDvar(   xb, B, y, R, H, varDA)
+        if ( varDA.precondition ): xa, niters = ThreeDvar_pc(xb, B, y, R, H, varDA, model)
+        else:                      xa, niters = ThreeDvar(   xb, B, y, R, H, varDA, model)
 
     elif ( varDA.update == 2 ):
         if ( varDA.precondition ): xa, niters = FourDvar_pc(xb, B, y, R, H, varDA, model)
@@ -509,14 +507,14 @@ def update_varDA(xb, B, y, R, H, varDA, model=None):
 ###############################################################
 
 ###############################################################
-def ThreeDvar(xb, B, y, R, H, varDA):
+def ThreeDvar(xb, B, y, R, H, varDA, model):
 # {{{
     '''
     Update the prior with 3Dvar algorithm to produce a posterior.
     In this implementation, the incremental form is used.
     It is the same as the classical formulation.
 
-    xa, niters = ThreeDvar(xb, B, y, R, H, varDA)
+    xa, niters = ThreeDvar(xb, B, y, R, H, varDA, model)
 
           xb - prior
            B - background error covariance
@@ -524,6 +522,7 @@ def ThreeDvar(xb, B, y, R, H, varDA):
            R - observation error covariance
            H - forward operator
        varDA - variational data assimilation class
+       model - model class
           xa - posterior
       niters - number of iterations required for minimizing the cost function
     '''
@@ -551,7 +550,7 @@ def ThreeDvar(xb, B, y, R, H, varDA):
         gJ = np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d))
 
         dJ      = gJ.copy()
-        dx      = np.zeros(np.shape(xa))
+        dx      = np.zeros(np.shape(gJ))
         niters  = 0
 
         residual_first = np.sum(gJ**2)
@@ -572,7 +571,7 @@ def ThreeDvar(xb, B, y, R, H, varDA):
             if ( not np.mod(niters,5) ):
                 print '        residual = %15.10f after %4d iterations' % (residual, niters)
 
-        if ( niters > varDA.minimization.maxiter ): print 'exceeded maximum iterations allowed'
+        if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
         print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
         # 3DVAR estimate
@@ -631,7 +630,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
 
             i = varDA.fdvar.nobstimes - j - 1
 
-            valInd = np.isfinite(np.squeeze(y[i,]))
+            valInd = np.isfinite(y[i,])
 
             d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
             gJ = gJ + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
@@ -642,7 +641,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
                 gJ = sxi[-1,:].copy()
 
         dJ     = gJ.copy()
-        dxo    = np.zeros(np.shape(xb))
+        dxo    = np.zeros(np.shape(gJ))
         niters = 0
 
         residual_first = np.sum(gJ**2)
@@ -662,7 +661,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
 
                 i = varDA.fdvar.nobstimes - j - 1
 
-                valInd = np.isfinite(np.squeeze(y[i,]))
+                valInd = np.isfinite(y[i,])
 
                 AdJy = AdJy + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],dJtl[varDA.fdvar.twind_obsIndex[i],:])))
 
@@ -681,7 +680,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
             if ( not np.mod(niters,5) ):
                 print '        residual = %15.10f after %4d iterations' % (residual, niters)
 
-        if ( niters > varDA.minimization.maxiter ): print 'exceeded maximum iterations allowed'
+        if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
         print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
         xa = xa + dxo
@@ -690,16 +689,15 @@ def FourDvar(xb, B, y, R, H, varDA, model):
 # }}}
 ###############################################################
 
-
 ###############################################################
-def ThreeDvar_pc(xb, G, y, R, H, varDA):
+def ThreeDvar_pc(xb, G, y, R, H, varDA, model):
 # {{{
     '''
     Update the prior with 3Dvar algorithm (with preconditioning) to produce a posterior.
     In this implementation, the incremental form is used.
     It is the same as the classical formulation.
 
-    xa, niters = ThreeDvar_pc(xb, G, y, R, H, varDA)
+    xa, niters = ThreeDvar_pc(xb, G, y, R, H, varDA, model)
 
           xb - prior
            G - preconditioning matrix
@@ -707,6 +705,7 @@ def ThreeDvar_pc(xb, G, y, R, H, varDA):
            R - observation error covariance
            H - forward operator
        varDA - variational data assimilation class
+       model - model class
           xa - posterior
       niters - number of iterations required for minimizing the cost function
     '''
@@ -732,9 +731,9 @@ def ThreeDvar_pc(xb, G, y, R, H, varDA):
         d  = y[valInd] - np.dot(H[valInd,:],xa)
         gJ = np.dot(np.transpose(G),np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d)))
 
-        dJ      = gJ.copy()
-        w       = np.zeros(np.shape(xa))
-        niters  = 0
+        dJ     = gJ.copy()
+        w      = np.zeros(np.shape(gJ))
+        niters = 0
 
         residual_first = np.sum(gJ**2)
         residual_tol   = 1.0
@@ -754,7 +753,7 @@ def ThreeDvar_pc(xb, G, y, R, H, varDA):
             if ( not np.mod(niters,5) ):
                 print '        residual = %15.10f after %4d iterations' % (residual, niters)
 
-        if ( niters > varDA.minimization.maxiter ): print 'exceeded maximum iterations allowed'
+        if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
         print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
         # 3DVAR estimate
@@ -806,13 +805,13 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
         # advance the background through the assimilation window with full non-linear model
         xnl = advance_model(model, xa, varDA.fdvar.twind, perfect=False)
 
-        gJ = np.zeros(np.shape(xb))
+        gJ = np.zeros(np.shape(G)[-1])
         d  = np.zeros(np.shape(y))
         for j in range(0,varDA.fdvar.nobstimes):
 
             i = varDA.fdvar.nobstimes - j - 1
 
-            valInd = np.isfinite(np.squeeze(y[i,]))
+            valInd = np.isfinite(y[i,])
 
             d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
             gJ = gJ + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
@@ -825,7 +824,7 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
         gJ = np.dot(np.transpose(G),gJ)
 
         dJ     = gJ.copy()
-        w      = np.zeros(np.shape(xb))
+        w      = np.zeros(np.shape(gJ))
         niters = 0
 
         residual_first = np.sum(gJ**2)
@@ -845,7 +844,7 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
 
                 i = varDA.fdvar.nobstimes - j - 1
 
-                valInd = np.isfinite(np.squeeze(y[i,]))
+                valInd = np.isfinite(y[i,])
 
                 AdJy = AdJy + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],GdJtl[varDA.fdvar.twind_obsIndex[i],:])))
 
@@ -865,10 +864,164 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
             if ( not np.mod(niters,5) ):
                 print '        residual = %15.10f after %4d iterations' % (residual, niters)
 
-        if ( niters > varDA.minimization.maxiter ): print 'exceeded maximum iterations allowed'
+        if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
         print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
         xa = xa + np.dot(G,w)
+
+    return xa, niters
+# }}}
+###############################################################
+
+###############################################################
+def update_ensvarDA(xb, G, y, R, H, varDA, model):
+# {{{
+    '''
+    Update the prior with a ensemble-variational-based state estimation algorithm to produce a posterior
+
+    xa, niters = update_ensvarDA(xb, G, y, R, H, varDA, model)
+
+          xb - prior
+           G - preconditioning matrix
+           y - observations
+           R - observation error covariance
+           H - forward operator
+       varDA - variational data assimilation class
+       model - model class
+          xa - posterior
+      niters - number of iterations required for minimizing the cost function
+    '''
+
+    if   ( varDA.update == 0 ):
+        xa, niters = xb, np.NaN
+
+    elif ( varDA.update == 1 ):
+        xa, niters = EnsembleThreeDvar_pc(xb, G, y, R, H, varDA, model)
+
+    elif ( varDA.update == 2 ):
+        xa, niters = EnsembleFourDvar_pc(xb, G, y, R, H, varDA, model)
+
+    else:
+        print 'invalid update algorithm ...'
+        sys.exit(2)
+
+    return xa, niters
+# }}}
+###############################################################
+
+###############################################################
+def EnsembleThreeDvar_pc(xb, G, y, R, H, varDA, model):
+# {{{
+    '''
+    Update the prior with Ensemble-based 3Dvar algorithm (with preconditioning) to produce a posterior.
+    In this implementation, the incremental form is used.
+    It is the same as the classical formulation.
+    The Ensemble-Three-D variational with preconditioning is the same as the
+    vanilla Three-D variational with preconditioning.
+    Thus, this routine simply calls ThreeDvar_pc and is a interface stub.
+
+    xa, niters = EnsembleThreeDvar_pc(xb, G, y, R, H, varDA, model)
+
+          xb - prior
+           G - preconditioning matrix
+           y - observations
+           R - observation error covariance
+           H - forward operator
+       varDA - variational data assimilation class
+       model - model class
+          xa - posterior
+      niters - number of iterations required for minimizing the cost function
+    '''
+    xa, niters = ThreeDvar_pc(xb, G, y, R, H, varDA, model)
+
+    return xa, niters
+# }}}
+###############################################################
+
+###############################################################
+def EnsembleFourDvar_pc(xb, G, y, R, H, varDA, model):
+# {{{
+    '''
+    Update the prior with Ensemble-based 4Dvar algorithm (with preconditioning) to produce a posterior.
+    In this implementation, the incremental form is used.
+    It is the same as the classical formulation.
+
+    xa, niters = EnsembleFourDvar_pc(xb, G, y, R, H, varDA, model)
+
+          xb - prior
+           G - preconditioning matrix
+           y - observations
+           R - observation error covariance
+           H - forward operator
+       varDA - variational data assimilation class
+       model - model class
+          xa - posterior
+      niters - number of iterations required for minimizing the cost function
+    '''
+
+    # increment  : xo - xbo = dxo                         = Gw
+    #                         dxi = Mdxo                  = MGw
+    # innovation :      di = yi - H(xbi) = yi - H(M(xbo))
+    #                  dyi = Hdxi - di   = HMdxo - di     = HMGw - di
+    # cost function:           J(w) =  Jb +  Jy
+    # cost function gradient: gJ(w) = gJb + gJy
+    #  Jb = 0.5 *      w^T w
+    #  Jy = 0.5 * \sum dyi^T R^{-1} dyi
+    # gJb = w
+    # gJy = \sum [HMG]^T R^{-1} dyi
+    # gJ  = [ I + \sum [HMG]^T R^{-1} [HMG] ] w - \sum [HMG]^T R^{-1} di
+
+    # start with background
+    xa   = xb.copy()
+    Rinv = np.linalg.inv(R)
+
+    for outer in range(0,varDA.maxouter):
+
+        # advance the background through the assimilation window with full non-linear model
+        xnl = advance_model(model, xa, varDA.fdvar.twind, perfect=False)
+
+        d  = np.zeros(np.shape(y))
+        HG = G.copy()
+        gJ = np.zeros(np.shape(G)[-1])
+        for i in range(0,varDA.fdvar.nobstimes):
+
+            valInd = np.isfinite(y[i,])
+            d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
+
+            HG[i,:,:] = np.dot(H,G[i,:,:])
+            gJ = gJ + np.dot(np.transpose(HG[i,valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
+
+        dJ     = gJ.copy()
+        w      = np.zeros(np.shape(gJ))
+        niters = 0
+
+        residual_first = np.sum(gJ**2)
+        residual_tol   = 1.0
+        print 'initial residual = %15.10f' % (residual_first)
+
+        while ( (residual_tol >= varDA.minimization.tol) and (niters <= varDA.minimization.maxiter) ):
+
+            niters = niters + 1
+
+            AdJ = np.zeros(np.shape(dJ))
+            for i in range(0,varDA.fdvar.nobstimes):
+                valInd = np.isfinite(y[i,])
+                AdJ = AdJ + np.dot(np.transpose(HG[i,valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(HG[i,valInd,:],dJ)))
+
+            AdJ = dJ + AdJ
+
+            [w, gJ, dJ] = minimize(varDA.minimization, w, gJ, dJ, AdJ)
+
+            residual = np.sum(gJ**2)
+            residual_tol = residual / residual_first
+
+            if ( not np.mod(niters,5) ):
+                print '        residual = %15.10f after %4d iterations' % (residual, niters)
+
+        if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
+        print '  final residual = %15.10f after %4d iterations' % (residual, niters)
+
+        xa = xa + np.dot(G[0,:,:],w)
 
     return xa, niters
 # }}}
@@ -900,6 +1053,52 @@ minimization - minimization class
 ###############################################################
 
 ###############################################################
+def precondition(X, varDA, ensDA, model, L=None):
+# {{{
+    '''
+    Setup the preconditioner before variational data assimilation
+
+    G = precondition(X, varDA, ensDA, model, L=None)
+
+     X - matrix to precondition
+ varDA - variational-based data assimilation class
+ ensDA - ensemble-based data assimilation class
+ model - minimization class
+     L - localize the matrix to precondition, if desired [None]
+    '''
+
+    if   ( varDA.update == 1 ):
+
+        Xp = np.transpose(np.transpose(X) - np.mean(X,axis=1))
+        if ( L == None ):
+            G = Xp.copy()
+        else:
+            G = np.zeros((model.Ndof,varDA.localization.cov_trunc*ensDA.Nens))
+            for m in range(0,ensDA.Nens):
+                si = varDA.localization.cov_trunc *  m
+                ei = varDA.localization.cov_trunc * (m+1)
+                G[:,si:ei] = np.dot(np.diag(Xp[:,m]),L) / np.sqrt(ensDA.Nens - 1.0)
+
+    elif ( varDA.update == 2 ):
+
+        if ( L == None ): G = X.copy()
+        else:             G = np.zeros((varDA.fdvar.nobstimes,model.Ndof,varDA.localization.cov_trunc*ensDA.Nens))
+
+        for i in range(0,varDA.fdvar.nobstimes):
+            Xp = np.transpose(np.transpose(X[i,:,:]) - np.mean(X[i,:,:],axis=1))
+            if ( L == None ):
+                G[i,:,:] = Xp.copy()
+            else:
+                for m in range(0,ensDA.Nens):
+                    si = varDA.localization.cov_trunc *  m
+                    ei = varDA.localization.cov_trunc * (m+1)
+                    G[i,:,si:ei] = np.dot(np.diag(Xp[:,m]),L) / np.sqrt(ensDA.Nens - 1.0)
+
+    return G
+# }}}
+###############################################################
+
+###############################################################
 def localization_operator(model, localization):
 # {{{
     '''
@@ -921,5 +1120,31 @@ localization - localization class
             L[i,j] = compute_cov_factor(dist, localization)
 
     return L
+# }}}
+###############################################################
+
+###############################################################
+def advance_ensemble(Xi, t, model, perfect=True, **kwargs):
+# {{{
+    '''
+    Advance an ensemble given initial conditions, length of integration and model information.
+
+    Xf = advance_ensemble(Xi, T, model, perfect=True, **kwargs)
+
+       Xi - Ensemble of initial conditions; size(Xi) = [N == Ndof, M == Nens]
+        t - integrate from t[0] to t[end]
+    model - model class
+  perfect - If perfect model run for L96, use model.Par[0], else use model.Par[1]
+ **kwargs - any additional arguments that need to go in the model advance call
+       Xf - Ensemble of final states; size(Xf) = [N == Ndof, M == Nens]
+    '''
+
+    Xf = np.zeros(np.shape(Xi))
+    for m in range(0, np.shape(Xi)[1]):
+        xi = Xi[:,m].copy()
+        xs = advance_model(model, xi, t, perfect=perfect, **kwargs)
+        Xf[:,m] = xs[-1,:].copy()
+
+    return Xf
 # }}}
 ###############################################################

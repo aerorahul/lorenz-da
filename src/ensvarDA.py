@@ -9,7 +9,7 @@
 ###############################################################
 
 ###############################################################
-# hybDA.py - driver script for hybrid DA
+# ensvarDA.py - driver script for Ensemble-Var DA
 ###############################################################
 
 ###############################################################
@@ -22,11 +22,11 @@ __status__    = "Prototype"
 
 ###############################################################
 import sys
-import numpy         as     np
-from   module_Lorenz import *
-from   module_DA     import *
-from   module_IO     import *
-from   param_hybDA   import *
+import numpy          as     np
+from   module_Lorenz  import *
+from   module_DA      import *
+from   module_IO      import *
+from   param_ensvarDA import *
 ###############################################################
 
 ###############################################################
@@ -46,13 +46,16 @@ def main():
     if ( DA.do_hybrid ):
         xac = np.mean(Xa,axis=1)
         xbc = np.mean(Xb,axis=1)
-        Xbwin = Xa.copy()
-
-    # load climatological covariance once and for all ...
-    if ( DA.do_hybrid ): Bs = read_clim_cov(model)
+        if   ( varDA.update == 1 ):
+            Xbwin = np.zeros((                      model.Ndof,ensDA.Nens))
+        elif ( varDA.update == 2 ):
+            Xbwin = np.zeros((varDA.fdvar.nobstimes,model.Ndof,ensDA.Nens))
+            Xawin = np.zeros((varDA.fdvar.nobstimes,model.Ndof,ensDA.Nens))
 
     # construct localization matrix once and for all ...
     L = localization_operator(model,ensDA.localization)
+    [U,S2,_] = np.linalg.svd(L, full_matrices=True, compute_uv=True)
+    Lp = np.dot(U[:,:varDA.localization.cov_trunc],np.diag(np.sqrt(S2[:varDA.localization.cov_trunc])))
 
     if ( DA.do_hybrid and varDA.update == 2 ):
         # check length of assimilation window
@@ -126,24 +129,25 @@ def main():
 
             elif ( varDA.update == 2 ):
 
-                Xb = advance_ensemble(Xa, varDA.fdvar.tbkgd, model, perfect=False)
-                Xbwin = Xb.copy()
+                Xbwin[0,:,:] = advance_ensemble(Xa, varDA.fdvar.tbkgd, model, perfect=False)
 
                 for i in range(0,varDA.fdvar.nobstimes):
 
-                    if ( varDA.fdvar.tb + varDA.fdvar.twind_obsIndex[i] > varDA.fdvar.ta ): break
+                    if ( varDA.fdvar.tb + varDA.fdvar.twind_obsIndex[i] <= varDA.fdvar.ta ):
+                        Xawin[i,:,:], evratio = update_ensDA(Xbwin[i,:,:], ywin[i,:], R, H, ensDA, model)
+                    else:
+                        Xawin[i,:,:] = Xbwin[i,:,:].copy()
 
-                    Xa, evratio = update_ensDA(Xb, ywin[i,:], R, H, ensDA, model)
+                    if ( i < varDA.fdvar.nobstimes-1 ):
+                        Xbwin[i+1,:,:] = advance_ensemble(Xawin[i,:,:], varDA.fdvar.twind_obs, model, perfect=False)
 
-                    if ( varDA.fdvar.tb + varDA.fdvar.twind_obsIndex[i] < varDA.fdvar.ta ):
-                        Xb = advance_ensemble(Xa, varDA.fdvar.twind_obs, model, perfect=False)
+                    if ( varDA.fdvar.tb + varDA.fdvar.twind_obsIndex[i] == varDA.fdvar.ta ):
+                        Xb = Xbwin[i,:,:].copy()
+                        Xa = Xawin[i,:,:].copy()
+                        y  = ywin[ i,:  ].copy()
 
-            # blend covariance from flow-dependent (ensemble) and static (climatology)
-            Be = np.cov(Xbwin, ddof=1)
-            Bc = (1.0 - DA.hybrid_wght) * Bs + DA.hybrid_wght * (Be*L)
-            if ( varDA.precondition ):
-                [U,S2,_] = np.linalg.svd(Bc, full_matrices=True, compute_uv=True)
-                Bc = np.dot(U,np.diag(np.sqrt(S2)))
+            # precondition before varDA
+            G = precondition(Xbwin, varDA, ensDA, model, L=Lp)
 
             # advance central analysis with the full nonlinear model
             xs = advance_model(model, xac, DA.tanal, perfect=False)
@@ -152,7 +156,7 @@ def main():
             elif ( varDA.update == 2 ): xbcwin = xs[varDA.fdvar.tb,:].copy()
 
             # update the central background
-            xacwin, niters = update_varDA(xbcwin, Bc, ywin, R, H, varDA, model)
+            xacwin, niters = update_ensvarDA(xbcwin, G, ywin, R, H, varDA, model)
 
             # if doing 4Dvar, step to the next assimilation time from the beginning of assimilation window
             if   ( varDA.update == 1 ):

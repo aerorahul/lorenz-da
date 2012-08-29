@@ -342,16 +342,16 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwar
             tmp = np.zeros((N,1)) ; tmp[:,0] = xb ; xb = tmp
         for M in range(0, xb.shape[1]):
             tmp = np.zeros(N+1) ; tmp[1:] = xb[:,M] ; tmp[0] = xb[-1,M]
-            pyplot.plot(theta, tmp+mean_dist, 'b-')
+            pyplot.plot(theta, tmp+mean_dist, 'b-', alpha=0.9)
     if ( xa != None ):
         if ( len(xa.shape) == 1 ):
             tmp = np.zeros((N,1)) ; tmp[:,0] = xa ; xa = tmp
         for M in range(0, xa.shape[1]):
             tmp = np.zeros(N+1) ; tmp[1:] = xa[:,M] ; tmp[0] = xa[-1,M]
-            pyplot.plot(theta, tmp+mean_dist, 'r-')
+            pyplot.plot(theta, tmp+mean_dist, 'r-', alpha=0.6)
     if ( ver != None ):
         tmp = np.zeros(N+1) ; tmp[1:] = ver ; tmp[0]= ver[-1]
-        pyplot.plot(theta, tmp+mean_dist, 'k-', linewidth=2)
+        pyplot.plot(theta, tmp+mean_dist, 'k-', linewidth=2, alpha=0.9)
     if ( obs != None ):
         tmp = np.zeros(N+1) ; tmp[1:] = obs ; tmp[0] = obs[-1]
         pyplot.plot(theta, tmp+mean_dist, 'yo', markeredgecolor='y')

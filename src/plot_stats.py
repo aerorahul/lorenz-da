@@ -104,13 +104,13 @@ def plot_rmse(xbrmse=None, xarmse=None, xyrmse=None, yscale='semilog', figNum=No
     pyplot.clf()
     pyplot.hold(True)
     if ( yscale == 'linear' ):
-        if ( xbrmse != None ): pyplot.plot(xbrmse,'b-',label='prior',      linewidth=2)
-        if ( xarmse != None ): pyplot.plot(xarmse,'r-',label='posterior',  linewidth=2)
-        if ( xyrmse != None ): pyplot.plot(xyrmse,'k-',label='observation',linewidth=2)
+        if ( xbrmse != None ): pyplot.plot(xbrmse,'b-',label='prior',      linewidth=2, alpha=0.90)
+        if ( xarmse != None ): pyplot.plot(xarmse,'r-',label='posterior',  linewidth=2, alpha=0.65)
+        if ( xyrmse != None ): pyplot.plot(xyrmse,'k-',label='observation',linewidth=2, alpha=0.40)
     elif ( yscale == 'semilog' ):
-        if ( xbrmse != None ): pyplot.semilogy(xbrmse,'b-',label='prior',      linewidth=2)
-        if ( xarmse != None ): pyplot.semilogy(xarmse,'r-',label='posterior',  linewidth=2)
-        if ( xyrmse != None ): pyplot.semilogy(xyrmse,'k-',label='observation',linewidth=2)
+        if ( xbrmse != None ): pyplot.semilogy(xbrmse,'b-',label='prior',      linewidth=2, alpha=0.90)
+        if ( xarmse != None ): pyplot.semilogy(xarmse,'r-',label='posterior',  linewidth=2, alpha=0.65)
+        if ( xyrmse != None ): pyplot.semilogy(xyrmse,'k-',label='observation',linewidth=2, alpha=0.40)
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     pyplot.ylim(0.0, yl[1])

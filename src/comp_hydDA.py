@@ -37,7 +37,6 @@ def main():
 
     # some more arguments, currently hard-coded
     save_figures = False         # save plots as eps
-    mFix         = 'L96'         # model for which RMSE plots to be drawn
     yscale       = 'linear'      # y-axis of RMSE plots (linear/semilog)
     yFix         = None          # fix the y-axis of RMSE plots ( None = automatic )
     fOrient      = 'portrait'    # figure orientation (landscape/portrait)
@@ -53,40 +52,21 @@ def main():
     if ( len(fnames) > 7 ): fcolor = get_Ndistinct_colors(len(fnames))
 
     # read dimensions and necessary attributes from the diagnostic file
-    try:
-        nc = Dataset(fnames[0], mode='r', format='NETCDF4')
-        ndof   = len(nc.dimensions['ndof'])
-        nassim = len(nc.dimensions['ntime'])
-        nobs   = len(nc.dimensions['nobs'])
-        nens   = len(nc.dimensions['ncopy'])
+    [model, DA, ensDA, varDA] = read_diag_info(fnames[0])
 
-        ntimes = nc.ntimes
-        dt     = nc.dt
-
-        # in future, all nc4 files will have 'model' global attribute
-        if ( 'model' in nc.ncattrs() ): model = nc.model
-        else:                           model = mFix
-
-        Vupdate = nc.Vupdate
-
-        nc.close()
-    except Exception as Instance:
-        print 'Exception occurred during read of ' + fname
-        print type(Instance)
-        print Instance.args
-        print Instance
-        sys.exit(1)
-
-    if ( Vupdate == 1 or Vupdate == 3 ): varDA = 3
-    if ( Vupdate == 2 or Vupdate == 4 ): varDA = 4
+    if   ( ensDA.update == 1 ): estr = 'EnKF'
+    elif ( ensDA.update == 2 ): estr = 'EnSRF'
+    elif ( ensDA.update == 3 ): estr = 'EAKF'
+    if   ( varDA.update == 1 ): vstr = '3D'
+    elif ( varDA.update == 2 ): vstr = '4D'
 
     # allocate room for variables
     print 'computing RMSE against %s' % measure
-    xbrmseE = np.zeros((len(fnames),nassim))
-    xarmseE = np.zeros((len(fnames),nassim))
-    xbrmseC = np.zeros((len(fnames),nassim))
-    xarmseC = np.zeros((len(fnames),nassim))
-    xyrmse  = np.zeros((len(fnames),nassim))
+    xbrmseE = np.zeros((len(fnames),DA.nassim))
+    xarmseE = np.zeros((len(fnames),DA.nassim))
+    xbrmseC = np.zeros((len(fnames),DA.nassim))
+    xarmseC = np.zeros((len(fnames),DA.nassim))
+    xyrmse  = np.zeros((len(fnames),DA.nassim))
     flabel  = []
     blabel  = []
     mean_prior_C     = np.zeros(len(fnames))
@@ -116,7 +96,7 @@ def main():
             sys.exit(1)
 
         # read the diagnostic file
-        xt, Xb, Xa, y, _, _, xbc, xac, _, _ = read_diag(fname, 0, end_time=nassim)
+        xt, Xb, Xa, y, _, _, xbc, xac, _, _ = read_diag(fname, 0, end_time=DA.nassim)
 
         # compute ensemble mean
         xbm = np.squeeze(np.mean(Xb, axis=1))
@@ -124,16 +104,16 @@ def main():
 
         # compute RMSE in prior, posterior and observations
         if ( measure == 'truth' ):
-            xbrmseE[f,] = np.sqrt( np.sum( (xt - xbm)**2, axis = 1) / ndof )
-            xarmseE[f,] = np.sqrt( np.sum( (xt - xam)**2, axis = 1) / ndof )
-            xbrmseC[f,] = np.sqrt( np.sum( (xt - xbc)**2, axis = 1) / ndof )
-            xarmseC[f,] = np.sqrt( np.sum( (xt - xac)**2, axis = 1) / ndof )
+            xbrmseE[f,] = np.sqrt( np.sum( (xt - xbm)**2, axis = 1) / model.Ndof )
+            xarmseE[f,] = np.sqrt( np.sum( (xt - xam)**2, axis = 1) / model.Ndof )
+            xbrmseC[f,] = np.sqrt( np.sum( (xt - xbc)**2, axis = 1) / model.Ndof )
+            xarmseC[f,] = np.sqrt( np.sum( (xt - xac)**2, axis = 1) / model.Ndof )
         else:
-            xbrmseE[f,] = np.sqrt( np.sum( (y - xbm)**2, axis = 1) / ndof )
-            xarmseE[f,] = np.sqrt( np.sum( (y - xam)**2, axis = 1) / ndof )
-            xbrmseC[f,] = np.sqrt( np.sum( (y - xbc)**2, axis = 1) / ndof )
-            xarmseC[f,] = np.sqrt( np.sum( (y - xac)**2, axis = 1) / ndof )
-        xyrmse[f,]  = np.sqrt( np.sum( (xt - y)**2          ) / ndof )
+            xbrmseE[f,] = np.sqrt( np.sum( (y - xbm)**2, axis = 1) / model.Ndof )
+            xarmseE[f,] = np.sqrt( np.sum( (y - xam)**2, axis = 1) / model.Ndof )
+            xbrmseC[f,] = np.sqrt( np.sum( (y - xbc)**2, axis = 1) / model.Ndof )
+            xarmseC[f,] = np.sqrt( np.sum( (y - xac)**2, axis = 1) / model.Ndof )
+        xyrmse[f,] = np.sqrt( np.sum( (xt - y)**2 ) / model.Ndof )
 
     # start plotting
 
@@ -164,11 +144,11 @@ def main():
 
     pyplot.xlabel('Assimilation Cycle',fontweight='bold',fontsize=12)
     pyplot.ylabel('RMSE',fontweight='bold',fontsize=12)
-    pyplot.title('RMSE - EnKF Prior',fontweight='bold',fontsize=14)
+    pyplot.title('RMSE - %s Prior' % estr,fontweight='bold',fontsize=14)
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_%dDhybDA_RMSE_EnKF_Prior.eps' % (model, varDA),dpi=300,orientation=fOrient,format='eps')
+        fig.savefig('%s_%shybDA_RMSE_%s_Prior.eps' % (model.Name, vstr, estr),dpi=300,orientation=fOrient,format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -198,11 +178,11 @@ def main():
 
     pyplot.xlabel('Assimilation Cycle',fontweight='bold',fontsize=12)
     pyplot.ylabel('RMSE',fontweight='bold',fontsize=12)
-    pyplot.title('RMSE - %dDVar Prior' % (varDA), fontweight='bold',fontsize=14)
+    pyplot.title('RMSE - %sVar Prior' % (vstr), fontweight='bold',fontsize=14)
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_%dDhybDA_RMSE_%dDVar_Prior.eps' % (model, varDA, varDA),dpi=300,orientation=fOrient,format='eps')
+        fig.savefig('%s_%shybDA_RMSE_%sVar_Prior.eps' % (model.Name, vstr, vstr),dpi=300,orientation=fOrient,format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -232,11 +212,11 @@ def main():
 
     pyplot.xlabel('Assimilation Cycle',fontweight='bold',fontsize=12)
     pyplot.ylabel('RMSE',fontweight='bold',fontsize=12)
-    pyplot.title('RMSE - EnKF Posterior',fontweight='bold',fontsize=14)
+    pyplot.title('RMSE - %s Posterior' % estr,fontweight='bold',fontsize=14)
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_%dDhybDA_RMSE_EnKF_Posterior.eps' % (model, varDA),dpi=300,orientation=fOrient,format='eps')
+        fig.savefig('%s_%shybDA_RMSE_%s_Posterior.eps' % (model.Name, vstr, estr),dpi=300,orientation=fOrient,format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -266,11 +246,11 @@ def main():
 
     pyplot.xlabel('Assimilation Cycle',fontweight='bold',fontsize=12)
     pyplot.ylabel('RMSE',fontweight='bold',fontsize=12)
-    pyplot.title('RMSE - %dDVar Posterior' % (varDA),fontweight='bold',fontsize=14)
+    pyplot.title('RMSE - %sVar Posterior' % (vstr),fontweight='bold',fontsize=14)
     pyplot.legend(loc=1)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_%dDhybDA_RMSE_%dDVar_Posterior.eps' % (model, varDA, varDA),dpi=300,orientation=fOrient,format='eps')
+        fig.savefig('%s_%shybDA_RMSE_%sVar_Posterior.eps' % (model.Name, vstr, vstr),dpi=300,orientation=fOrient,format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -281,17 +261,17 @@ def main():
     index = np.arange(nf) + 0.15
     width = 0.35
 
-    pyplot.bar(index,      mean_prior_E,    width,color='r',edgecolor='r',yerr=std_prior_E,    ecolor = 'k')
-    pyplot.bar(index+width,mean_posterior_E,width,color='b',edgecolor='b',yerr=std_posterior_E,ecolor = 'k')
+    pyplot.bar(index,      mean_prior_E,    width,color='black',edgecolor='black',yerr=std_prior_E, error_kw=dict(ecolor='gray',elinewidth=3,capsize=5))
+    pyplot.bar(index+width,mean_posterior_E,width,color='gray',edgecolor='gray',yerr=std_posterior_E,error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
 
     pyplot.xticks(index+width, blabel)
 
     pyplot.xlabel(r'$\beta_e$',fontweight='bold',fontsize=12)
     pyplot.ylabel('RMSE',      fontweight='bold',fontsize=12)
-    pyplot.title('RMSE - EnKF',fontweight='bold',fontsize=14)
+    pyplot.title('RMSE - %s' % estr,fontweight='bold',fontsize=14)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_%dDhybDA_RMSE_EnKF.eps' % (model, varDA),dpi=300,orientation=fOrient,format='eps')
+        fig.savefig('%s_%shybDA_RMSE_%s.eps' % (model.Name, vstr, estr),dpi=300,orientation=fOrient,format='eps')
     #-----------------------------------------------------------
 
     #-----------------------------------------------------------
@@ -299,17 +279,20 @@ def main():
     pyplot.clf()
     pyplot.hold(True)
 
-    pyplot.bar(index,      mean_prior_C,    width,color='r',edgecolor='r',yerr=std_prior_C,    ecolor = 'k')
-    pyplot.bar(index+width,mean_posterior_C,width,color='b',edgecolor='b',yerr=std_posterior_C,ecolor = 'k')
+    index = np.arange(nf) + 0.15
+    width = 0.35
+
+    pyplot.bar(index,      mean_prior_C,    width,color='black',edgecolor='black',yerr=std_prior_C, error_kw=dict(ecolor='gray',elinewidth=3,capsize=5))
+    pyplot.bar(index+width,mean_posterior_C,width,color='gray',edgecolor='gray',yerr=std_posterior_C,error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
 
     pyplot.xticks(index+width, blabel)
 
     pyplot.xlabel(r'$\beta_e$',fontweight='bold',fontsize=12)
     pyplot.ylabel('RMSE',      fontweight='bold',fontsize=12)
-    pyplot.title('RMSE - %dDVar' % (varDA),fontweight='bold',fontsize=14)
+    pyplot.title('RMSE - %sVar' % (vstr),fontweight='bold',fontsize=14)
     pyplot.hold(False)
     if save_figures:
-        fig.savefig('%s_%dDhybDA_RMSE_%dDVar.eps' % (model, varDA, varDA),dpi=300,orientation=fOrient,format='eps')
+        fig.savefig('%s_%shybDA_RMSE_%sVar.eps' % (model.Name, vstr, vstr),dpi=300,orientation=fOrient,format='eps')
     #-----------------------------------------------------------
 
     if not save_figures: pyplot.show()

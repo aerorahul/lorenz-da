@@ -261,8 +261,8 @@ def main():
     index = np.arange(nf) + 0.15
     width = 0.35
 
-    pyplot.bar(index,      mean_prior_E,    width,color='black',edgecolor='black',yerr=std_prior_E, error_kw=dict(ecolor='gray',elinewidth=3,capsize=5))
-    pyplot.bar(index+width,mean_posterior_E,width,color='gray',edgecolor='gray',yerr=std_posterior_E,error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
+    pyplot.bar(index,mean_prior_E,width,linewidth=0.0,color='0.75',edgecolor='0.75',yerr=std_prior_E, error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
+    pyplot.bar(index+width,mean_posterior_E,width,linewidth=0.0,color='gray',edgecolor='gray',yerr=std_posterior_E,error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
 
     pyplot.xticks(index+width, blabel)
 
@@ -282,8 +282,8 @@ def main():
     index = np.arange(nf) + 0.15
     width = 0.35
 
-    pyplot.bar(index,      mean_prior_C,    width,color='black',edgecolor='black',yerr=std_prior_C, error_kw=dict(ecolor='gray',elinewidth=3,capsize=5))
-    pyplot.bar(index+width,mean_posterior_C,width,color='gray',edgecolor='gray',yerr=std_posterior_C,error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
+    pyplot.bar(index,mean_prior_C,width,linewidth=0.0,color='0.75',edgecolor='0.75',yerr=std_prior_C, error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
+    pyplot.bar(index+width,mean_posterior_C,width,linewidth=0.0,color='gray',edgecolor='gray',yerr=std_posterior_C,error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
 
     pyplot.xticks(index+width, blabel)
 

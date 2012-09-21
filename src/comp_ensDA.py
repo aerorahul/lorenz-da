@@ -191,14 +191,14 @@ def main():
     index = np.arange(nf) + 0.15
     width = 0.35
 
-    pyplot.bar(index,      mean_prior,    width,color='black',edgecolor='black',yerr=std_prior, error_kw=dict(ecolor='gray',elinewidth=3,capsize=5))
-    pyplot.bar(index+width,mean_posterior,width,color='gray',edgecolor='gray',yerr=std_posterior,error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
+    pyplot.bar(index,mean_prior,width,linewidth=0.0,color='0.75',edgecolor='0.75',yerr=std_prior, error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
+    pyplot.bar(index+width,mean_posterior,width,linewidth=0.0,color='gray',edgecolor='gray',yerr=std_posterior,error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
 
     pyplot.xticks(index+width, blabel)
 
-    pyplot.xlabel('Ne',   fontweight='bold',fontsize=12)
-    pyplot.ylabel('RMSE', fontweight='bold',fontsize=12)
-    pyplot.title('RMSE',  fontweight='bold',fontsize=14)
+    pyplot.xlabel('Ensemble Size', fontweight='bold',fontsize=12)
+    pyplot.ylabel('RMSE',          fontweight='bold',fontsize=12)
+    pyplot.title( 'RMSE',          fontweight='bold',fontsize=14)
     pyplot.hold(False)
     if save_figures:
         fig.savefig('%s_ensDA_RMSE.eps' % (model.Name),dpi=300,orientation=fOrient,format='eps')
@@ -209,16 +209,16 @@ def main():
     pyplot.clf()
     pyplot.hold(True)
 
-    index = np.arange(nf) + 0.1
-    width = 0.8
+    index = np.arange(nf) + 0.2
+    width = 0.6
 
-    pyplot.bar(index,mean_evratio,width,color='k',edgecolor='k',yerr=std_evratio,error_kw=dict(ecolor='gray',elinewidth=3,capsize=5))
+    pyplot.bar(index,mean_evratio,width,linewidth=0.0,color='gray',edgecolor='gray',yerr=std_evratio,error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
 
     pyplot.xticks(index+width/2, blabel)
 
-    pyplot.xlabel('Ne',   fontweight='bold',fontsize=12)
+    pyplot.xlabel('Ensemble Size',          fontweight='bold',fontsize=12)
     pyplot.ylabel('Error - Variance Ratio', fontweight='bold',fontsize=12)
-    pyplot.title('Error - Variance Ratio',  fontweight='bold',fontsize=14)
+    pyplot.title( 'Error - Variance Ratio', fontweight='bold',fontsize=14)
     pyplot.hold(False)
     if save_figures:
         fig.savefig('%s_ensDA_evratio.eps' % (model.Name),dpi=300,orientation=fOrient,format='eps')

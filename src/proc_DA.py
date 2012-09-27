@@ -67,6 +67,21 @@ def main():
         xbm     = Xb.copy()
         xam     = Xa.copy()
 
+    if ( (DA.do_hybrid) or (hasattr(varDA,'update')) ):
+        var_evratio = np.zeros(np.shape(xbm)[0])
+        Bs = varDA.inflation.infl_fac * read_clim_cov(model)
+        if ( DA.do_hybrid ): L = localization_operator(model,ensDA.localization)
+        for i in range(0,DA.nassim):
+            if ( DA.do_hybrid ): xtmp = xbc
+            else:                xtmp = xbm
+            innov  = np.sum((y[i,:] -  np.dot(np.diag(H[i,:]),xtmp[i,:]))**2)
+            if ( DA.do_hybrid ):
+                Bc = (1.0 - DA.hybrid_wght) * Bs + DA.hybrid_wght * (np.cov(Xb[i,],ddof=1)*L)
+            else:
+                Bc = Bs
+            totvar = np.sum(np.diag(Bc) + R[i,:])
+            var_evratio[i] = innov / totvar
+
     if ( hasattr(varDA,'update') ):
         if   ( varDA.update == 1 ): vstr = '3DVar'
         elif ( varDA.update == 2 ): vstr = '4DVar'
@@ -133,6 +148,8 @@ def main():
     if ( hasattr(varDA,'update') ):
         fig = plot_iteration_stats(niters)
         if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-niters' % vstr)
+        fig = plot_error_variance_stats(var_evratio, sStat=sStat)
+        if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-evratio' % vstr)
     if ( hasattr(ensDA,'update') ):
         fig = plot_error_variance_stats(evratio, sStat=sStat)
         if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-evratio' % estr)

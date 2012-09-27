@@ -460,6 +460,10 @@ def check_varDA(varDA):
         print 'No Assimilation | 3DVar | 4DVar'
         fail = True
 
+    if   ( varDA.inflation.inflate ):
+        print 'Doing no inflation of the static background error covariance at all'
+    else:
+        print 'Inflating the static background error covariance with a factor of %f' % varDA.inflation.infl_fac
     print '==========================================='
 
     if ( fail ): sys.exit(1)

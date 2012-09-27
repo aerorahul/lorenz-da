@@ -240,8 +240,8 @@ def read_diag_info(fname):
             ensDA.update                  = nc.Eupdate
             ensDA.Nens                    = len(nc.dimensions['ncopy'])
             ensDA.inflation               = type('', (), {})
-            ensDA.inflation.inflate       = nc.inflate
-            ensDA.inflation.infl_fac      = nc.infl_fac
+            ensDA.inflation.inflate       = nc.Einflate
+            ensDA.inflation.infl_fac      = nc.Einfl_fac
             ensDA.localization            = type('', (), {})
             ensDA.localization.localize   = nc.Elocalize
             ensDA.localization.cov_cutoff = nc.Ecov_cutoff
@@ -254,6 +254,9 @@ def read_diag_info(fname):
             varDA.minimization            = type('', (), {})
             varDA.minimization.maxiter    = nc.maxiter
             varDA.minimization.tol        = nc.tol
+            varDA.inflation               = type('', (), {})
+            varDA.inflation.inflate       = nc.Vinflate
+            varDA.inflation.infl_fac      = nc.Vinfl_fac
             varDA.localization            = type('', (), {})
             varDA.localization.localize   = nc.Vlocalize
             varDA.localization.cov_cutoff = nc.Vcov_cutoff

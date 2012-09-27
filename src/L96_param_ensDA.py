@@ -74,8 +74,8 @@ diag_file.attributes = {'model'       : model.Name,
                         'Elocalize'   : ensDA.localization.localize,
                         'Ecov_cutoff' : ensDA.localization.cov_cutoff,
                         'Ecov_trunc'  : ensDA.localization.cov_trunc,
-                        'inflate'     : ensDA.inflation.inflate,
-                        'infl_fac'    : ensDA.inflation.infl_fac}
+                        'Einflate'    : ensDA.inflation.inflate,
+                        'Einfl_fac'   : ensDA.inflation.infl_fac}
 
 # restart conditions
 restart          = type('',(),{})    # restart initial conditions Class

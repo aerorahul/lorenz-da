@@ -28,9 +28,10 @@ __status__    = "Prototype"
 ###############################################################
 import sys
 import numpy         as     np
-from   matplotlib    import pyplot, cm
+from   matplotlib    import pyplot
 from   module_DA     import *
 from   module_IO     import *
+from   plot_stats    import plot_cov
 ###############################################################
 
 ###############################################################
@@ -69,45 +70,23 @@ def main():
     Be_Lb = np.dot(XbpLb,np.transpose(XbpLb))
     Be_Ll = np.dot(XbpLl,np.transpose(XbpLl))
 
-    fig1  = plot_cov(Bs,          "Static : $\mathbf{B}_s$")
-    fig2  = plot_cov(Be,          "Ensemble : $\mathbf{B}_e$")
-    fig3  = plot_cov(Bs*L,        "Static Schur : $\mathbf{B}_s \circ\ \mathbf{L}$")
-    fig4  = plot_cov(Be*L,        "Ensemble Schur : $\mathbf{B}_e \circ\ \mathbf{L}$")
-    fig5  = plot_cov(Be_Lb,       "Ensemble Buehner : $[\mathbf{X}^'_b \mathbf{L}] [\mathbf{X}^'_b \mathbf{L}]^{T}$")
-    fig6  = plot_cov(Be_Ll,       "Ensemble Liu")
-    fig7  = plot_cov(Bs-Bs*L,     "Difference Static - Static Schur")
-    fig8  = plot_cov(Be-Be*L,     "Difference Ensemble - Ensemble Schur")
-    fig9  = plot_cov(Be-Be_Lb,    "Difference Ensemble - Ensemble Buehner")
-    fig10 = plot_cov(Be-Be_Ll,    "Difference Ensemble - Ensemble Liu")
-    fig11 = plot_cov(Be*L-Be_Lb,  "Difference Ensemble Schur - Ensemble Buehner")
-    fig12 = plot_cov(Be*L-Be_Ll,  "Difference Ensemble Schur - Ensemble Liu")
-    fig13 = plot_cov(Be_Lb-Be_Ll, "Difference Ensemble Buehner - Ensemble Liu")
+    fig1  = plot_cov(Bs,          titlestr="Static : $\mathbf{B}_s$")
+    fig2  = plot_cov(Be,          titlestr="Ensemble : $\mathbf{B}_e$")
+    fig3  = plot_cov(Bs*L,        titlestr="Static Schur : $\mathbf{B}_s \circ\ \mathbf{L}$")
+    fig4  = plot_cov(Be*L,        titlestr="Ensemble Schur : $\mathbf{B}_e \circ\ \mathbf{L}$")
+    fig5  = plot_cov(Be_Lb,       titlestr="Ensemble Buehner : $[\mathbf{X}^'_b \mathbf{L}] [\mathbf{X}^'_b \mathbf{L}]^{T}$")
+    fig6  = plot_cov(Be_Ll,       titlestr="Ensemble Liu")
+    fig7  = plot_cov(Bs-Bs*L,     titlestr="Difference Static - Static Schur")
+    fig8  = plot_cov(Be-Be*L,     titlestr="Difference Ensemble - Ensemble Schur")
+    fig9  = plot_cov(Be-Be_Lb,    titlestr="Difference Ensemble - Ensemble Buehner")
+    fig10 = plot_cov(Be-Be_Ll,    titlestr="Difference Ensemble - Ensemble Liu")
+    fig11 = plot_cov(Be*L-Be_Lb,  titlestr="Difference Ensemble Schur - Ensemble Buehner")
+    fig12 = plot_cov(Be*L-Be_Ll,  titlestr="Difference Ensemble Schur - Ensemble Liu")
+    fig13 = plot_cov(Be_Lb-Be_Ll, titlestr="Difference Ensemble Buehner - Ensemble Liu")
 
     pyplot.show()
     sys.exit(0)
 
-def plot_cov(B,titlestr):
-
-    fig = pyplot.figure()
-    pyplot.clf()
-    pyplot.hold(True)
-    cmax = np.round(np.max(np.abs(B)),2)
-    pyplot.imshow(B, cmap=cm.get_cmap(name='PuOr_r', lut=128), interpolation='nearest')
-    pyplot.gca().invert_yaxis()
-    pyplot.colorbar()
-    pyplot.clim(-cmax,cmax)
-
-    newlocs = np.arange(4,np.shape(B)[0],5)
-    newlabs = newlocs + 1
-    pyplot.xticks(newlocs, newlabs)
-    pyplot.yticks(newlocs, newlabs)
-
-    pyplot.xlabel('N',     fontsize=12, fontweight='bold')
-    pyplot.ylabel('N',     fontsize=12, fontweight='bold')
-    pyplot.title(titlestr, fontsize=14, fontweight='bold')
-    fig.canvas.set_window_title(titlestr)
-
-    return fig
 ###############################################################
 
 ###############################################################

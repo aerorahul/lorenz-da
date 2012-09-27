@@ -49,7 +49,7 @@ def main():
         Xbwin = Xa.copy()
 
     # load climatological covariance once and for all ...
-    if ( DA.do_hybrid ): Bs = read_clim_cov(model)
+    if ( DA.do_hybrid ): Bs = varDA.inflation.infl_fac * read_clim_cov(model)
 
     # construct localization matrix once and for all ...
     L = localization_operator(model,ensDA.localization)

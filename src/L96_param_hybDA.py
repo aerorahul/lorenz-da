@@ -67,12 +67,15 @@ ensDA.localization.cov_trunc  = model.Ndof     # truncate localization matrix (c
 
 varDA                         = type('',(),{}) # variational data assimilation Class
 varDA.minimization            = type('',(),{}) # minimization Class
+varDA.inflation               = type('',(),{}) # inflation Class
 varDA.localization            = type('',(),{}) # localization Class
 varDA.update                  = 2              # variational-based DA method (1= 3Dvar; 2= 4Dvar)
 varDA.precondition            = True           # precondition before minimization
 varDA.maxouter                = 1              # no. of outer loops
 varDA.minimization.maxiter    = 1000           # maximum iterations for minimization
 varDA.minimization.tol        = 1e-4           # tolerance to end the variational minimization iteration
+varDA.inflation.inflate       = True           # inflate [ > 1.0 ] / deflate [ < 1.0 ] static covariance
+varDA.inflation.infl_fac      = 2.75           # inflate static covariance
 varDA.localization.localize   = 1              # localization (0= None, 1= Gaspari-Cohn, 2= Boxcar, 3= Ramped)
 varDA.localization.cov_cutoff = 0.0625         # normalized covariance cutoff = cutoff / ( 2*normalized_dist )
 varDA.localization.cov_trunc  = model.Ndof     # truncate localization matrix (cov_trunc <= model.Ndof)
@@ -98,9 +101,11 @@ diag_file.attributes = {'model'       : model.Name,
                         'Elocalize'   : ensDA.localization.localize,
                         'Ecov_cutoff' : ensDA.localization.cov_cutoff,
                         'Ecov_trunc'  : ensDA.localization.cov_trunc,
-                        'inflate'     : ensDA.inflation.inflate,
-                        'infl_fac'    : ensDA.inflation.infl_fac,
+                        'Einflate'    : ensDA.inflation.inflate,
+                        'Einfl_fac'   : ensDA.inflation.infl_fac,
                         'Vupdate'     : varDA.update,
+                        'Vinflate'    : int(varDA.inflation.inflate),
+                        'Vinfl_fac'   : varDA.inflation.infl_fac,
                         'Vlocalize'   : varDA.localization.localize,
                         'Vcov_cutoff' : varDA.localization.cov_cutoff,
                         'Vcov_trunc'  : varDA.localization.cov_trunc,

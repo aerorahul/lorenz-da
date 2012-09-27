@@ -105,23 +105,23 @@ def plot_rmse(xbrmse=None, xarmse=None, xyrmse=None, yscale='semilog', figNum=No
     pyplot.clf()
     pyplot.hold(True)
     if ( yscale == 'linear' ):
-        if ( xbrmse != None ): pyplot.plot(xbrmse,'b-',label='prior',      linewidth=2, alpha=0.90)
-        if ( xarmse != None ): pyplot.plot(xarmse,'r-',label='posterior',  linewidth=2, alpha=0.65)
-        if ( xyrmse != None ): pyplot.plot(xyrmse,'k-',label='observation',linewidth=2, alpha=0.40)
+        if ( xbrmse != None ): pyplot.plot(xbrmse[1:],'b-',label='prior',      linewidth=2, alpha=0.90)
+        if ( xarmse != None ): pyplot.plot(xarmse[:],'r-',label='posterior',  linewidth=2, alpha=0.65)
+        if ( xyrmse != None ): pyplot.plot(xyrmse,     'k-',label='observation',linewidth=2, alpha=0.40)
     elif ( yscale == 'semilog' ):
-        if ( xbrmse != None ): pyplot.semilogy(xbrmse,'b-',label='prior',      linewidth=2, alpha=0.90)
-        if ( xarmse != None ): pyplot.semilogy(xarmse,'r-',label='posterior',  linewidth=2, alpha=0.65)
-        if ( xyrmse != None ): pyplot.semilogy(xyrmse,'k-',label='observation',linewidth=2, alpha=0.40)
+        if ( xbrmse != None ): pyplot.semilogy(xbrmse[1: ],'b-',label='prior',      linewidth=2, alpha=0.90)
+        if ( xarmse != None ): pyplot.semilogy(xarmse[:-1],'r-',label='posterior',  linewidth=2, alpha=0.65)
+        if ( xyrmse != None ): pyplot.semilogy(xyrmse,     'k-',label='observation',linewidth=2, alpha=0.40)
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     pyplot.ylim(0.0, yl[1])
     dyl = yl[1]
 
     if ( xbrmse != None ):
-        strb = 'mean prior rmse : %5.4f +/- %5.4f' % (np.mean(xbrmse[sStat:]), np.std(xbrmse[sStat:],ddof=1))
+        strb = 'mean prior rmse : %5.4f +/- %5.4f' % (np.mean(xbrmse[sStat+1:]),np.std(xbrmse[sStat+1:],ddof=1))
         pyplot.text(0.05*len(xbrmse),yl[1]-0.1*dyl,strb,fontsize=10)
     if ( xarmse != None ):
-        stra = 'mean posterior rmse : %5.4f +/- %5.4f' % (np.mean(xarmse[sStat:]), np.std(xarmse[sStat:],ddof=1))
+        stra = 'mean posterior rmse : %5.4f +/- %5.4f' % (np.mean(xarmse[sStat:-1]),np.std(xarmse[sStat:-1],ddof=1))
         pyplot.text(0.05*len(xarmse),yl[1]-0.15*dyl,stra,fontsize=10)
     if ( xyrmse != None ):
         stro = 'mean observation rmse : %5.4f +/- %5.4f' % (np.mean(xyrmse[sStat:]), np.std(xyrmse[sStat:],ddof=1))
@@ -352,5 +352,40 @@ orientation - orientation of the figure       [ 'landscape' ]
     if ( png ): fhandle.savefig(fname + '.png', dpi=pngdpi, orientation=orientation, format='png', **kwargs)
 
     return
+# }}}
+###############################################################
+
+def plot_cov(cov_mat,titlestr='Covariance Matrix'):
+# {{{
+    '''
+    Plot a covariance matrix
+
+    fig = plot_cov(cov_mat, titlestr='Covariance Matrix')
+
+    cov_mat - covariance matrix to plot
+   titlestr - optional title to the plot [Covariance Matrix]
+        fig - handle of the figure to return
+    '''
+
+    fig = pyplot.figure()
+    pyplot.clf()
+    pyplot.hold(True)
+    cmax = np.round(np.max(np.abs(cov_mat)),2)
+    pyplot.imshow(cov_mat, cmap=cm.get_cmap(name='PuOr_r', lut=128), interpolation='nearest')
+    pyplot.gca().invert_yaxis()
+    pyplot.colorbar()
+    pyplot.clim(-cmax,cmax)
+
+    newlocs = np.arange(4,np.shape(cov_mat)[0],5)
+    newlabs = newlocs + 1
+    pyplot.xticks(newlocs, newlabs)
+    pyplot.yticks(newlocs, newlabs)
+
+    pyplot.xlabel('N',     fontsize=12, fontweight='bold')
+    pyplot.ylabel('N',     fontsize=12, fontweight='bold')
+    pyplot.title(titlestr, fontsize=14, fontweight='bold')
+    fig.canvas.set_window_title(titlestr)
+
+    return fig
 # }}}
 ###############################################################

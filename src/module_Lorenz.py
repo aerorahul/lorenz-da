@@ -308,20 +308,21 @@ def plot_L63(obs=None, ver=None, xb=None, xa=None, xdim=0, ydim=2, **kwargs):
 ###############################################################
 
 ###############################################################
-def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwargs):
+def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, show_ensemble=False, **kwargs):
 # {{{
     '''
     Plot the Lorenz 1996 attractor in polar coordinates
 
-    plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwargs)
+    plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, show_ensemble=False, **kwargs)
 
-         obs - observations [None]
-         ver - truth [None]
-          xb - prior ensemble or ensemble mean [None]
-          xa - posterior ensemble or ensemble mean [None]
-           t - assimilation time [0]
-           N - degrees of freedom to plot [1]
-      figNum - figure handle [None]
+          obs - observations [None]
+          ver - truth [None]
+           xb - prior ensemble or ensemble mean [None]
+           xa - posterior ensemble or ensemble mean [None]
+            t - assimilation time [0]
+            N - degrees of freedom to plot [1]
+       figNum - figure handle [None]
+show_ensemble - show ensemble [False]
     '''
 
     if ( figNum == None ):
@@ -340,15 +341,27 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwar
     if ( xb != None ):
         if ( len(xb.shape) == 1 ):
             tmp = np.zeros((N,1)) ; tmp[:,0] = xb ; xb = tmp
-        for M in range(0, xb.shape[1]):
-            tmp = np.zeros(N+1) ; tmp[1:] = xb[:,M] ; tmp[0] = xb[-1,M]
+            show_ensemble = True
+        if ( show_ensemble ):
+            for M in range(0, xb.shape[1]):
+                tmp = np.zeros(N+1) ; tmp[1:] = xb[:,M] ; tmp[0] = xb[-1,M]
+                pyplot.plot(theta, tmp+mean_dist, 'b-', alpha=0.9)
+        else:
+            xbm = np.mean(xb,axis=1)
+            tmp = np.zeros(N+1) ; tmp[1:] = xbm ; tmp[0] = xbm[-1]
             pyplot.plot(theta, tmp+mean_dist, 'b-', alpha=0.9)
     if ( xa != None ):
         if ( len(xa.shape) == 1 ):
             tmp = np.zeros((N,1)) ; tmp[:,0] = xa ; xa = tmp
-        for M in range(0, xa.shape[1]):
-            tmp = np.zeros(N+1) ; tmp[1:] = xa[:,M] ; tmp[0] = xa[-1,M]
-            pyplot.plot(theta, tmp+mean_dist, 'r-', alpha=0.6)
+            show_ensemble = True
+        if ( show_ensemble ):
+            for M in range(0, xa.shape[1]):
+                tmp = np.zeros(N+1) ; tmp[1:] = xa[:,M] ; tmp[0] = xa[-1,M]
+                pyplot.plot(theta, tmp+mean_dist, 'r-', alpha=0.6)
+        else:
+            xam = np.mean(xa,axis=1)
+            tmp = np.zeros(N+1) ; tmp[1:] = xam ; tmp[0] = xam[-1]
+            pyplot.plot(theta, tmp+mean_dist, 'r-', alpha=0.9)
     if ( ver != None ):
         tmp = np.zeros(N+1) ; tmp[1:] = ver ; tmp[0]= ver[-1]
         pyplot.plot(theta, tmp+mean_dist, 'k-', linewidth=2, alpha=0.9)

@@ -46,7 +46,7 @@ def main():
     if ( sOI == -1 ): sOI = 0
 
     fnames = []
-    for i in range(0,nf): fnames.append(fname.replace('e0','e%d'%i))
+    for i in range(1,nf+1): fnames.append(fname.replace('e1','e%d'%i))
 
     fcolor = ['black', 'gray', 'blue', 'red', 'green', 'cyan', 'magenta']
     if ( len(fnames) > 7 ): fcolor = get_Ndistinct_colors(len(fnames))

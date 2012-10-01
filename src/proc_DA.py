@@ -26,6 +26,7 @@ import numpy         as     np
 from   matplotlib    import pyplot
 from   module_Lorenz import *
 from   module_IO     import *
+from   module_DA     import *
 from   plot_stats    import *
 ###############################################################
 

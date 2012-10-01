@@ -461,9 +461,9 @@ def check_varDA(varDA):
         fail = True
 
     if   ( varDA.inflation.inflate ):
-        print 'Doing no inflation of the static background error covariance at all'
-    else:
         print 'Inflating the static background error covariance with a factor of %f' % varDA.inflation.infl_fac
+    else:
+        print 'Doing no inflation of the static background error covariance at all'
     print '==========================================='
 
     if ( fail ): sys.exit(1)
@@ -577,6 +577,13 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
 
         if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
         print '  final residual = %15.10f after %4d iterations' % (residual, niters)
+
+        # check for filter divergence
+        error_variance_ratio = np.sum(d**2) / np.sum(np.diag(B+R))
+        if ( 0.5 < error_variance_ratio < 2.0 ):
+            print 'total error / total variance = %f' % (error_variance_ratio)
+        else:
+            print "\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" % (error_variance_ratio)
 
         # 3DVAR estimate
         xa = xa + dx
@@ -759,6 +766,13 @@ def ThreeDvar_pc(xb, G, y, R, H, varDA, model):
 
         if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
         print '  final residual = %15.10f after %4d iterations' % (residual, niters)
+
+        # check for filter divergence
+        error_variance_ratio = np.sum(d**2) / np.sum(np.diag(np.dot(G,np.transpose(G))+R))
+        if ( 0.5 < error_variance_ratio < 2.0 ):
+            print 'total error / total variance = %f' % (error_variance_ratio)
+        else:
+            print "\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" % (error_variance_ratio)
 
         # 3DVAR estimate
         xa = xa + np.dot(G,w)

@@ -36,7 +36,7 @@ def main():
     [measure, fname, sOI, _] = get_input_arguments()
 
     # Ensemble sizes to compare
-    Ne = [3, 5, 10, 20, 30, 40, 50, 60, 80, 100]
+    Ne = [5, 10, 20, 30, 40, 50]
 
     # some more arguments, currently hard-coded
     save_figures = False         # save plots as eps
@@ -52,8 +52,15 @@ def main():
     for i in range(0,nf): fnames.append(fname + '%d.nc4' % Ne[i])
     for i in range(0,nf): print fnames[i]
 
-    fcolor = ['black', 'gray', 'blue', 'red', 'green', 'cyan', 'magenta']
-    if ( len(fnames) > 7 ): fcolor = get_Ndistinct_colors(len(fnames))
+    if ( len(fnames) <= 15 ):
+        fcolor = ["#000000", "#C0C0C0", "#808080", "#800000", "#FF0000",\
+                  "#800080", "#FF00FF", "#008000", "#00FF00", "#808000",\
+                  "#FFFF00", "#000080", "#0000FF", "#008080", "#00FFFF"]
+        # black, silver, gray, maroon, red
+        # purple, fuchsia, green, lime, olive
+        # yellow, navy, blue, teal, aqua
+    else:
+        fcolor = get_Ndistinct_colors(len(fnames))
 
     # read dimensions and necessary attributes from the diagnostic file
     [model, DA, ensDA, _] = read_diag_info(fnames[0])

@@ -288,8 +288,10 @@ def plot_L63(obs=None, ver=None, xb=None, xa=None, xdim=0, ydim=2, **kwargs):
     pyplot.hold(True)
 
     att = None
+    pretitle = None
     for key in kwargs:
         if ( key == 'att' ): att = kwargs[key]
+        if ( key == 'pretitle' ): pretitle = kwargs[key]
 
     if ( att != None ): pyplot.plot(att[:,xdim], att[:,ydim], color='gray', linewidth=1)
     if ( xb  != None ): pyplot.plot(xb[ :,xdim], xb[ :,ydim], 'b-', linewidth=1)
@@ -308,21 +310,20 @@ def plot_L63(obs=None, ver=None, xb=None, xa=None, xdim=0, ydim=2, **kwargs):
 ###############################################################
 
 ###############################################################
-def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, show_ensemble=False, **kwargs):
+def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwargs):
 # {{{
     '''
     Plot the Lorenz 1996 attractor in polar coordinates
 
-    plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, show_ensemble=False, **kwargs)
+    plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwargs)
 
-          obs - observations [None]
-          ver - truth [None]
-           xb - prior ensemble or ensemble mean [None]
-           xa - posterior ensemble or ensemble mean [None]
-            t - assimilation time [0]
-            N - degrees of freedom to plot [1]
-       figNum - figure handle [None]
-show_ensemble - show ensemble [False]
+         obs - observations [None]
+         ver - truth [None]
+          xb - prior ensemble or ensemble mean [None]
+          xa - posterior ensemble or ensemble mean [None]
+           t - assimilation time [0]
+           N - degrees of freedom to plot [1]
+      figNum - figure handle [None]
     '''
 
     if ( figNum == None ):
@@ -340,34 +341,30 @@ show_ensemble - show ensemble [False]
 
     if ( xb != None ):
         if ( len(xb.shape) == 1 ):
-            tmp = np.zeros((N,1)) ; tmp[:,0] = xb ; xb = tmp
-            show_ensemble = True
-        if ( show_ensemble ):
-            for M in range(0, xb.shape[1]):
-                tmp = np.zeros(N+1) ; tmp[1:] = xb[:,M] ; tmp[0] = xb[-1,M]
-                pyplot.plot(theta, tmp+mean_dist, 'b-', alpha=0.9)
+            tmp = np.zeros(N+1) ; tmp[1:] = xb; tmp[0] = xb[-1]
         else:
-            xbm = np.mean(xb,axis=1)
-            tmp = np.zeros(N+1) ; tmp[1:] = xbm ; tmp[0] = xbm[-1]
-            pyplot.plot(theta, tmp+mean_dist, 'b-', alpha=0.9)
+            xmin, xmax, xmean = np.min(xb,axis=1), np.max(xb,axis=1), np.mean(xb,axis=1)
+            tmpmin  = np.zeros(N+1) ; tmpmin[ 1:] = xmin;  tmpmin[ 0] = xmin[ -1]
+            tmpmax  = np.zeros(N+1) ; tmpmax[ 1:] = xmax;  tmpmax[ 0] = xmax[ -1]
+            tmp     = np.zeros(N+1) ; tmp[    1:] = xmean; tmp[0]     = xmean[-1]
+            pyplot.fill_between(theta, tmpmin+mean_dist, tmpmax+mean_dist, facecolor='blue', edgecolor='blue', alpha=0.75)
+        pyplot.plot(theta, tmp+mean_dist, 'b-', linewidth=2.0)
     if ( xa != None ):
         if ( len(xa.shape) == 1 ):
-            tmp = np.zeros((N,1)) ; tmp[:,0] = xa ; xa = tmp
-            show_ensemble = True
-        if ( show_ensemble ):
-            for M in range(0, xa.shape[1]):
-                tmp = np.zeros(N+1) ; tmp[1:] = xa[:,M] ; tmp[0] = xa[-1,M]
-                pyplot.plot(theta, tmp+mean_dist, 'r-', alpha=0.6)
+            tmp = np.zeros(N+1) ; tmp[1:] = xa; tmp[0] = xa[-1]
         else:
-            xam = np.mean(xa,axis=1)
-            tmp = np.zeros(N+1) ; tmp[1:] = xam ; tmp[0] = xam[-1]
-            pyplot.plot(theta, tmp+mean_dist, 'r-', alpha=0.9)
+            xmin, xmax, xmean = np.min(xa,axis=1), np.max(xa,axis=1), np.mean(xa,axis=1)
+            tmpmin  = np.zeros(N+1) ; tmpmin[ 1:] = xmin;  tmpmin[ 0] = xmin[ -1]
+            tmpmax  = np.zeros(N+1) ; tmpmax[ 1:] = xmax;  tmpmax[ 0] = xmax[ -1]
+            tmp     = np.zeros(N+1) ; tmp[    1:] = xmean; tmp[0]     = xmean[-1]
+            pyplot.fill_between(theta, tmpmin+mean_dist, tmpmax+mean_dist, facecolor='red', edgecolor='red', alpha=0.5)
+        pyplot.plot(theta, tmp+mean_dist, 'r-', linewidth=2.0)
     if ( ver != None ):
         tmp = np.zeros(N+1) ; tmp[1:] = ver ; tmp[0]= ver[-1]
-        pyplot.plot(theta, tmp+mean_dist, 'k-', linewidth=2, alpha=0.9)
+        pyplot.plot(theta, tmp+mean_dist, 'k-', linewidth=2.0)
     if ( obs != None ):
         tmp = np.zeros(N+1) ; tmp[1:] = obs ; tmp[0] = obs[-1]
-        pyplot.plot(theta, tmp+mean_dist, 'yo', markeredgecolor='y')
+        pyplot.plot(theta, tmp+mean_dist, 'yo', markersize=7.5, markeredgecolor='y', alpha=0.95)
 
     pyplot.gca().set_rmin(0.0)
     pyplot.gca().set_rmax(mean_dist+25.0)
@@ -380,10 +377,15 @@ show_ensemble - show ensemble [False]
     tlabel = np.array(np.linspace(0, 40,20,endpoint=False),dtype=int)
     tgrid, tlabel = pyplot.thetagrids(tgrid, tlabel)
 
-    if ( np.isreal(t) ): title_str = 'k = %d' % (t)
-    else:                title_str = str(t)
-    pyplot.title(title_str,fontweight='bold',fontsize=14)
-    fig.canvas.set_window_title(title_str)
+    pretitle = None
+    for key in kwargs:
+        if ( key == 'pretitle' ): pretitle = kwargs[key]
+
+    if ( np.isreal(t) ): title = 'k = %d' % (t)
+    else:                title = str(t)
+    if ( not (pretitle == None) ): title = pretitle + ' - ' + title
+    pyplot.title(title,fontweight='bold',fontsize=14)
+    fig.canvas.set_window_title(title)
 
     return fig
 # }}}

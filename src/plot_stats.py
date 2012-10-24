@@ -94,13 +94,12 @@ def plot_abs_error(xbe, xae, label=['x'], N=1, yscale='semilog', figNum=None):
 ###############################################################
 
 ###############################################################
-def plot_rmse(xbrmse=None, xarmse=None, xyrmse=None, yscale='semilog', figNum=None, title=None,
+def plot_rmse(xbrmse=None, xarmse=None, xyrmse=None, yscale='semilog', figNum=None, pretitle=None,
         sStat=100):
 
     if ( (yscale != 'linear') and (yscale != 'semilog') ): yscale = 'semilog'
     if ( figNum == None ): fig = pyplot.figure()
-    else: fig = pyplot.figure(figNum)
-    if ( title == None ): title = 'Root Mean Squared Error'
+    else:                  fig = pyplot.figure(figNum)
 
     pyplot.clf()
     pyplot.hold(True)
@@ -129,6 +128,8 @@ def plot_rmse(xbrmse=None, xarmse=None, xyrmse=None, yscale='semilog', figNum=No
 
     pyplot.xlabel('Assimilation Cycle',fontweight='bold',fontsize=12)
     pyplot.ylabel('RMSE',fontweight='bold',fontsize=12)
+    title = 'Root Mean Squared Error'
+    if ( not (pretitle == None) ): title = pretitle + ' - ' + title
     pyplot.title(title,fontweight='bold',fontsize=14)
     pyplot.legend(loc=0,ncol=2)
     pyplot.hold(False)
@@ -178,7 +179,7 @@ def plot_abs_error_var(xbev, xaev, label=['x'], N=1, yscale='semilog', figNum=No
 ###############################################################
 
 ###############################################################
-def plot_iteration_stats(itstats, figNum=None):
+def plot_iteration_stats(itstats, figNum=None, pretitle=None):
 
     if ( figNum == None ): fig = pyplot.figure()
     else: fig = pyplot.figure(figNum)
@@ -202,6 +203,7 @@ def plot_iteration_stats(itstats, figNum=None):
     pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
     pyplot.ylabel('# Iterations',     fontweight='bold',fontsize=12)
     title = '# Iterations for cost function'
+    if ( not (pretitle == None) ): title = pretitle + ' - ' + title
     pyplot.title(title,fontweight='bold',fontsize=14)
     fig.canvas.set_window_title(title)
     pyplot.hold(False)
@@ -209,7 +211,7 @@ def plot_iteration_stats(itstats, figNum=None):
 ###############################################################
 
 ###############################################################
-def plot_error_variance_stats(evratio, figNum=None, sStat=100):
+def plot_error_variance_stats(evratio, figNum=None, sStat=100, pretitle=None):
 
     if ( figNum == None ): fig = pyplot.figure()
     else: fig = pyplot.figure(figNum)
@@ -230,6 +232,7 @@ def plot_error_variance_stats(evratio, figNum=None, sStat=100):
     pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
     pyplot.ylabel('Innovation Variance / Total Variance',fontweight='bold',fontsize=12)
     title = 'Innovation Variance / Total Variance'
+    if ( not (pretitle == None) ): title = pretitle + ' - ' + title
     pyplot.title(title,fontweight='bold',fontsize=14)
     fig.canvas.set_window_title(title)
     pyplot.hold(False)
@@ -355,15 +358,15 @@ orientation - orientation of the figure       [ 'landscape' ]
 # }}}
 ###############################################################
 
-def plot_cov(cov_mat,titlestr='Covariance Matrix'):
+def plot_cov(cov_mat,title='Covariance Matrix'):
 # {{{
     '''
     Plot a covariance matrix
 
-    fig = plot_cov(cov_mat, titlestr='Covariance Matrix')
+    fig = plot_cov(cov_mat, title='Covariance Matrix')
 
     cov_mat - covariance matrix to plot
-   titlestr - optional title to the plot [Covariance Matrix]
+      title - optional title to the plot ['Covariance Matrix']
         fig - handle of the figure to return
     '''
 
@@ -383,8 +386,8 @@ def plot_cov(cov_mat,titlestr='Covariance Matrix'):
 
     pyplot.xlabel('N',     fontsize=12, fontweight='bold')
     pyplot.ylabel('N',     fontsize=12, fontweight='bold')
-    pyplot.title(titlestr, fontsize=14, fontweight='bold')
-    fig.canvas.set_window_title(titlestr)
+    pyplot.title(title, fontsize=14, fontweight='bold')
+    fig.canvas.set_window_title(title)
 
     return fig
 # }}}

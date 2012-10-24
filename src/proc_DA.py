@@ -115,16 +115,16 @@ def main():
         sys.exit(2)
 
     # plot the RMSE
-    fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, sStat=sStat, yscale='linear', title=fstr+'-RMSE')
+    fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, sStat=sStat, yscale='linear', pretitle=fstr)
     if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-RMSE' % fstr)
 
     # plot the last state
     if   ( model.Name == 'L63' ):
-        fig = plot_trace(obs=y, ver=xt, xb=xbm, xa=xam, N=model.Ndof)
+        fig = plot_trace(obs=y, ver=xt, xb=xbm, xa=xam, N=model.Ndof, pretitle=fstr)
         if ( save_fig ): save_figure(fig, fname = fname_fig + 'attractor')
 
     elif ( model.Name == 'L96' ):
-        fig = plot_L96(obs=y[pIndex,], ver=xt[pIndex,], xb=Xb[pIndex,], xa=Xa[pIndex,], t=pIndex+1, N=model.Ndof)
+        fig = plot_L96(obs=y[pIndex,], ver=xt[pIndex,], xb=Xb[pIndex,], xa=Xa[pIndex,], t=pIndex+1, N=model.Ndof, pretitle=fstr)
         if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-%d' % (fstr,pIndex+1))
 
     # plot the last state and RMSE for central state
@@ -136,23 +136,24 @@ def main():
             xbrmse = np.sqrt( np.sum( (y  - xbc)**2, axis = 1) / model.Ndof )
             xarmse = np.sqrt( np.sum( (y  - xac)**2, axis = 1) / model.Ndof )
         xyrmse = np.sqrt( np.sum( (xt - y)**2 ) / model.Ndof )
-        fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, sStat=sStat, yscale='linear', title=vstr+'-RMSE')
+        fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, sStat=sStat, yscale='linear', pretitle=vstr)
         if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-RMSE' % vstr)
 
         if   ( model.Name == 'L63' ):
-            fig = plot_trace(obs=y, ver=xt, xb=xbm, xa=xam, N=model.Ndof)
+            fig = plot_trace(obs=y, ver=xt, xb=xbm, xa=xam, N=model.Ndof, pretitle=vstr)
         elif ( model.Name == 'L96' ):
-            fig = plot_L96(obs=y[pIndex,], ver=xt[pIndex,], xb=xbc[pIndex,], xa=xac[pIndex,], t=pIndex+1, N=model.Ndof)
+            fig = plot_L96(obs=y[pIndex,], ver=xt[pIndex,], xb=xbc[pIndex,], xa=xac[pIndex,], t=pIndex+1, N=model.Ndof, pretitle=vstr)
             if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-%d' % (vstr, pIndex+1))
 
     # plot the iteration statistics and/or error-to-variance ratio
     if ( hasattr(varDA,'update') ):
-        fig = plot_iteration_stats(niters)
+        fig = plot_iteration_stats(niters,pretitle=vstr)
         if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-niters' % vstr)
-        fig = plot_error_variance_stats(var_evratio, sStat=sStat)
+        fig = plot_error_variance_stats(var_evratio, sStat=sStat, pretitle=vstr)
         if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-evratio' % vstr)
     if ( hasattr(ensDA,'update') ):
-        fig = plot_error_variance_stats(evratio, sStat=sStat)
+        titlestr = estr + ' - Innovation Variance / Total Variance'
+        fig = plot_error_variance_stats(evratio, sStat=sStat, pretitle=estr)
         if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-evratio' % estr)
 
     if ( not save_fig ): pyplot.show()

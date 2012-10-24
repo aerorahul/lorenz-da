@@ -1166,3 +1166,23 @@ def advance_ensemble(Xi, t, model, perfect=True, **kwargs):
     return Xf
 # }}}
 ###############################################################
+
+###############################################################
+def inflate_ensemble(Xi, inflation_factor):
+# {{{
+    '''
+    Inflate an ensemble.
+
+    Xo = inflate_ensemble(Xi, inflation_factor)
+
+              Xi - Input ensemble    [ shape(Xi) = [Ne, Ndof] ]
+inflation_factor - Factor with which to inflate ensemble perturbations
+              Xo - Inflated ensemble [ shape(Xo) = [Ne, Ndof] ]
+    '''
+
+    xm = np.mean(Xi,axis=0)
+    Xo = xm + inflation_factor * (Xi - xm)
+
+    return Xo
+# }}}
+###############################################################

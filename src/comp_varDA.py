@@ -36,7 +36,7 @@ def main():
     [measure, fname, sOI, _] = get_input_arguments()
 
     # Inflation factors to compare
-    alpha = ['1.0', '1.2', '1.4', '1.6', '1.8', '2.0', '2.2', '2.4', '2.6', '2.8', '3.0']
+    alpha = [1.0, 2.0, 3.0, 3.1, 3.2, 3.4]
 
     # some more arguments, currently hard-coded
     save_figures = False         # save plots as eps
@@ -49,18 +49,25 @@ def main():
 
     nf = len(alpha)
     fnames = []
-    for i in range(0,nf): fnames.append(fname + '%s.nc4' % alpha[i])
+    for i in range(0,nf): fnames.append( fname + '%3.1f.nc4' % ((alpha[i])) )
 
-    fcolor = ['black', 'gray', 'blue', 'red', 'green', 'cyan', 'magenta']
-    if ( len(fnames) > 7 ): fcolor = get_Ndistinct_colors(len(fnames))
+    if ( len(fnames) <= 15):
+        fcolor = ["#000000", "#C0C0C0", "#808080", "#800000", "#FF0000",\
+                  "#800080", "#FF00FF", "#008000", "#00FF00", "#808000",\
+                  "#FFFF00", "#000080", "#0000FF", "#008080", "#00FFFF"]
+        # black, silver, gray, maroon, red
+        # purple, fuchsia, green, lime, olive
+        # yellow, navy, blue, teal, aqua
+    else:
+        fcolor = get_Ndistinct_colors(len(fnames))
 
-    # read dimensions and necessary attributes from the diagnostic file
-    [model, DA, _, varDA] = read_diag_info(fnames[0])
+    # read general dimensions and necessary attributes from the diagnostic file
+    [model, DA, _, gvarDA] = read_diag_info(fnames[0])
 
-    Bs = read_clim_cov(model)
+    Bc = read_clim_cov(model)
 
-    if   ( varDA.update == 1 ): vstr = '3DVar'
-    elif ( varDA.update == 2 ): vstr = '4DVar'
+    if   ( gvarDA.update == 1 ): vstr = '3DVar'
+    elif ( gvarDA.update == 2 ): vstr = '4DVar'
 
     # allocate room for variables
     print 'computing RMSE against %s' % measure
@@ -86,8 +93,8 @@ def main():
 
         try:
             nc = Dataset(fname, mode='r', format='NETCDF4')
-            flabel.append(r'$\alpha = %s$' % alpha[f])
-            blabel.append('%s' % alpha[f])
+            flabel.append(r'$\alpha = %3.1f$' % alpha[f])
+            blabel.append('%3.1f' % alpha[f])
             nc.close()
         except Exception as Instance:
             print 'Exception occurred during read of ' + fname
@@ -95,6 +102,9 @@ def main():
             print Instance.args
             print Instance
             sys.exit(1)
+
+        # read the varDA for the specific diagnostic file
+        [_, _, _, varDA] = read_diag_info(fname)
 
         # read the diagnostic file
         xt, xb, xa, y, H, R, niters = read_diag(fname, 0, end_time=DA.nassim)
@@ -109,16 +119,17 @@ def main():
         xyrmse[f,] = np.sqrt( np.sum( (xt -  y)**2 ) / model.Ndof )
 
         evratio = niters.copy()
+        evratio = np.zeros(len(niters))
         for i in range(0,DA.nassim):
-            innov  = np.sum((y[i,:] -  np.dot(np.diag(H[i,:]),xb[i,:]))**2)
-            totvar = np.sum(varDA.inflation.infl_fac*np.diag(Bs) + R[i,:])
+            innov  = np.sum((y[i,:] - np.dot(np.diag(H[i,:]),xb[  i,:]))**2)
+            totvar = np.sum(varDA.inflation.infl_fac*np.diag(Bc) + R[i,:])
             evratio[i] = innov / totvar
-        mean_evratio[f] = np.mean(evratio[sOI+1:])
-        std_evratio[f]  = np.std( evratio[sOI+1:],ddof=1)
+        mean_evratio[f] = np.mean(evratio[sOI:])
+        std_evratio[f]  = np.std( evratio[sOI:],ddof=1)
 
         # compute mean and std. dev. in the iteration count
         mean_niters[f] = np.mean(niters[sOI+1:])
-        std_niters[f]  = np.std(niters[sOI+1:], ddof=1)
+        std_niters[f]  = np.std( niters[sOI+1:], ddof=1)
 
     # start plotting
 
@@ -198,8 +209,9 @@ def main():
     index = np.arange(nf) + 0.15
     width = 0.35
 
-    pyplot.bar(index,mean_prior,width,linewidth=0.0,color='0.75',edgecolor='0.75',yerr=std_prior, error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
-    pyplot.bar(index+width,mean_posterior,width,linewidth=0.0,color='gray',edgecolor='gray',yerr=std_posterior,error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
+    bottom = 0.0
+    pyplot.bar(index,mean_prior-bottom,width,bottom=bottom,linewidth=0.0,color='0.75',edgecolor='0.75',yerr=std_prior, error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
+    pyplot.bar(index+width,mean_posterior-bottom,width,bottom=bottom,linewidth=0.0,color='gray',edgecolor='gray',yerr=std_posterior,error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
 
     pyplot.xticks(index+width, blabel)
 
@@ -238,7 +250,6 @@ def main():
 
     index = np.arange(nf) + 0.2
     width = 0.6
-
     pyplot.bar(index,mean_evratio,width,linewidth=0.0,color='gray',edgecolor='gray',yerr=std_evratio,error_kw=dict(ecolor='black',elinewidth=3,capsize=5))
 
     pyplot.xticks(index+width/2, blabel)

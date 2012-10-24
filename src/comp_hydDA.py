@@ -33,7 +33,10 @@ from   module_IO  import *
 def main():
 
     # name of starting hybrid output diagnostic file, starting index and no. of files
-    [measure, fname, sOI, nf] = get_input_arguments()
+    [measure, fname, sOI, _] = get_input_arguments()
+
+    # beta to compare
+    beta = [0.0, 0.5, 1.0]
 
     # some more arguments, currently hard-coded
     save_figures = False         # save plots as eps
@@ -45,11 +48,19 @@ def main():
 
     if ( sOI == -1 ): sOI = 0
 
+    nf = len(beta)
     fnames = []
-    for i in range(1,nf+1): fnames.append(fname.replace('e1','e%d'%i))
+    for i in range(0,nf): fnames.append( fname + '%3.2f.nc4' % (beta[i]) )
 
-    fcolor = ['black', 'gray', 'blue', 'red', 'green', 'cyan', 'magenta']
-    if ( len(fnames) > 7 ): fcolor = get_Ndistinct_colors(len(fnames))
+    if ( len(fnames) <= 15 ):
+        fcolor = ["#000000", "#C0C0C0", "#808080", "#800000", "#FF0000",\
+                  "#800080", "#FF00FF", "#008000", "#00FF00", "#808000",\
+                  "#FFFF00", "#000080", "#0000FF", "#008080", "#00FFFF"]
+        # black, silver, gray, maroon, red
+        # purple, fuchsia, green, lime, olive
+        # yellow, navy, blue, teal, aqua
+    else:
+        fcolor = get_Ndistinct_colors(len(fnames))
 
     # read dimensions and necessary attributes from the diagnostic file
     [model, DA, ensDA, varDA] = read_diag_info(fnames[0])
@@ -85,6 +96,9 @@ def main():
 
         try:
             nc = Dataset(fname, mode='r', format='NETCDF4')
+            if ( not (nc.hybrid_wght == beta[f]) ):
+                print 'beta mismatch | beta[f] = %3.2f, nc.hybrid_wght = %3.2f' % (beta[f], nc.hybrid_wght)
+                sys.exit(2)
             flabel.append(r'$\beta_e$ = %3.2f' % nc.hybrid_wght)
             blabel.append('%3.2f' % nc.hybrid_wght)
             nc.close()

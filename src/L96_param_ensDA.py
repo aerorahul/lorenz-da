@@ -55,6 +55,7 @@ ensDA.inflation    = type('',(),{})            # inflation Class
 ensDA.localization = type('',(),{})            # localization Class
 ensDA.update                  = 2              # ensemble-based DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
 ensDA.Nens                    = 30             # number of ensemble members
+ensDA.init_ens_infl_fac       = 1.0            # inflate initial ensemble by init_ens_infl_fac
 ensDA.inflation.inflate       = 1              # inflation (0= None, 1= Multiplicative [1.01], 2= Additive [0.01],
                                                # 3= Cov. Relax [0.25], 4= Spread Restoration [1.0])
 ensDA.inflation.infl_fac      = 1.06           # Depends on inflation method (see values in [] above)

@@ -42,6 +42,7 @@ def main():
 
     # get IC's
     [xt, Xa] = get_IC(model, restart, Nens=ensDA.Nens)
+    Xa = np.transpose( inflate_ensemble(np.transpose(Xa), ensDA.init_ens_infl_fac) )
     Xb = Xa.copy()
     if ( DA.do_hybrid ):
         xac = np.mean(Xa,axis=1)

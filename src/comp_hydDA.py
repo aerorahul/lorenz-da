@@ -35,8 +35,10 @@ def main():
     # name of starting hybrid output diagnostic file, starting index and no. of files
     [measure, fname, sOI, _] = get_input_arguments()
 
-    # beta to compare
-    beta = [0.0, 0.5, 1.0]
+    # alpha, beta to compare
+    vary_variable = 'alpha'
+    beta = [0.0, 0.5, 0.75, 1.00]
+    alpha = [0.5, 1.0, 2.0, 2.6]
 
     # some more arguments, currently hard-coded
     save_figures = False         # save plots as eps
@@ -48,9 +50,15 @@ def main():
 
     if ( sOI == -1 ): sOI = 0
 
-    nf = len(beta)
     fnames = []
-    for i in range(0,nf): fnames.append( fname + '%3.2f.nc4' % (beta[i]) )
+    if   ( vary_variable == 'alpha'):
+        nf = len(alpha)
+        for i in range(0,nf):
+            fnames.append( fname + '_beta=%3.2f' % beta[0] + '_alpha=%2.1f' % alpha[i] + '.nc4' )
+    elif ( vary_variable == 'beta' ):
+        nf = len(beta)
+        for i in range(0,nf):
+            fnames.append( fname + '_beta=%3.2f' % beta[i] + '_alpha=%2.1f' % alpha[0] + '.nc4' )
 
     if ( len(fnames) <= 15 ):
         fcolor = ["#000000", "#C0C0C0", "#808080", "#800000", "#FF0000",\
@@ -96,11 +104,12 @@ def main():
 
         try:
             nc = Dataset(fname, mode='r', format='NETCDF4')
-            if ( not (nc.hybrid_wght == beta[f]) ):
-                print 'beta mismatch | beta[f] = %3.2f, nc.hybrid_wght = %3.2f' % (beta[f], nc.hybrid_wght)
-                sys.exit(2)
-            flabel.append(r'$\beta_e$ = %3.2f' % nc.hybrid_wght)
-            blabel.append('%3.2f' % nc.hybrid_wght)
+            if   ( vary_variable == 'alpha' ):
+                flabel.append(r'$\alpha$ = %2.1f' % alpha[f])
+                blabel.append('%2.1f' % alpha[f])
+            elif ( vary_variable == 'beta' ):
+                flabel.append(r'$\beta$ = %3.2f' % nc.hybrid_wght)
+                blabel.append('%3.2f' % nc.hybrid_wght)
             nc.close()
         except Exception as Instance:
             print 'Exception occurred during read of ' + fname
@@ -280,9 +289,9 @@ def main():
 
     pyplot.xticks(index+width, blabel)
 
-    pyplot.xlabel(r'$\beta_e$',fontweight='bold',fontsize=12)
-    pyplot.ylabel('RMSE',      fontweight='bold',fontsize=12)
-    pyplot.title('RMSE - %s' % estr,fontweight='bold',fontsize=14)
+    pyplot.xlabel(r'$\%s$' % vary_variable,fontweight='bold',fontsize=12)
+    pyplot.ylabel('RMSE',                  fontweight='bold',fontsize=12)
+    pyplot.title('RMSE - %s' % estr,       fontweight='bold',fontsize=14)
     pyplot.hold(False)
     if save_figures:
         fig.savefig('%s_%shybDA_RMSE_%s.eps' % (model.Name, vstr, estr),dpi=300,orientation=fOrient,format='eps')
@@ -301,9 +310,9 @@ def main():
 
     pyplot.xticks(index+width, blabel)
 
-    pyplot.xlabel(r'$\beta_e$',fontweight='bold',fontsize=12)
-    pyplot.ylabel('RMSE',      fontweight='bold',fontsize=12)
-    pyplot.title('RMSE - %sVar' % (vstr),fontweight='bold',fontsize=14)
+    pyplot.xlabel(r'$\%s$' % vary_variable ,fontweight='bold',fontsize=12)
+    pyplot.ylabel('RMSE',                   fontweight='bold',fontsize=12)
+    pyplot.title('RMSE - %sVar' % (vstr),   fontweight='bold',fontsize=14)
     pyplot.hold(False)
     if save_figures:
         fig.savefig('%s_%shybDA_RMSE_%sVar.eps' % (model.Name, vstr, vstr),dpi=300,orientation=fOrient,format='eps')

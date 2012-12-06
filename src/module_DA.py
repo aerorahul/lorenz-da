@@ -561,7 +561,7 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
         residual_tol   = 1.0
         print 'initial residual = %15.10f' % (residual_first)
 
-        while ( (residual_tol >= varDA.minimization.tol) and ( niters <= varDA.minimization.maxiter) ):
+        while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
 
             niters = niters + 1
 
@@ -659,7 +659,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
         residual_tol   = 1.0
         print 'initial residual = %15.10f' % (residual_first)
 
-        while ( (residual_tol >= varDA.minimization.tol) and (niters <= varDA.minimization.maxiter) ):
+        while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
 
             niters = niters + 1
 
@@ -750,7 +750,7 @@ def ThreeDvar_pc(xb, G, y, R, H, varDA, model):
         residual_tol   = 1.0
         print 'initial residual = %15.10f' % (residual_first)
 
-        while ( (residual_tol >= varDA.minimization.tol) and ( niters <= varDA.minimization.maxiter) ):
+        while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
 
             niters = niters + 1
 
@@ -849,7 +849,7 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
         residual_tol   = 1.0
         print 'initial residual = %15.10f' % (residual_first)
 
-        while ( (residual_tol >= varDA.minimization.tol) and (niters <= varDA.minimization.maxiter) ):
+        while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
 
             niters = niters + 1
 
@@ -1017,7 +1017,7 @@ def EnsembleFourDvar_pc(xb, G, y, R, H, varDA, model):
         residual_tol   = 1.0
         print 'initial residual = %15.10f' % (residual_first)
 
-        while ( (residual_tol >= varDA.minimization.tol) and (niters <= varDA.minimization.maxiter) ):
+        while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
 
             niters = niters + 1
 

@@ -31,7 +31,7 @@ from   module_IO     import *
 def main():
 
     # get the name of output diagnostic file to read
-    [_, fname, _, _] = get_input_arguments()
+    [_, fname, sOI, eOI] = get_input_arguments()
     if ( not os.path.isfile(fname) ):
         print '%s does not exist' % fname
         sys.exit(1)
@@ -43,6 +43,9 @@ def main():
 
     # print some info so the user knows the script is doing something
     print 'no. of assimilation cycles = %d' % DA.nassim
+
+    if ( sOI == -1 ): sOI = 0
+    if ( eOI == -1 ): eOI = DA.nassim
 
     # read diagnostics from file
     if ( DA.do_hybrid ):
@@ -74,7 +77,7 @@ def main():
         elif ( hasattr(ensDA,'update') ): fstr, evratio = estr, tmpvar
 
     # Loop through the states
-    for t in range(0, DA.nassim):
+    for t in range(sOI, eOI):
 
         fig = plot_L96(obs=y[t,], ver=xt[t,], xb=Xb[t,], xa=Xa[t,], t=t+1, N=model.Ndof, pretitle=fstr)
 

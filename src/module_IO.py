@@ -448,7 +448,7 @@ def create_truth(tfile, ndof, nobs=None):
         Var = nc.createVariable('obs_err_var', 'f8',('ntime','nobs',))
 
         for (key,value) in tfile.attributes.items():
-            exec( 'nc.%s = %s' % (key,value) )
+            exec( 'nc.%s = value' % (key) )
 
         nc.close()
 

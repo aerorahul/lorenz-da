@@ -23,18 +23,25 @@ __status__    = "Prototype"
 ###############################################################
 
 ###############################################################
+import sys
 import numpy         as     np
 from   matplotlib    import pyplot
 from   module_Lorenz import *
 from   plot_stats    import *
+from   argparse      import ArgumentParser, ArgumentDefaultsHelpFormatter
+
 ###############################################################
+
+parser = ArgumentParser(description = 'Test TLM and Adjoint for LXX models', formatter_class=ArgumentDefaultsHelpFormatter)
+parser.add_argument('-m','--model',help='model name',type=str,required=False,choices=['L63','L96'],default='L63')
+args = parser.parse_args()
 
 ###############################################################
 # insure the same sequence of random numbers EVERY TIME
 np.random.seed(0)
 
 model      = type('',(),{})  # model Class
-model.Name = 'L63'           # model name
+model.Name = args.model
 
 if   ( model.Name == 'L63' ):
     model.Ndof = 3                          # model degrees of freedom

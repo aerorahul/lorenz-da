@@ -27,15 +27,23 @@ import numpy         as     np
 from   netCDF4       import Dataset
 from   module_Lorenz import *
 from   module_IO     import *
+from   argparse      import ArgumentParser, ArgumentDefaultsHelpFormatter
+
 ###############################################################
 
 ###############################################################
 def main():
 
-    method = 'EnKF' # choose method to create B: NMC / Climo / EnKF
+    parser = ArgumentParser(description = 'Compute climatological covariances for LXX models', formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-m','--model',help='model name',type=str,required=False,choices=['L63','L96'],default='L63')
+    parser.add_argument('-c','--covariances',help='covariance method',type=str,required=False,choices=['NMC','Climo','EnKF'],default='EnKF')
+    parser.add_argument('-f','--filename',help='filename for EnKF method',type=str,required=False)
+    args = parser.parse_args()
+
+    method = args.covariances # choose method to create B: NMC / Climo / EnKF
 
     model      = type('',(),{})  # model Class
-    model.Name = 'L63'           # model name
+    model.Name = args.model      # model name
 
     if   ( model.Name == 'L63' ):
         model.Ndof = 3                          # model degrees of freedom
@@ -64,7 +72,7 @@ def main():
     elif ( method == 'EnKF' ):
 
         # get the name of EnKF output diagnostic file to read
-        [_, fname, _, _] = get_input_arguments()
+        fname = args.filename
 
     if ( (method == 'NMC') or (method == 'Climo') ):
 
@@ -110,14 +118,15 @@ def main():
         [model_tmp, DA, ensDA, varDA] = read_diag_info(fname)
         _, Xb, _, _, _, _, _ = read_diag(fname, 0, end_time=DA.nassim)
 
-         if ( (model.Name != model_tmp.Name) or (model.Ndof != model_tmp.Ndof) ):
-             print 'mismatch between models, please verify'
-             sys.exit(1)
+        if ( (model.Name != model_tmp.Name) or (model.Ndof != model_tmp.Ndof) ):
+            print 'mismatch between models, please verify'
+            sys.exit(1)
 
         print 'no. of samples ... %d' % DA.nassim
+        Ntim = DA.nassim
 
         Bi = np.zeros((Ntim,model.Ndof,model.Ndof))
-        for i in range(0,Ntim): Bi[i,] = np.cov(np.squeeze(Xb[i,]),ddof=1)
+        for i in range(0,Ntim): Bi[i,] = np.cov(np.transpose(np.squeeze(Xb[i,])),ddof=1)
 
         B = np.mean(Bi,axis=0)
 
@@ -125,7 +134,7 @@ def main():
     print 'save B to disk ...'
     print np.diag(B)
     nc       = Dataset('L96_climo_B_' + method +'.nc4',mode='w',clobber=True,format='NETCDF4')
-    Dim      = nc.createDimension('xyz',Ndof)
+    Dim      = nc.createDimension('xyz',model.Ndof)
     Var      = nc.createVariable('B', 'f8', ('xyz','xyz',))
     Var[:,:] = B
     nc.close()

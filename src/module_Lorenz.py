@@ -253,6 +253,39 @@ def L96_tlm(x0, t, F, xsave, tsave, adjoint):
 ###############################################################
 
 ###############################################################
+def L96v2(x0, t, F, G):
+# {{{
+    '''
+    L96v2 - function that integrates the Lorenz and Emanuel 1998 equations, given initial conditions
+    'x0', forcing 'F' and additional forcing 'G' (eg. IAU tendency)
+
+    xs = L96(x0, t, (F, G))
+
+       xs - final state at time t = T
+       x0 - initial state at time t = 0
+        t - vector of time from t = [0, T]
+        F - Forcing
+        G - additional forcing (eg. IAU tendency)
+    '''
+
+    Ndof = len(x0)
+    xs = np.zeros(Ndof)
+
+    for j in range(0,Ndof):
+        jp1 = j + 1
+        if ( jp1 >= Ndof ): jp1 = jp1 - Ndof
+        jm2 = j - 2
+        if ( jm2 < 0 ): jm2 = Ndof + jm2
+        jm1 = j - 1
+        if ( jm1 < 0 ): jm1 = Ndof + jm1
+
+        xs[j] = ( x0[jp1] - x0[jm2] ) * x0[jm1] - x0[j] + F + G[j]
+
+    return xs
+# }}}
+###############################################################
+
+###############################################################
 def plot_L63(obs=None, ver=None, xb=None, xa=None, xdim=0, ydim=2, **kwargs):
 # {{{
     '''

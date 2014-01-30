@@ -892,6 +892,190 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
 ###############################################################
 
 ###############################################################
+def ThreeDvar_adj(gradJ, B, y, R, H, varDA, model):
+# {{{
+    '''
+    This attempts to mimic the adjoint for the ThreeDvar to
+    compute the observation impact.
+    A step in observation impact calculation is K^T gradJ
+    where K^T is the adjoint of the Kalman gain and
+    gradJ is the gradient of the metric at analysis time.
+    K         =          [ B^{-1} + H^T R^{-1} H ]^{-1} H^T R^{-1}
+    K^T       = R^{-1} H [ B^{-1} + H^T R^{-1} H ]^{-1}
+    K^T gradJ = R^{-1} H [ B^{-1} + H^T R^{-1} H ]^{-1} gradJ
+    In this routine we solve for q:
+    [ B^{-1} + H^T R^{-1} H ]^{-1} gradJ = q
+    i.e.
+    [ B^{-1} + H^T R^{-1} H ] q          = gradJ
+
+    and then obtain K^T gradJ as R^{-1} H q
+
+    This is only valid for a single outer loop. Multiple outer loops
+    need the innovations saved for each outer loop during forward analysis.
+
+    The interface is kept the same as that of ThreeDvar for
+    simplicity
+
+    KTgradJ, niters = ThreeDvar_adj(gradJ, B, y, R, H, varDA, model)
+
+       gradJ - model sensitivity gradient
+           B - background error covariance
+           y - observations
+           R - observation error covariance
+           H - forward operator
+       varDA - variational data assimilation class
+       model - model class
+     KTgradJ - K^T gradJ
+      niters - number of iterations required for minimizing the Hessian
+    '''
+
+    # KTgradJ = K^T gradJ
+    #         = R^{-1} H [ B^{-1} + H^T R^{-1} H ]^{-1} gradJ
+    #         = R^{-1} H q
+    # where
+    # [ B^{-1} + H^T R^{-1} H ]^{-1} gradJ = q
+    # i.e.
+    # [ B^{-1} + H^T R^{-1} H ]          q = gradJ
+
+    # Solving Ax = b
+    # where
+    # A = [ B^{-1} + H^T R^{-1} H ]
+    # x = q
+    # b = gradJ
+    # KTgradJ = R^{-1} H q
+
+    Binv = np.linalg.inv(B)
+    Rinv = np.linalg.inv(R)
+
+    valInd = np.isfinite(y)
+
+    gJ     = gradJ.copy()
+    dJ     = gJ.copy()
+    q      = np.zeros(np.shape(gJ))
+    niters = 0
+
+    residual_first = np.sum(gJ**2)
+    residual_tol   = 1.0
+    print 'initial residual = %15.10f' % (residual_first)
+
+    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
+
+        niters = niters + 1
+
+        AdJ = np.dot(Binv,dJ) + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],dJ)))
+
+        [q, gJ, dJ] = minimize(varDA.minimization, q, gJ, dJ, AdJ)
+
+        residual     = np.sum(gJ**2)
+        residual_tol = residual / residual_first
+
+        if ( not np.mod(niters,5) ):
+            print '        residual = %15.10f after %4d iterations' % (residual, niters)
+
+    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
+    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
+
+    KTgradJ = np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],q))
+
+    return KTgradJ, niters
+# }}}
+###############################################################
+
+###############################################################
+def ThreeDvar_pc_adj(gradJ, G, y, R, H, varDA, model):
+# {{{
+    '''
+    This attempts to mimic the adjoint for the ThreeDvar_pc to
+    compute the observation impact.
+    In this implementation, the incremental form is used.
+    It is the same as the classical formulation.
+    A step in observation impact calculation is K^T gradJ
+    where K^T is the adjoint of the Kalman gain and
+    gradJ is the gradient of the metric at analysis time.
+    K         =          G [ I + G^T H^T R^{-1} H G]^{-1} G^T H^T R^{-1}
+    K^T       = R^{-1} H [ B^{-1} + H^T R^{-1} H ]^{-1}
+    K^T gradJ = R^{-1} H [ B^{-1} + H^T R^{-1} H ]^{-1} gradJ
+    In this routine we solve for q:
+    [ B^{-1} + H^T R^{-1} H ]^{-1} gradJ = q
+    i.e.
+    [ B^{-1} + H^T R^{-1} H ] q          = gradJ
+
+    and then obtain K^T gradJ as R^{-1} H G q
+
+    This is only valid for a single outer loop. Multiple outer loops
+    need the innovations saved for each outer loop during forward analysis.
+
+    The interface is kept the same as that of ThreeDvar_pc for
+    simplicity
+
+    KTgradJ, niters = ThreeDvar_pc_adj(gradJ, G, y, R, H, varDA, model)
+
+       gradJ - model sensitivity gradient
+           G - preconditioning matrix
+           y - observations
+           R - observation error covariance
+           H - forward operator
+       varDA - variational data assimilation class
+       model - model class
+     KTgradJ - K^T gradJ
+      niters - number of iterations required for minimizing the Hessian
+    '''
+    # KTgradJ = K^T gradJ
+    #         = R^{-1} H G [ I + G^T H^T R^{-1} H G]^{-1} G^T gradJ
+    #         = R^{-1} H G [ I + G^T H^T R^{-1} H G]^{-1} w
+    #         = R^{-1} H G q
+    # where
+    # w = G^T gradJ
+    # therefore
+    # [ I + G^T H^T R^{-1} H G]^{-1} w = q
+    # i.e.
+    # [ I + G^T H^T R^{-1} H G]      q = w
+
+    # Solving Ax = b
+    # where
+    # A = [ I + G^T H^T R^{-1} H G]
+    # x = q
+    # b = w
+    # KTgradJ = R^{-1} H G q
+
+    Rinv = np.linalg.inv(R)
+
+    valInd  = np.isfinite(y)
+
+    w      = np.dot(np.transpose(G),gradJ)
+    gJ     = w.copy()
+    dJ     = gJ.copy()
+    q      = np.zeros(np.shape(gJ))
+    niters = 0
+
+    residual_first = np.sum(gJ**2)
+    residual_tol   = 1.0
+    print 'initial residual = %15.10f' % (residual_first)
+
+    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
+
+        niters = niters + 1
+
+        AdJ = dJ + np.dot(np.transpose(G),np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],np.dot(G,dJ)))))
+
+        [q, gJ, dJ] = minimize(varDA.minimization, q, gJ, dJ, AdJ)
+
+        residual     = np.sum(gJ**2)
+        residual_tol = residual / residual_first
+
+        if ( not np.mod(niters,5) ):
+            print '        residual = %15.10f after %4d iterations' % (residual, niters)
+
+    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
+    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
+
+    KTgradJ = np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],np.dot(G,q)))
+
+    return KTgradJ, niters
+# }}}
+###############################################################
+
+###############################################################
 def update_ensvarDA(xb, G, y, R, H, varDA, model):
 # {{{
     '''

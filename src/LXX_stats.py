@@ -35,9 +35,9 @@ from   argparse      import ArgumentParser, ArgumentDefaultsHelpFormatter
 def main():
 
     parser = ArgumentParser(description = 'Compute climatological covariances for LXX models', formatter_class=ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-m','--model',help='model name',type=str,required=False,choices=['L63','L96'],default='L63')
-    parser.add_argument('-c','--covariances',help='covariance method',type=str,required=False,choices=['NMC','Climo','EnKF'],default='EnKF')
-    parser.add_argument('-f','--filename',help='filename for EnKF method',type=str,required=False)
+    parser.add_argument('-m','--model',help='model name',type=str,choices=['L63','L96'],default='L96',required=False)
+    parser.add_argument('-c','--covariances',help='covariance method',type=str,choices=['NMC','Climo','EnKF'],default='EnKF',required=False)
+    parser.add_argument('-f','--filename',help='filename for EnKF method',type=str,required=True)
     args = parser.parse_args()
 
     method = args.covariances # choose method to create B: NMC / Climo / EnKF
@@ -124,9 +124,11 @@ def main():
 
         print 'no. of samples ... %d' % DA.nassim
         Ntim = DA.nassim
+        offset = 500
+        print 'removing first %d samples to account for spin-up ...' % offset
 
-        Bi = np.zeros((Ntim,model.Ndof,model.Ndof))
-        for i in range(0,Ntim): Bi[i,] = np.cov(np.transpose(np.squeeze(Xb[i,])),ddof=1)
+        Bi = np.zeros((Ntim-offset,model.Ndof,model.Ndof))
+        for i in range(offset+0,Ntim): Bi[i-offset,] = np.cov(np.transpose(np.squeeze(Xb[i,])),ddof=1)
 
         B = np.mean(Bi,axis=0)
 

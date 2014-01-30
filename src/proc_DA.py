@@ -23,6 +23,7 @@ __status__    = "Prototype"
 ###############################################################
 import sys
 import numpy         as     np
+from   argparse      import ArgumentParser, ArgumentDefaultsHelpFormatter
 from   matplotlib    import pyplot
 from   module_Lorenz import *
 from   module_IO     import *
@@ -33,11 +34,20 @@ from   plot_stats    import *
 ###############################################################
 def main():
 
-    save_fig = False
+    parser = ArgumentParser(description = 'Process the diag file written by ???DA.py', formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-f','--filename',help='name of the diag file to read',type=str,required=True)
+    parser.add_argument('-m','--measure',help='measure to evaluate performance',type=str,required=False,choices=['obs','truth'],default='truth')
+    parser.add_argument('-b','--begin_index',help='starting index to read',type=int,required=False,default=0)
+    parser.add_argument('-t','--plot_index',help='time index to plot',type=int,required=False,default=-1)
+    parser.add_argument('-s','--save_figure',help='save figures',action='store_true',required=False)
+    args = parser.parse_args()
 
-    # get the name of output diagnostic file to read, start index for statistics, index to plot
-    # state, measure to do verification (truth | observations)
-    [measure,fname,sStat,ePlot] = get_input_arguments()
+    fname    = args.filename
+    measure  = args.measure
+    sStat    = args.begin_index
+    ePlot    = args.plot_index
+    save_fig = args.save_figure
+
     if ( not os.path.isfile(fname) ):
         print '%s does not exist' % fname
         sys.exit(1)
@@ -45,7 +55,6 @@ def main():
     fname_fig = fname.split('diag.nc4')[0]
 
     if ( sStat <= -1 ): sStat   = 100
-    if ( not measure ): measure = 'truth'
 
     # get model, DA class data and necessary attributes from the diagnostic file:
     [model, DA, ensDA, varDA] = read_diag_info(fname)

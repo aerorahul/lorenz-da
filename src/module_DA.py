@@ -1396,3 +1396,37 @@ def compute_B(model,varDA,outer=0):
     return B
 # }}}
 ###############################################################
+
+###############################################################
+def create_obs(model,varDA,xt,H,R):
+# {{{
+    '''
+    y = create_obs(model,varDA,xt,H,R)
+
+    Create observations for 3DVar / 4DVar within a specified obs. window
+
+ model - model class
+ varDA - variational-based data assimilation class
+    xt - truth
+     H - forward operator
+     R - observation error covariance
+     y - observation vector / matrix
+    '''
+    # new observations from noise about truth; set verification values
+    if   ( varDA.update == 1 ):
+
+        y = np.dot(H,xt + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
+
+    elif ( varDA.update == 2 ):
+
+        # integrate truth within the obs. window
+        xs = advance_model(model, xt, varDA.fdvar.twind, perfect=True)
+
+        y = np.zeros((varDA.fdvar.nobstimes,model.Ndof))
+
+        for i in range(varDA.fdvar.nobstimes):
+            y[i,:] = np.dot(H,xs[varDA.fdvar.twind_obsIndex[i],:] + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
+
+    return y
+# }}}
+###############################################################

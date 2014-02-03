@@ -24,6 +24,7 @@ __status__    = "Prototype"
 import sys
 import numpy         as     np
 from   module_Lorenz import *
+from   module_IO     import *
 ###############################################################
 
 ###############################################################
@@ -548,45 +549,43 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
 
     valInd  = np.isfinite(y)
 
-    for outer in range(0,varDA.maxouter):
+    d  = y[valInd] - np.dot(H[valInd,:],xa)
+    gJ = np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d))
 
-        d  = y[valInd] - np.dot(H[valInd,:],xa)
-        gJ = np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d))
+    dJ      = gJ.copy()
+    dx      = np.zeros(np.shape(gJ))
+    niters  = 0
 
-        dJ      = gJ.copy()
-        dx      = np.zeros(np.shape(gJ))
-        niters  = 0
+    residual_first = np.sum(gJ**2)
+    residual_tol   = 1.0
+    print 'initial residual = %15.10f' % (residual_first)
 
-        residual_first = np.sum(gJ**2)
-        residual_tol   = 1.0
-        print 'initial residual = %15.10f' % (residual_first)
+    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
 
-        while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
+        niters = niters + 1
 
-            niters = niters + 1
+        AdJ = np.dot(Binv,dJ) + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],dJ)))
 
-            AdJ = np.dot(Binv,dJ) + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],dJ)))
+        [dx, gJ, dJ] = minimize(varDA.minimization, dx, gJ, dJ, AdJ)
 
-            [dx, gJ, dJ] = minimize(varDA.minimization, dx, gJ, dJ, AdJ)
+        residual     = np.sum(gJ**2)
+        residual_tol = residual / residual_first
 
-            residual     = np.sum(gJ**2)
-            residual_tol = residual / residual_first
+        if ( not np.mod(niters,5) ):
+            print '        residual = %15.10f after %4d iterations' % (residual, niters)
 
-            if ( not np.mod(niters,5) ):
-                print '        residual = %15.10f after %4d iterations' % (residual, niters)
+    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
+    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
-        if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
-        print '  final residual = %15.10f after %4d iterations' % (residual, niters)
+    # check for filter divergence
+    error_variance_ratio = np.sum(d**2) / np.sum(np.diag(B+R))
+    if ( 0.5 < error_variance_ratio < 2.0 ):
+        print 'total error / total variance = %f' % (error_variance_ratio)
+    else:
+        print "\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" % (error_variance_ratio)
 
-        # check for filter divergence
-        error_variance_ratio = np.sum(d**2) / np.sum(np.diag(B+R))
-        if ( 0.5 < error_variance_ratio < 2.0 ):
-            print 'total error / total variance = %f' % (error_variance_ratio)
-        else:
-            print "\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" % (error_variance_ratio)
-
-        # 3DVAR estimate
-        xa = xa + dx
+    # 3DVAR estimate
+    xa = xa + dx
 
     return xa, niters
 # }}}
@@ -630,71 +629,70 @@ def FourDvar(xb, B, y, R, H, varDA, model):
     Binv = np.linalg.inv(B)
     Rinv = np.linalg.inv(R)
 
-    for outer in range(0,varDA.maxouter):
+    # advance the background through the assimilation window with full non-linear model
+    xnl = advance_model(model, xa, varDA.fdvar.twind, perfect=False)
 
-        # advance the background through the assimilation window with full non-linear model
-        xnl = advance_model(model, xa, varDA.fdvar.twind, perfect=False)
+    gJ = np.zeros(np.shape(xb))
+    d  = np.zeros(np.shape(y))
+    for j in range(0,varDA.fdvar.nobstimes):
 
-        gJ = np.zeros(np.shape(xb))
-        d  = np.zeros(np.shape(y))
+        i = varDA.fdvar.nobstimes - j - 1
+
+        valInd = np.isfinite(y[i,])
+
+        d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
+        gJ = gJ + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
+
+        tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
+        if ( len(tint) != 0 ):
+            sxi = advance_model_tlm(model, gJ, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
+            gJ = sxi[-1,:].copy()
+
+    dJ     = gJ.copy()
+    dxo    = np.zeros(np.shape(gJ))
+    niters = 0
+
+    residual_first = np.sum(gJ**2)
+    residual_tol   = 1.0
+    print 'initial residual = %15.10f' % (residual_first)
+
+    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
+
+        niters = niters + 1
+
+        # advance the direction of the gradient through the assimilation window with TL model
+        dJtl = advance_model_tlm(model, dJ, varDA.fdvar.twind, xnl, varDA.fdvar.twind, adjoint=False, perfect=False)
+
+        AdJb = np.dot(Binv,dJ)
+        AdJy = np.zeros(np.shape(xb))
         for j in range(0,varDA.fdvar.nobstimes):
 
             i = varDA.fdvar.nobstimes - j - 1
 
             valInd = np.isfinite(y[i,])
 
-            d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
-            gJ = gJ + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
+            AdJy = AdJy + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],dJtl[varDA.fdvar.twind_obsIndex[i],:])))
 
             tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
             if ( len(tint) != 0 ):
-                sxi = advance_model_tlm(model, gJ, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
-                gJ = sxi[-1,:].copy()
+                sxi = advance_model_tlm(model, AdJy, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
+                AdJy = sxi[-1,:].copy()
 
-        dJ     = gJ.copy()
-        dxo    = np.zeros(np.shape(gJ))
-        niters = 0
+        AdJ = AdJb + AdJy
 
-        residual_first = np.sum(gJ**2)
-        residual_tol   = 1.0
-        print 'initial residual = %15.10f' % (residual_first)
+        [dxo, gJ, dJ] = minimize(varDA.minimization, dxo, gJ, dJ, AdJ)
 
-        while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
+        residual = np.sum(gJ**2)
+        residual_tol = residual / residual_first
 
-            niters = niters + 1
+        if ( not np.mod(niters,5) ):
+            print '        residual = %15.10f after %4d iterations' % (residual, niters)
 
-            # advance the direction of the gradient through the assimilation window with TL model
-            dJtl = advance_model_tlm(model, dJ, varDA.fdvar.twind, xnl, varDA.fdvar.twind, adjoint=False, perfect=False)
+    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
+    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
-            AdJb = np.dot(Binv,dJ)
-            AdJy = np.zeros(np.shape(xb))
-            for j in range(0,varDA.fdvar.nobstimes):
-
-                i = varDA.fdvar.nobstimes - j - 1
-
-                valInd = np.isfinite(y[i,])
-
-                AdJy = AdJy + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],dJtl[varDA.fdvar.twind_obsIndex[i],:])))
-
-                tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
-                if ( len(tint) != 0 ):
-                    sxi = advance_model_tlm(model, AdJy, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
-                    AdJy = sxi[-1,:].copy()
-
-            AdJ = AdJb + AdJy
-
-            [dxo, gJ, dJ] = minimize(varDA.minimization, dxo, gJ, dJ, AdJ)
-
-            residual = np.sum(gJ**2)
-            residual_tol = residual / residual_first
-
-            if ( not np.mod(niters,5) ):
-                print '        residual = %15.10f after %4d iterations' % (residual, niters)
-
-        if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
-        print '  final residual = %15.10f after %4d iterations' % (residual, niters)
-
-        xa = xa + dxo
+    # 4DVAR estimate
+    xa = xa + dxo
 
     return xa, niters
 # }}}
@@ -737,45 +735,43 @@ def ThreeDvar_pc(xb, G, y, R, H, varDA, model):
 
     valInd  = np.isfinite(y)
 
-    for outer in range(0,varDA.maxouter):
+    d  = y[valInd] - np.dot(H[valInd,:],xa)
+    gJ = np.dot(np.transpose(G),np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d)))
 
-        d  = y[valInd] - np.dot(H[valInd,:],xa)
-        gJ = np.dot(np.transpose(G),np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d)))
+    dJ     = gJ.copy()
+    w      = np.zeros(np.shape(gJ))
+    niters = 0
 
-        dJ     = gJ.copy()
-        w      = np.zeros(np.shape(gJ))
-        niters = 0
+    residual_first = np.sum(gJ**2)
+    residual_tol   = 1.0
+    print 'initial residual = %15.10f' % (residual_first)
 
-        residual_first = np.sum(gJ**2)
-        residual_tol   = 1.0
-        print 'initial residual = %15.10f' % (residual_first)
+    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
 
-        while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
+        niters = niters + 1
 
-            niters = niters + 1
+        AdJ = dJ + np.dot(np.transpose(G),np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],np.dot(G,dJ)))))
 
-            AdJ = dJ + np.dot(np.transpose(G),np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],np.dot(G,dJ)))))
+        [w, gJ, dJ] = minimize(varDA.minimization, w, gJ, dJ, AdJ)
 
-            [w, gJ, dJ] = minimize(varDA.minimization, w, gJ, dJ, AdJ)
+        residual     = np.sum(gJ**2)
+        residual_tol = residual / residual_first
 
-            residual     = np.sum(gJ**2)
-            residual_tol = residual / residual_first
+        if ( not np.mod(niters,5) ):
+            print '        residual = %15.10f after %4d iterations' % (residual, niters)
 
-            if ( not np.mod(niters,5) ):
-                print '        residual = %15.10f after %4d iterations' % (residual, niters)
+    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
+    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
-        if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
-        print '  final residual = %15.10f after %4d iterations' % (residual, niters)
+    # check for filter divergence
+    error_variance_ratio = np.sum(d**2) / np.sum(np.diag(np.dot(G,np.transpose(G))+R))
+    if ( 0.5 < error_variance_ratio < 2.0 ):
+        print 'total error / total variance = %f' % (error_variance_ratio)
+    else:
+        print "\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" % (error_variance_ratio)
 
-        # check for filter divergence
-        error_variance_ratio = np.sum(d**2) / np.sum(np.diag(np.dot(G,np.transpose(G))+R))
-        if ( 0.5 < error_variance_ratio < 2.0 ):
-            print 'total error / total variance = %f' % (error_variance_ratio)
-        else:
-            print "\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" % (error_variance_ratio)
-
-        # 3DVAR estimate
-        xa = xa + np.dot(G,w)
+    # 3DVAR estimate
+    xa = xa + np.dot(G,w)
 
     return xa, niters
 # }}}
@@ -818,74 +814,73 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
     xa   = xb.copy()
     Rinv = np.linalg.inv(R)
 
-    for outer in range(0,varDA.maxouter):
+    # advance the background through the assimilation window with full non-linear model
+    xnl = advance_model(model, xa, varDA.fdvar.twind, perfect=False)
 
-        # advance the background through the assimilation window with full non-linear model
-        xnl = advance_model(model, xa, varDA.fdvar.twind, perfect=False)
+    gJ = np.zeros(np.shape(G)[-1])
+    d  = np.zeros(np.shape(y))
+    for j in range(0,varDA.fdvar.nobstimes):
 
-        gJ = np.zeros(np.shape(G)[-1])
-        d  = np.zeros(np.shape(y))
+        i = varDA.fdvar.nobstimes - j - 1
+
+        valInd = np.isfinite(y[i,])
+
+        d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
+        gJ = gJ + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
+
+        tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
+        if ( len(tint) != 0 ):
+            sxi = advance_model_tlm(model, gJ, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
+            gJ = sxi[-1,:].copy()
+
+    gJ = np.dot(np.transpose(G),gJ)
+
+    dJ     = gJ.copy()
+    w      = np.zeros(np.shape(gJ))
+    niters = 0
+
+    residual_first = np.sum(gJ**2)
+    residual_tol   = 1.0
+    print 'initial residual = %15.10f' % (residual_first)
+
+    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
+
+        niters = niters + 1
+
+        # advance the direction of the gradient through the assimilation window with TL model
+        GdJtl = advance_model_tlm(model, np.dot(G,dJ), varDA.fdvar.twind, xnl, varDA.fdvar.twind, adjoint=False, perfect=False)
+
+        AdJb = dJ.copy()
+        AdJy = np.zeros(np.shape(xb))
         for j in range(0,varDA.fdvar.nobstimes):
 
             i = varDA.fdvar.nobstimes - j - 1
 
             valInd = np.isfinite(y[i,])
 
-            d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
-            gJ = gJ + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
+            AdJy = AdJy + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],GdJtl[varDA.fdvar.twind_obsIndex[i],:])))
 
             tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
             if ( len(tint) != 0 ):
-                sxi = advance_model_tlm(model, gJ, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
-                gJ = sxi[-1,:].copy()
+                sxi = advance_model_tlm(model, AdJy, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
+                AdJy = sxi[-1,:].copy()
 
-        gJ = np.dot(np.transpose(G),gJ)
+        AdJy = np.dot(np.transpose(G),AdJy)
+        AdJ = AdJb + AdJy
 
-        dJ     = gJ.copy()
-        w      = np.zeros(np.shape(gJ))
-        niters = 0
+        [w, gJ, dJ] = minimize(varDA.minimization, w, gJ, dJ, AdJ)
 
-        residual_first = np.sum(gJ**2)
-        residual_tol   = 1.0
-        print 'initial residual = %15.10f' % (residual_first)
+        residual = np.sum(gJ**2)
+        residual_tol = residual / residual_first
 
-        while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
+        if ( not np.mod(niters,5) ):
+            print '        residual = %15.10f after %4d iterations' % (residual, niters)
 
-            niters = niters + 1
+    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
+    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
-            # advance the direction of the gradient through the assimilation window with TL model
-            GdJtl = advance_model_tlm(model, np.dot(G,dJ), varDA.fdvar.twind, xnl, varDA.fdvar.twind, adjoint=False, perfect=False)
-
-            AdJb = dJ.copy()
-            AdJy = np.zeros(np.shape(xb))
-            for j in range(0,varDA.fdvar.nobstimes):
-
-                i = varDA.fdvar.nobstimes - j - 1
-
-                valInd = np.isfinite(y[i,])
-
-                AdJy = AdJy + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],GdJtl[varDA.fdvar.twind_obsIndex[i],:])))
-
-                tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
-                if ( len(tint) != 0 ):
-                    sxi = advance_model_tlm(model, AdJy, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
-                    AdJy = sxi[-1,:].copy()
-
-            AdJy = np.dot(np.transpose(G),AdJy)
-            AdJ = AdJb + AdJy
-
-            [w, gJ, dJ] = minimize(varDA.minimization, w, gJ, dJ, AdJ)
-
-            residual = np.sum(gJ**2)
-            residual_tol = residual / residual_first
-
-            if ( not np.mod(niters,5) ):
-                print '        residual = %15.10f after %4d iterations' % (residual, niters)
-
-        if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
-        print '  final residual = %15.10f after %4d iterations' % (residual, niters)
-
-        xa = xa + np.dot(G,w)
+    # 4DVAR estimate
+    xa = xa + np.dot(G,w)
 
     return xa, niters
 # }}}
@@ -1368,5 +1363,36 @@ inflation_factor - Factor with which to inflate ensemble perturbations
     Xo = xm + inflation_factor * (Xi - xm)
 
     return Xo
+# }}}
+###############################################################
+
+###############################################################
+def compute_B(model,varDA,outer=0):
+# {{{
+    '''
+    Load climatological background error covariance matrix and
+    and make ready for variational update
+
+    B = compute_B(model,varDA,outer=0)
+
+     B - background error covariance / preconditioning matrix
+ model - model class
+ varDA - variational-based data assimilation class
+ outer - outer loop index, if adaptively scaling B (0)
+    '''
+
+    # load fixed background error covariance matrix; generated by 'model.Name'_stats.py
+    B = read_clim_cov(model)
+
+    # inflate climatological B
+    B *= varDA.inflation.infl_fac
+    if ( varDA.inflation.adaptive ): B /= ( outer + 1 )
+
+    # precondition B to sqrt(B)
+    if ( varDA.precondition ):
+        [U,S2,_] = np.linalg.svd(B, full_matrices=True, compute_uv=True)
+        B = np.dot(U,np.diag(np.sqrt(S2)))
+
+    return B
 # }}}
 ###############################################################

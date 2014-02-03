@@ -47,7 +47,28 @@ def main():
     L = localization_operator(model,varDA.localization)
 
     if ( varDA.update == 2 ):
-        varDA = FourDVar_obsWindow(model,DA,varDA)
+        # check length of assimilation window
+        if ( varDA.fdvar.offset * DA.ntimes + varDA.fdvar.window - DA.ntimes < 0.0 ):
+            print 'assimilation window is too short'
+            sys.exit(2)
+
+        # time index from analysis to ... background, next analysis, end of window, window
+        varDA.fdvar.tb = np.int(np.rint(varDA.fdvar.offset * DA.ntimes/model.dt))
+        varDA.fdvar.ta = np.int(np.rint(DA.ntimes/model.dt))
+        varDA.fdvar.tf = np.int(np.rint((varDA.fdvar.offset * DA.ntimes + varDA.fdvar.window)/model.dt))
+        varDA.fdvar.tw = varDA.fdvar.tf - varDA.fdvar.tb
+
+        # time vector from analysis to ... background, next analysis, end of window, window
+        varDA.fdvar.tbkgd = np.linspace(DA.t0,varDA.fdvar.tb,   varDA.fdvar.tb   +1) * model.dt
+        varDA.fdvar.tanal = np.linspace(DA.t0,varDA.fdvar.ta-varDA.fdvar.tb,varDA.fdvar.ta-varDA.fdvar.tb+1) * model.dt
+        varDA.fdvar.tfore = np.linspace(DA.t0,varDA.fdvar.tf,   varDA.fdvar.tf   +1) * model.dt
+        varDA.fdvar.twind = np.linspace(DA.t0,varDA.fdvar.tw,   varDA.fdvar.tw   +1) * model.dt
+
+        # time vector, interval, indices of observations
+        varDA.fdvar.twind_obsInterval = varDA.fdvar.tw / (varDA.fdvar.nobstimes-1)
+        varDA.fdvar.twind_obsTimes    = varDA.fdvar.twind[::varDA.fdvar.twind_obsInterval]
+        varDA.fdvar.twind_obsIndex    = np.array(np.rint(varDA.fdvar.twind_obsTimes / model.dt), dtype=int)
+
     else:
         # time between assimilations
         DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))

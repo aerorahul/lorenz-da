@@ -68,6 +68,10 @@ def main():
     else:
         xt, Xb, Xa, y, H, R, tmpvar                    = read_diag(fname, 0, end_time=DA.nassim)
 
+    if ( DA.maxouter > 1 ):
+        Xb = np.squeeze(Xb[:, 0,:])
+        Xa = np.squeeze(Xa[:,-1,:])
+
     if ( hasattr(ensDA,'update') ):
         Xb      = np.transpose(Xb, (0,2,1))
         Xa      = np.transpose(Xa, (0,2,1))
@@ -84,7 +88,7 @@ def main():
         for i in range(0,DA.nassim):
             if ( DA.do_hybrid ): xtmp = xbc
             else:                xtmp = xbm
-            innov  = np.sum((y[i,:] -  np.dot(np.diag(H[i,:]),xtmp[i,:]))**2)
+            innov  = np.nansum((y[i,:model.Ndof] - np.dot(np.diag(H[i,:]),xtmp[i,:]))**2)
             if ( DA.do_hybrid ):
                 Bc = (1.0 - DA.hybrid_wght) * Bs + DA.hybrid_wght * (np.cov(Xb[i,],ddof=1)*L)
             else:
@@ -111,9 +115,9 @@ def main():
         xbrmse = np.sqrt( np.sum( (xt - xbm)**2, axis = 1) / model.Ndof )
         xarmse = np.sqrt( np.sum( (xt - xam)**2, axis = 1) / model.Ndof )
     else:
-        xbrmse = np.sqrt( np.sum( (y  - xbm)**2, axis = 1) / model.Ndof )
-        xarmse = np.sqrt( np.sum( (y  - xam)**2, axis = 1) / model.Ndof )
-    xyrmse = np.sqrt( np.sum( (xt - y)**2 ) / model.Ndof )
+        xbrmse = np.sqrt( np.sum( (y[:,:model.Ndof] - xbm)**2, axis = 1) / model.Ndof )
+        xarmse = np.sqrt( np.sum( (y[:,:model.Ndof] - xam)**2, axis = 1) / model.Ndof )
+    xyrmse = np.sqrt( np.sum( (y[:,:model.Ndof] - xt )**2 ) / model.Ndof )
 
     if   ( ePlot == 0 ): pIndex = 0
     elif ( ePlot >  0 ): pIndex = ePlot + 1
@@ -133,7 +137,7 @@ def main():
         if ( save_fig ): save_figure(fig, fname = fname_fig + 'attractor')
 
     elif ( model.Name == 'L96' ):
-        fig = plot_L96(obs=y[pIndex,], ver=xt[pIndex,], xb=Xb[pIndex,], xa=Xa[pIndex,], t=pIndex+1, N=model.Ndof, pretitle=fstr)
+        fig = plot_L96(obs=y[pIndex,:model.Ndof], ver=xt[pIndex,], xb=Xb[pIndex,], xa=Xa[pIndex,], t=pIndex+1, N=model.Ndof, pretitle=fstr)
         if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-%d' % (fstr,pIndex+1))
 
     # plot the last state and RMSE for central state
@@ -142,21 +146,21 @@ def main():
             xbrmse = np.sqrt( np.sum( (xt - xbc)**2, axis = 1) / model.Ndof )
             xarmse = np.sqrt( np.sum( (xt - xac)**2, axis = 1) / model.Ndof )
         else:
-            xbrmse = np.sqrt( np.sum( (y  - xbc)**2, axis = 1) / model.Ndof )
-            xarmse = np.sqrt( np.sum( (y  - xac)**2, axis = 1) / model.Ndof )
-        xyrmse = np.sqrt( np.sum( (xt - y)**2 ) / model.Ndof )
+            xbrmse = np.sqrt( np.sum( (y[:,:model.Ndof] - xbc)**2, axis = 1) / model.Ndof )
+            xarmse = np.sqrt( np.sum( (y[:,:model.Ndof] - xac)**2, axis = 1) / model.Ndof )
+        xyrmse = np.sqrt( np.sum( (y[:,:model.Ndof] - xt )**2 ) / model.Ndof )
         fig = plot_rmse(xbrmse=xbrmse, xarmse=xarmse, sStat=sStat, yscale='linear', pretitle=vstr)
         if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-RMSE' % vstr)
 
         if   ( model.Name == 'L63' ):
             fig = plot_trace(obs=y, ver=xt, xb=xbm, xa=xam, N=model.Ndof, pretitle=vstr)
         elif ( model.Name == 'L96' ):
-            fig = plot_L96(obs=y[pIndex,], ver=xt[pIndex,], xb=xbc[pIndex,], xa=xac[pIndex,], t=pIndex+1, N=model.Ndof, pretitle=vstr)
+            fig = plot_L96(obs=y[pIndex,:model.Ndof], ver=xt[pIndex,], xb=xbc[pIndex,], xa=xac[pIndex,], t=pIndex+1, N=model.Ndof, pretitle=vstr)
             if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-%d' % (vstr, pIndex+1))
 
     # plot the iteration statistics and/or error-to-variance ratio
     if ( hasattr(varDA,'update') ):
-        fig = plot_iteration_stats(niters,pretitle=vstr)
+        fig = plot_iteration_stats(niters[:,-1],pretitle=vstr)
         if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-niters' % vstr)
         fig = plot_error_variance_stats(var_evratio, sStat=sStat, pretitle=vstr)
         if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-evratio' % vstr)

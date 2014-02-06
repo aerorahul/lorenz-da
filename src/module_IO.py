@@ -33,7 +33,7 @@ module = 'module_IO.py'
 ###############################################################
 
 ###############################################################
-def create_diag(dfile, ndof, nobs=None, nens=None, hybrid=False):
+def create_diag(dfile, ndof, nouter=1, nobs=None, nens=None, hybrid=False):
 # {{{
     '''
     create an output file for writing diagnostics
@@ -42,6 +42,7 @@ def create_diag(dfile, ndof, nobs=None, nens=None, hybrid=False):
 
     dfile - diagnostic file Class
      ndof - number of degrees of freedom in the model
+   nouter - number of outer loops (1)
      nobs - number of observations (None)
      nens - number of ensemble members (None)
    hybrid - flag for hybrid DA (False)
@@ -60,9 +61,10 @@ def create_diag(dfile, ndof, nobs=None, nens=None, hybrid=False):
 
         nc  = Dataset(dfile.filename, mode='w', clobber=True, format='NETCDF4')
 
-        Dim = nc.createDimension('ntime',size=None)
-        Dim = nc.createDimension('ndof', size=ndof)
-        Dim = nc.createDimension('nobs', size=nobs)
+        Dim = nc.createDimension('ntime', size=None)
+        Dim = nc.createDimension('nouter',size=nouter)
+        Dim = nc.createDimension('ndof',  size=ndof)
+        Dim = nc.createDimension('nobs',  size=nobs)
 
         if not ( nens == None ):
             Dim = nc.createDimension('ncopy',size=nens)
@@ -70,22 +72,22 @@ def create_diag(dfile, ndof, nobs=None, nens=None, hybrid=False):
         Var = nc.createVariable('truth','f8',('ntime','ndof',))
 
         if ( nens == None ):
-            Var = nc.createVariable('prior',    'f8',('ntime','ndof',))
-            Var = nc.createVariable('posterior','f8',('ntime','ndof',))
-            Var = nc.createVariable('niters',   'f8',('ntime',))
+            Var = nc.createVariable('prior',    'f8',('ntime','nouter','ndof',))
+            Var = nc.createVariable('posterior','f8',('ntime','nouter','ndof',))
+            Var = nc.createVariable('niters',   'f8',('ntime','nouter',))
         else:
-            Var = nc.createVariable('prior',    'f8',('ntime','ncopy','ndof',))
-            Var = nc.createVariable('posterior','f8',('ntime','ncopy','ndof',))
-            Var = nc.createVariable('evratio',  'f8',('ntime',))
+            Var = nc.createVariable('prior',    'f8',('ntime','nouter','ncopy','ndof',))
+            Var = nc.createVariable('posterior','f8',('ntime','nouter','ncopy','ndof',))
+            Var = nc.createVariable('evratio',  'f8',('ntime','nouter',))
 
         Var = nc.createVariable('obs',         'f8',('ntime','nobs',))
         Var = nc.createVariable('obs_operator','f8',('ntime','ndof',))
-        Var = nc.createVariable('obs_err_var', 'f8',('ntime','nobs',))
+        Var = nc.createVariable('obs_err_var', 'f8',('ntime','ndof',))
 
         if ( hybrid ):
-            Var = nc.createVariable('central_prior',    'f8',('ntime','ndof',))
-            Var = nc.createVariable('central_posterior','f8',('ntime','ndof',))
-            Var = nc.createVariable('niters',           'f8',('ntime',))
+            Var = nc.createVariable('central_prior',    'f8',('ntime','nouter','ndof',))
+            Var = nc.createVariable('central_posterior','f8',('ntime','nouter','ndof',))
+            Var = nc.createVariable('niters',           'f8',('ntime','nouter',))
 
         for (key,value) in dfile.attributes.iteritems():
             exec( 'nc.%s = value' % (key) )
@@ -106,7 +108,8 @@ def create_diag(dfile, ndof, nobs=None, nens=None, hybrid=False):
 ###############################################################
 
 ###############################################################
-def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_var, central_prior=None, central_posterior=None, niters=None, evratio=None):
+def write_diag(fname, time, outer, truth, prior, posterior, obs, obs_operator, obs_err_var,
+        central_prior=None, central_posterior=None, niters=None, evratio=None):
 # {{{
     '''
     write the diagnostics to an output file
@@ -115,6 +118,7 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_
 
               fname - name of the output file, must already exist
                time - time index to write diagnostics for
+              outer - outer loop index to write diagnostics for
               truth - truth
               prior - prior state
           posterior - posterior state
@@ -137,30 +141,23 @@ def write_diag(fname, time, truth, prior, posterior, obs, obs_operator, obs_err_
 
         nc = Dataset(fname, mode='a', clobber=True, format='NETCDF4')
 
-        nc.variables['truth'][time,:] = truth.copy()
+        nc.variables['prior'    ][time,outer,:] = prior.copy()
+        nc.variables['posterior'][time,outer,:] = posterior.copy()
 
-        if ( len(np.shape(prior)) == 1 ):
-            nc.variables['prior'][time,:]   = prior.copy()
-        else:
-            nc.variables['prior'][time,:,:] = prior.copy()
-
-        if ( len(np.shape(posterior)) == 1 ):
-            nc.variables['posterior'][time,:]   = posterior.copy()
-        else:
-            nc.variables['posterior'][time,:,:] = posterior.copy()
-
-        nc.variables['obs'][time,:]          = obs.copy()
-        nc.variables['obs_operator'][time,:] = obs_operator.copy()
-        nc.variables['obs_err_var'][time,:]  = obs_err_var.copy()
+        if ( outer == 0 ):
+            nc.variables['truth'       ][time,:] = truth.copy()
+            nc.variables['obs'         ][time,:] = obs.copy()
+            nc.variables['obs_operator'][time,:] = obs_operator.copy()
+            nc.variables['obs_err_var' ][time,:] = obs_err_var.copy()
 
         if not ( central_prior == None ):
-            nc.variables['central_prior'][time,:] = central_prior.copy()
+            nc.variables['central_prior'    ][time,outer,:] = central_prior.copy()
 
         if not ( central_posterior == None ):
-            nc.variables['central_posterior'][time,:] = central_posterior.copy()
+            nc.variables['central_posterior'][time,outer,:] = central_posterior.copy()
 
         if not ( niters == None ):
-            nc.variables['niters'][time] = niters
+            nc.variables['niters'][time,outer] = niters
 
         if not ( evratio == None ):
             nc.variables['evratio'][time] = evratio
@@ -224,10 +221,11 @@ def read_diag_info(fname):
             print 'model %s is not implemented' % (model.Name)
             sys.exit(2)
 
-        DA.nassim = len(nc.dimensions['ntime'])
-        DA.ntimes = nc.ntimes
-        DA.Nobs   = len(nc.dimensions['nobs'])
-        DA.t0     = 0.0
+        DA.nassim   = len(nc.dimensions['ntime'])
+        DA.ntimes   = nc.ntimes
+        DA.Nobs     = len(nc.dimensions['nobs'])
+        DA.t0       = 0.0
+        DA.maxouter = len(nc.dimensions['nouter'])
 
         if 'do_hybrid' in nc.ncattrs():
             DA.do_hybrid   = nc.do_hybrid
@@ -250,7 +248,6 @@ def read_diag_info(fname):
         if 'Vupdate' in nc.ncattrs():
             varDA.update                  = nc.Vupdate
             varDA.precondition            = nc.precondition
-            varDA.maxouter                = nc.maxouter
             varDA.minimization            = type('', (), {})
             varDA.minimization.maxiter    = nc.maxiter
             varDA.minimization.tol        = nc.tol
@@ -313,25 +310,21 @@ def read_diag(fname, time, end_time=None):
 
     if ( end_time == None ): end_time = time + 1
 
+    [model, DA, ensDA, varDA] = read_diag_info(fname)
+
     try:
 
         nc = Dataset(fname, mode='r', format='NETCDF4')
 
-        truth        = np.squeeze(nc.variables['truth'][time:end_time,])
-        prior        = np.squeeze(nc.variables['prior'][time:end_time,])
-        posterior    = np.squeeze(nc.variables['posterior'][time:end_time,])
-        obs          = np.squeeze(nc.variables['obs'][time:end_time,])
-        obs_operator = np.squeeze(nc.variables['obs_operator'][time:end_time,])
-        obs_err_var   = np.squeeze(nc.variables['obs_err_var'][time:end_time,])
+        truth        = np.squeeze(nc.variables[ 'truth'       ][time:end_time,])
+        prior        = np.squeeze(nc.variables[ 'prior'       ][time:end_time,])
+        posterior    = np.squeeze(nc.variables[ 'posterior'   ][time:end_time,])
+        obs          = np.squeeze(nc.variables[ 'obs'         ][time:end_time,])
+        obs_operator = np.squeeze(nc.variables[ 'obs_operator'][time:end_time,])
+        obs_err_var   = np.squeeze(nc.variables['obs_err_var' ][time:end_time,])
 
-        if 'do_hybrid' in nc.ncattrs():
-            hybrid = nc.do_hybrid
-            hybrid_rcnt = nc.hybrid_rcnt
-        else:
-            hybrid = False
-
-        if ( hybrid ):
-            central_prior     = np.squeeze(nc.variables['central_prior'][time:end_time,])
+        if ( DA.do_hybrid ):
+            central_prior     = np.squeeze(nc.variables['central_prior'    ][time:end_time,])
             central_posterior = np.squeeze(nc.variables['central_posterior'][time:end_time,])
 
         if 'niters' in nc.variables.keys():
@@ -351,7 +344,7 @@ def read_diag(fname, time, end_time=None):
         print Instance
         sys.exit(1)
 
-    if ( hybrid ):
+    if ( DA.do_hybrid ):
         return truth, prior, posterior, obs, obs_operator, obs_err_var, central_prior, central_posterior, niters, evratio
     else:
         if   ( 'niters' in nc.variables.keys() ):

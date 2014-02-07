@@ -44,7 +44,7 @@ model.init(Name='L96',Ndof=40,Par=[8.0,8.4],dt=1.e-4)
 
 # Initialize Data Assimilation class
 nassim      = 1000           # no. of assimilation cycles
-ntimes      = 1.0*0.05       # do assimilation every ntimes non-dimensional time units
+ntimes      = 2.0*0.05       # do assimilation every ntimes non-dimensional time units
 maxouter    = 1              # no. of outer loops
 do_hybrid   = True           # True= run hybrid (varDA + ensDA) mode, False= run ensDA mode
 hybrid_rcnt = True           # True= re-center ensemble about varDA, False= free ensDA
@@ -80,7 +80,7 @@ ensDA.init(model,DA,\
            localize=localize,cov_cutoff=cov_cutoff,cov_trunc=cov_trunc)
 
 # Initialize Variational Data Assimilation class
-update       = 1              # variational-based DA method (1= 3Dvar; 2= 4Dvar)
+update       = 2              # variational-based DA method (1= 3Dvar; 2= 4Dvar)
 precondition = True           # precondition before minimization
 maxiter      = 100            # maximum iterations for minimization
 tol          = 1e-4           # tolerance to end the variational minimization iteration
@@ -90,12 +90,9 @@ infl_adp     = True           # inflate adaptively (cuts inflation as a function
 localize     = 1              # localization (0= None, 1= Gaspari-Cohn, 2= Boxcar, 3= Ramped)
 cov_cutoff   = 0.0625         # normalized covariance cutoff = cutoff / ( 2*normalized_dist )
 cov_trunc    = model.Ndof     # truncate localization matrix (cov_trunc <= model.Ndof)
-if   ( update == 1 ):
-    window, offset, nobstimes = 0.0, 1.0, 1
-elif ( update == 2 ):
-    window    = 0.75*DA.ntimes # length of the 4Dvar assimilation window
-    offset    = 0.25           # time offset: forecast from analysis to background time
-    nobstimes = 4              # no. of evenly spaced obs. times in the window
+window       = 0.75           # length of the assimilation window
+offset       = 0.25           # time offset: forecast from analysis to background time
+nobstimes    = 4              # no. of evenly spaced obs. times in the window
 varDA.init(model,DA,\
            update=update,precondition=precondition,\
            maxiter=maxiter,tol=tol,\

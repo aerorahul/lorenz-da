@@ -38,25 +38,20 @@ def main():
     # check for valid ensemble and variational data assimilation options
     check_DA(DA)
     check_ensDA(ensDA)
-    if ( DA.do_hybrid ): check_varDA(varDA)
+    check_varDA(varDA)
 
     # get IC's
     [xt, Xa] = get_IC(model, restart, Nens=ensDA.Nens)
     Xa = np.transpose( inflate_ensemble(np.transpose(Xa), ensDA.init_ens_infl_fac) )
     Xb = Xa.copy()
-    if ( DA.do_hybrid ):
-        xac = np.mean(Xa,axis=1)
-        xbc = np.mean(Xb,axis=1)
-        Xbwin = Xa.copy()
+    xac = np.mean(Xa,axis=1)
+    xbc = np.mean(Xb,axis=1)
 
     # load climatological covariance once and for all ...
-    if ( DA.do_hybrid ): Bc = read_clim_cov(model)
+    Bc = read_clim_cov(model)
 
     # construct localization matrix once and for all ...
     L = localization_operator(model,ensDA.localization)
-
-    # time between assimilations
-    DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))
 
     nobs = model.Ndof*varDA.fdvar.nobstimes
     y    = np.tile(np.dot(H,xt),[varDA.fdvar.nobstimes,1])
@@ -100,7 +95,7 @@ def main():
             Bs = compute_B(varDA,Bc,outer=outer)
 
             # blend covariance from flow-dependent (ensemble) and static (climatology)
-            B = (1.0 - DA.hybrid_wght) * Bc + DA.hybrid_wght * (Be*L)
+            B = (1.0 - DA.hybrid_wght) * Bs + DA.hybrid_wght * (Be*L)
             if ( varDA.precondition ):
                 [U,S2,_] = np.linalg.svd(B, full_matrices=True, compute_uv=True)
                 B = np.dot(U,np.diag(np.sqrt(S2)))

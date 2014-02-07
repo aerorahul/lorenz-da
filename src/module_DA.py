@@ -126,9 +126,9 @@ class VarDataAssim(object):
            cov_trunc - truncation for localization [None]
              maxiter - maximum allowed iterations for minimization [100]
                  tol - tolerance to check for convergence in minimization [1.e-4]
-              window - if 4DVar, length of window between assimilations [0.75 * DA.ntimes]
-              offset - if 4DVar, start of the window from assimilation time [0.25]
-           nobstimes - divide the window in equal obs. bins [4]
+              window - length of window between assimilations [0.0]
+              offset - start of the window from assimilation time [1.0]
+           nobstimes - divide the window in equal obs. bins [1]
         '''
 
         self.update       = update
@@ -334,9 +334,9 @@ class fdvar(object):
         Initializes the 4DVar class
             model - model class instance
                DA - Data assimilation class instance
-           window - length of window between assimilations [0.75 * DA.ntimes]
-           offset - start of the window from assimilation time [0.25]
-        nobstimes - divide the window in equal obs. bins [4]
+           window - length of window between assimilations [0.0]
+           offset - start of the window from assimilation time [1.0]
+        nobstimes - divide the window in equal obs. bins [1]
 
         Also returns as self.
         tb - time index of background from previous analysis
@@ -358,14 +358,14 @@ class fdvar(object):
         self.offset    = offset
         self.nobstimes = nobstimes
 
-        # check length of assimilation window if doing 4DVar
-        if ( self.offset * DA.ntimes + self.window - DA.ntimes < 0.0 ):
-            raise ValueError('Assimilation window for 4DVar is too short')
+        # check length of assimilation window
+        if ( self.offset + self.window < 1.0 ):
+            raise ValueError('Assimilation window is too short')
 
         # time index from analysis to ... background, next analysis, end of window, window
         self.tb = np.int(np.rint(self.offset * DA.ntimes/model.dt))
         self.ta = np.int(np.rint(DA.ntimes/model.dt))
-        self.tf = np.int(np.rint((self.offset * DA.ntimes + self.window)/model.dt))
+        self.tf = np.int(np.rint((self.offset + self.window) * DA.ntimes/model.dt))
         self.tw = self.tf - self.tb
 
         # time vector from analysis to ... background, next analysis, end of window, window

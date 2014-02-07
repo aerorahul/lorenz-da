@@ -24,264 +24,317 @@ __status__    = "Prototype"
 ###############################################################
 import os
 import sys
-import numpy       as     np
+import numpy
 from   scipy       import integrate
 from   matplotlib  import pyplot
 from   netCDF4     import Dataset
-from module_Lorenz import *
 ###############################################################
 
 module = 'module_Lorenz.py'
 
 ###############################################################
-def advance_model(model, x0, t, perfect=True, **kwargs):
+_private_vars = ['Name', 'Ndof', 'Par']
+class Lorenz(object):
 # {{{
     '''
-    advance_model - function that integrates the model state, given initial conditions 'x0'
-    and length of the integration in t.
-    The nature of the model advance as specified by 'perfect' and is only valid
-    for L96 system.
-
-    xs = advance_model(model, x0, t, perfect=True)
-
-       xs - final state at time t = T
-    model - model class for the model containing model static parameters
-       x0 - initial state at time t = 0
-        t - vector of time from t = [0, T]
-  perfect - If perfect model run for L96, use model.Par[0], else use model.Par[1]
- **kwargs - any additional arguments that need to go in the model advance call
+    This module provides an interface to the Lorenz class models,
+    together with its TL and Adjoint models.
     '''
 
-    if   ( model.Name == 'L63' ):
-        par = model.Par
-    elif ( model.Name == 'L96' ):
-        if ( perfect ): par = model.Par[0]
-        else:           par = model.Par[1]
-    else:
-        print '%s is an invalid model, exiting.' % model.Name
-        sys.exit(1)
+    def __setattr__(self, key, val):
+    # {{{
+        '''
+        prevent modification of read-only instance variables.
+        '''
+        if key in self.__dict__ and key in _private_vars:
+            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+        else:
+            self.__dict__[key] = val
+    #}}}
 
-    exec('xs = integrate.odeint(%s, x0, t, (par, 0.0), **kwargs)' % (model.Name))
+    def __delattr__(self, key):
+    # {{{
+        '''
+        prevent deletion of read-only instance variables.
+        '''
+        if key in self.__dict__ and key in _private_vars:
+            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+        else:
+            del self.__dict__[key]
+    #}}}
 
-    return xs
-# }}}
-###############################################################
+    def __init__(self):
+    # {{{
+        '''
+        Populates the Lorenz class given the model name,
+        time-step, degrees of freedom and other model specific parameters
+        '''
+        pass
+    #}}}
 
-###############################################################
-def advance_model_tlm(model, x0, t, xref, tref, adjoint=False, perfect=True, **kwargs):
-# {{{
-    '''
-    advance_model_tlm - function that integrates the model state, using the TLM (or Adjoint)
-    given initial conditions 'x0' and length of the integration in t.
-    The nature of the model advance as specified by 'perfect' and is only valid
-    for L96 system.
+    def init(self,Name='L96',dt=1.0e-4,Ndof=None,Par=None):
+    # {{{
+        '''
+        Populates the Lorenz class given the model name,
+        time-step, degrees of freedom and other model specific parameters
+        '''
 
-    xs = advance_model_tlm(model, x0, t, xref, tref, adjoint, perfect=True)
+        self.Name = Name
+        self.dt   = dt
+        if   ( self.Name == 'L63' ):
+            self.Ndof = 3                if ( Ndof == None ) else Ndof
+            self.Par = [10., 28., 8./3.] if ( Par  == None ) else Par
+        elif ( self.Name == 'L96' ):
+            self.Ndof = 40       if ( Ndof == None ) else Ndof
+            self.Par = [8., 8.4] if ( Par  == None ) else Par
+        else:
+            raise AttributeError('Invalid model option %s' % self.Name)
 
-       xs - final state at time t = T
-    model - model class for the model containing model static parameters
-       x0 - initial state at time t = 0
-        t - vector of time from t = [0, T]
-     xref - non-linear reference trajectory
-     tref - vector of time from t = [0, T]
-  adjoint - adjoint (True) or forward TLM (False) [DEFAULT: False]
-  perfect - If perfect model run for L96, use model.Par[0], else use model.Par[1]
-    '''
+    #}}}
 
-    if   ( model.Name == 'L63' ):
-        par = model.Par
-    elif ( model.Name == 'L96' ):
-        if ( perfect ): par = model.Par[0]
-        else:           par = model.Par[1]
-    else:
-        print '%s is an invalid model, exiting.' % model.Name
-        sys.exit(1)
+    def advance(self, x0, t, perfect=True, **kwargs):
+    # {{{
+        '''
+        advance - function that integrates the model state, given initial conditions 'x0'
+        and length of the integration in t.
+        The nature of the model advance as specified by 'perfect' and is only valid
+        for L96 system.
 
-    if ( adjoint ): xref = np.flipud(xref)
+        xs = advance(self, x0, t, perfect=True, **kwargs)
 
-    exec('xs = integrate.odeint(%s_tlm, x0, t, (par,xref,tref,adjoint), **kwargs)' % model.Name)
+         self - model class for the model containing model static parameters
+           x0 - initial state at time t = 0
+            t - vector of time from t = [0, T]
+      perfect - If perfect model run for L96, use self.Par[0], else use self.Par[1]
+     **kwargs - any additional arguments that need to go in the model advance call
+           xs - final state at time t = T
+        '''
 
-    return xs
-# }}}
-###############################################################
+        if   ( self.Name == 'L63' ):
+            par = self.Par
+        elif ( self.Name == 'L96' ):
+            if ( perfect ): par = self.Par[0]
+            else:           par = self.Par[1]
+        else:
+            print '%s is an invalid model, exiting.' % self.Name
+            sys.exit(1)
 
-###############################################################
-def L63(x0, t, par, dummy):
-# {{{
-    '''
-    L63 - function that integrates the Lorenz 1963 equations, given parameters 'par' and initial
-    conditions 'x0'
+        exec('xs = integrate.odeint(self.%s, x0, t, (par, 0.0), **kwargs)' % (self.Name))
 
-    xs = L63(x0, t, (par, dummy))
+        return xs
+    # }}}
 
-       xs - final state at time t = T
-       x0 - initial state at time t = 0
-        t - vector of time from t = [0, T]
-      par - parameters of the Lorenz 1963 system
-    dummy - Arguments coming in after x0, t MUST be a tuple (,) for scipy.integrate.odeint to work
-    '''
+    def advance_tlm(self, x0, t, xref, tref, adjoint=False, perfect=True, **kwargs):
+    # {{{
+        '''
+        advance_tlm - function that integrates the model state, using the TLM (or Adjoint)
+        given initial conditions 'x0' and length of the integration in t.
+        The nature of the model advance as specified by 'perfect' and is only valid
+        for L96 system.
 
-    x, y, z = x0
-    s, r, b = par
+        xs = advance_tlm(self, x0, t, xref, tref, adjoint, perfect=True, **kwargs)
 
-    x_dot = s*(y-x)
-    y_dot = r*x -y -x*z
-    z_dot = x*y - b*z
+         self - model class for the model containing model static parameters
+           x0 - initial state at time t = 0
+            t - vector of time from t = [0, T]
+         xref - non-linear reference trajectory
+         tref - vector of time from t = [0, T]
+      adjoint - adjoint (True) or forward TLM (False) [DEFAULT: False]
+      perfect - If perfect model run for L96, use self.Par[0], else use self.Par[1]
+     **kwargs - any additional arguments that need to go in the model advance call
+           xs - final state at time t = T
+        '''
 
-    xs = np.array([x_dot, y_dot, z_dot])
+        if   ( self.Name == 'L63' ):
+            par = self.Par
+        elif ( self.Name == 'L96' ):
+            if ( perfect ): par = self.Par[0]
+            else:           par = self.Par[1]
+        else:
+            print '%s is an invalid model, exiting.' % self.Name
+            sys.exit(1)
 
-    return xs
-# }}}
-###############################################################
+        if ( adjoint ): xref = numpy.flipud(xref)
 
-###############################################################
-def L63_tlm(x0, t, par, xsave, tsave, adjoint):
-# {{{
-    '''
-    L63_tlm - function that integrates the Lorenz 1963 equations forward or backward using a TLM and
-    its adjoint, given parameters 'par' and initial perturbations 'x0'
+        exec('xs = integrate.odeint(self.%s_tlm, x0, t, (par,xref,tref,adjoint), **kwargs)' % self.Name)
 
-    xs = L63_tlm(x0, t, (par, xsave, tsave, adjoint))
+        return xs
+    # }}}
 
-         xs - evolved perturbations at time t = T
+    def L63(self, x0, t, par, dummy):
+    # {{{
+        '''
+        L63 - function that integrates the Lorenz 1963 equations, given parameters 'par' and initial
+        conditions 'x0'
+
+        xs = L63(x0, t, (par, dummy))
+
+         self - model class for the model containing model static parameters
+           x0 - initial state at time t = 0
+            t - vector of time from t = [0, T]
+          par - parameters of the Lorenz 1963 system
+        dummy - Arguments coming in after x0, t MUST be a tuple (,) for scipy.integrate.odeint to work
+           xs - final state at time t = T
+        '''
+
+        x, y, z = x0
+        s, r, b = par
+
+        x_dot = s*(y-x)
+        y_dot = r*x -y -x*z
+        z_dot = x*y - b*z
+
+        xs = numpy.array([x_dot, y_dot, z_dot])
+
+        return xs
+    # }}}
+
+    def L63_tlm(self, x0, t, par, xsave, tsave, adjoint):
+    # {{{
+        '''
+        L63_tlm - function that integrates the Lorenz 1963 equations forward or backward using a TLM and
+        its adjoint, given parameters 'par' and initial perturbations 'x0'
+
+        xs = L63_tlm(x0, t, (par, xsave, tsave, adjoint))
+
+       self - model class for the model containing model static parameters
          x0 - initial perturbations at time t = 0
           t - vector of time from t = [0, T]
         par - parameters of the Lorenz 1963 system
       xsave - states along the control trajectory for the TLM / Adjoint
       tsave - time vector along the control trajectory for the TLM / Adjoint
     adjoint - Forward TLM (False) or Adjoint (True)
-    '''
+         xs - evolved perturbations at time t = T
+        '''
 
-    s, r, b = par
+        s, r, b = par
 
-    x = np.interp(t,tsave,xsave[:,0])
-    y = np.interp(t,tsave,xsave[:,1])
-    z = np.interp(t,tsave,xsave[:,2])
+        x = numpy.interp(t,tsave,xsave[:,0])
+        y = numpy.interp(t,tsave,xsave[:,1])
+        z = numpy.interp(t,tsave,xsave[:,2])
 
-    M = np.array([[-s,   s,  0],
-                  [r-z, -1, -x],
-                  [y,    x, -b]])
+        M = numpy.array([[-s,   s,  0],
+                         [r-z, -1, -x],
+                         [y,    x, -b]])
 
-    if ( adjoint ):
-        xs = np.dot(np.transpose(M),x0)
-    else:
-        xs = np.dot(M,x0)
+        if ( adjoint ):
+            xs = numpy.dot(numpy.transpose(M),x0)
+        else:
+            xs = numpy.dot(M,x0)
 
-    return xs
-# }}}
-###############################################################
+        return xs
+    # }}}
 
-###############################################################
-def L96(x0, t, F, dummy):
-# {{{
-    '''
-    L96 - function that integrates the Lorenz and Emanuel 1998 equations, given forcing 'F' and initial
-    conditions 'x0'
+    def L96(self, x0, t, F, dummy):
+    # {{{
+        '''
+        L96 - function that integrates the Lorenz and Emanuel 1998 equations, given forcing 'F' and initial
+        conditions 'x0'
 
-    xs = L96(x0, t, (F, dummy))
+        xs = L96(x0, t, (F, dummy))
 
-       xs - final state at time t = T
+     self - model class for the model containing model static parameters
        x0 - initial state at time t = 0
         t - vector of time from t = [0, T]
         F - Forcing
     dummy - Arguments coming in after x0, t MUST be a tuple (,) for scipy.integrate.odeint to work
-    '''
+       xs - final state at time t = T
+        '''
 
-    Ndof = len(x0)
-    xs = np.zeros(Ndof)
+        Ndof = len(x0)
+        xs = numpy.zeros(Ndof)
 
-    for j in range(0,Ndof):
-        jp1 = j + 1
-        if ( jp1 >= Ndof ): jp1 = jp1 - Ndof
-        jm2 = j - 2
-        if ( jm2 < 0 ): jm2 = Ndof + jm2
-        jm1 = j - 1
-        if ( jm1 < 0 ): jm1 = Ndof + jm1
+        for j in range(0,Ndof):
+            jp1 = j + 1
+            if ( jp1 >= Ndof ): jp1 = jp1 - Ndof
+            jm2 = j - 2
+            if ( jm2 < 0 ): jm2 = Ndof + jm2
+            jm1 = j - 1
+            if ( jm1 < 0 ): jm1 = Ndof + jm1
 
-        xs[j] = ( x0[jp1] - x0[jm2] ) * x0[jm1] - x0[j] + F
+            xs[j] = ( x0[jp1] - x0[jm2] ) * x0[jm1] - x0[j] + F
 
-    return xs
-# }}}
-###############################################################
+        return xs
+    # }}}
 
-###############################################################
-def L96_tlm(x0, t, F, xsave, tsave, adjoint):
-# {{{
-    '''
-    L96_tlm - function that integrates the Lorenz and Emanuel 1998 equations forward or backward
-    using a TLM and its adjoint, given Forcing 'F' and initial perturbations 'x0'
+    def L96_tlm(self, x0, t, F, xsave, tsave, adjoint):
+    # {{{
+        '''
+        L96_tlm - function that integrates the Lorenz and Emanuel 1998 equations forward or backward
+        using a TLM and its adjoint, given Forcing 'F' and initial perturbations 'x0'
 
-    xs = L96_tlm(x0, t, (F, xsave, tsave, adjoint))
+        xs = L96_tlm(x0, t, (F, xsave, tsave, adjoint))
 
-         xs - evolved perturbations at time t = T
+       self - model class for the model containing model static parameters
          x0 - initial perturbations at time t = 0
           t - vector of time from t = [0, T]
           F - Forcing
       xsave - states along the control trajectory for the TLM / Adjoint
       tsave - time vector along the control trajectory for the TLM / Adjoint
     adjoint - Forward TLM (False) or Adjoint (True)
-    '''
+         xs - evolved perturbations at time t = T
+        '''
 
-    Ndof = len(x0)
-    x = np.zeros(Ndof)
+        Ndof = len(x0)
+        x = numpy.zeros(Ndof)
 
-    for j in range(0,Ndof):
-        x[j] = np.interp(t,tsave,xsave[:,j])
+        for j in range(0,Ndof):
+            x[j] = numpy.interp(t,tsave,xsave[:,j])
 
-    M = np.zeros((Ndof,Ndof))
+        M = numpy.zeros((Ndof,Ndof))
 
-    for j in range(0,Ndof):
-        jp1 = j + 1
-        if ( jp1 >= Ndof ): jp1 = jp1 - Ndof
-        jm2 = j - 2
-        if ( jm2 < 0 ): jm2 = Ndof + jm2
-        jm1 = j - 1
-        if ( jm1 < 0 ): jm1 = Ndof + jm1
+        for j in range(0,Ndof):
+            jp1 = j + 1
+            if ( jp1 >= Ndof ): jp1 = jp1 - Ndof
+            jm2 = j - 2
+            if ( jm2 < 0 ): jm2 = Ndof + jm2
+            jm1 = j - 1
+            if ( jm1 < 0 ): jm1 = Ndof + jm1
 
-        M[j,jm2] = -x[jm1]
-        M[j,jm1] = x[jp1] - x[jm2]
-        M[j,j]   = -1
-        M[j,jp1] = x[jm1]
+            M[j,jm2] = -x[jm1]
+            M[j,jm1] = x[jp1] - x[jm2]
+            M[j,j]   = -1
+            M[j,jp1] = x[jm1]
 
-    if ( adjoint ):
-        xs = np.dot(np.transpose(M),x0)
-    else:
-        xs = np.dot(M,x0)
+        if ( adjoint ):
+            xs = numpy.dot(numpy.transpose(M),x0)
+        else:
+            xs = numpy.dot(M,x0)
 
-    return xs
-# }}}
-###############################################################
+        return xs
+    # }}}
 
-###############################################################
-def L96v2(x0, t, F, G):
-# {{{
-    '''
-    L96v2 - function that integrates the Lorenz and Emanuel 1998 equations, given initial conditions
-    'x0', forcing 'F' and additional forcing 'G' (eg. IAU tendency)
+    def L96_IAU(x0, t, F, G):
+    # {{{
+        '''
+        L96_IAU - function that integrates the Lorenz and Emanuel 1998 equations,
+        given initial conditions 'x0', forcing 'F' and additional forcing 'G' (eg. IAU tendency)
 
-    xs = L96(x0, t, (F, G))
+        xs = L96(x0, t, (F, G))
 
-       xs - final state at time t = T
-       x0 - initial state at time t = 0
-        t - vector of time from t = [0, T]
-        F - Forcing
-        G - additional forcing (eg. IAU tendency)
-    '''
+           xs - final state at time t = T
+           x0 - initial state at time t = 0
+            t - vector of time from t = [0, T]
+            F - Forcing
+            G - additional forcing (eg. IAU tendency)
+        '''
 
-    Ndof = len(x0)
-    xs = np.zeros(Ndof)
+        Ndof = len(x0)
+        xs = numpy.zeros(Ndof)
 
-    for j in range(0,Ndof):
-        jp1 = j + 1
-        if ( jp1 >= Ndof ): jp1 = jp1 - Ndof
-        jm2 = j - 2
-        if ( jm2 < 0 ): jm2 = Ndof + jm2
-        jm1 = j - 1
-        if ( jm1 < 0 ): jm1 = Ndof + jm1
+        for j in range(0,Ndof):
+            jp1 = j + 1
+            if ( jp1 >= Ndof ): jp1 = jp1 - Ndof
+            jm2 = j - 2
+            if ( jm2 < 0 ): jm2 = Ndof + jm2
+            jm1 = j - 1
+            if ( jm1 < 0 ): jm1 = Ndof + jm1
 
-        xs[j] = ( x0[jp1] - x0[jm2] ) * x0[jm1] - x0[j] + F + G[j]
+            xs[j] = ( x0[jp1] - x0[jm2] ) * x0[jm1] - x0[j] + F + G[j]
 
-    return xs
+        return xs
+    # }}}
+
 # }}}
 ###############################################################
 
@@ -366,7 +419,7 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwar
     pyplot.clf()
     mean_dist = 35.0
     pyplot.subplot(111, polar=True)
-    theta = np.linspace(0.0,2*np.pi,N+1)
+    theta = numpy.linspace(0.0,2*numpy.pi,N+1)
     pyplot.hold(True)
 
     # start by plotting a dummy tiny white dot dot at 0,0
@@ -374,47 +427,47 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwar
 
     if ( xb != None ):
         if ( len(xb.shape) == 1 ):
-            tmp = np.zeros(N+1) ; tmp[1:] = xb; tmp[0] = xb[-1]
+            tmp = numpy.zeros(N+1) ; tmp[1:] = xb; tmp[0] = xb[-1]
         else:
-            xmin, xmax, xmean = np.min(xb,axis=1), np.max(xb,axis=1), np.mean(xb,axis=1)
-            tmpmin  = np.zeros(N+1) ; tmpmin[ 1:] = xmin;  tmpmin[ 0] = xmin[ -1]
-            tmpmax  = np.zeros(N+1) ; tmpmax[ 1:] = xmax;  tmpmax[ 0] = xmax[ -1]
-            tmp     = np.zeros(N+1) ; tmp[    1:] = xmean; tmp[0]     = xmean[-1]
+            xmin, xmax, xmean = numpy.min(xb,axis=1), numpy.max(xb,axis=1), numpy.mean(xb,axis=1)
+            tmpmin  = numpy.zeros(N+1) ; tmpmin[ 1:] = xmin;  tmpmin[ 0] = xmin[ -1]
+            tmpmax  = numpy.zeros(N+1) ; tmpmax[ 1:] = xmax;  tmpmax[ 0] = xmax[ -1]
+            tmp     = numpy.zeros(N+1) ; tmp[    1:] = xmean; tmp[0]     = xmean[-1]
             pyplot.fill_between(theta, tmpmin+mean_dist, tmpmax+mean_dist, facecolor='blue', edgecolor='blue', alpha=0.75)
         pyplot.plot(theta, tmp+mean_dist, 'b-', linewidth=2.0)
     if ( xa != None ):
         if ( len(xa.shape) == 1 ):
-            tmp = np.zeros(N+1) ; tmp[1:] = xa; tmp[0] = xa[-1]
+            tmp = numpy.zeros(N+1) ; tmp[1:] = xa; tmp[0] = xa[-1]
         else:
-            xmin, xmax, xmean = np.min(xa,axis=1), np.max(xa,axis=1), np.mean(xa,axis=1)
-            tmpmin  = np.zeros(N+1) ; tmpmin[ 1:] = xmin;  tmpmin[ 0] = xmin[ -1]
-            tmpmax  = np.zeros(N+1) ; tmpmax[ 1:] = xmax;  tmpmax[ 0] = xmax[ -1]
-            tmp     = np.zeros(N+1) ; tmp[    1:] = xmean; tmp[0]     = xmean[-1]
+            xmin, xmax, xmean = numpy.min(xa,axis=1), numpy.max(xa,axis=1), numpy.mean(xa,axis=1)
+            tmpmin  = numpy.zeros(N+1) ; tmpmin[ 1:] = xmin;  tmpmin[ 0] = xmin[ -1]
+            tmpmax  = numpy.zeros(N+1) ; tmpmax[ 1:] = xmax;  tmpmax[ 0] = xmax[ -1]
+            tmp     = numpy.zeros(N+1) ; tmp[    1:] = xmean; tmp[0]     = xmean[-1]
             pyplot.fill_between(theta, tmpmin+mean_dist, tmpmax+mean_dist, facecolor='red', edgecolor='red', alpha=0.5)
         pyplot.plot(theta, tmp+mean_dist, 'r-', linewidth=2.0)
     if ( ver != None ):
-        tmp = np.zeros(N+1) ; tmp[1:] = ver ; tmp[0]= ver[-1]
+        tmp = numpy.zeros(N+1) ; tmp[1:] = ver ; tmp[0]= ver[-1]
         pyplot.plot(theta, tmp+mean_dist, 'k-', linewidth=2.0)
     if ( obs != None ):
-        tmp = np.zeros(N+1) ; tmp[1:] = obs ; tmp[0] = obs[-1]
+        tmp = numpy.zeros(N+1) ; tmp[1:] = obs ; tmp[0] = obs[-1]
         pyplot.plot(theta, tmp+mean_dist, 'yo', markersize=7.5, markeredgecolor='y', alpha=0.95)
 
     pyplot.gca().set_rmin(0.0)
     pyplot.gca().set_rmax(mean_dist+25.0)
-    rgrid  = np.array(np.linspace(10,mean_dist+25,5,endpoint=False),dtype=int)
+    rgrid  = numpy.array(numpy.linspace(10,mean_dist+25,5,endpoint=False),dtype=int)
     rlabel = []
     rgrid, rlabel = pyplot.rgrids(rgrid, rlabel)
 
     tlabel = []
-    tgrid  = np.array(np.linspace(0,360,20,endpoint=False),dtype=int)
-    tlabel = np.array(np.linspace(0, 40,20,endpoint=False),dtype=int)
+    tgrid  = numpy.array(numpy.linspace(0,360,20,endpoint=False),dtype=int)
+    tlabel = numpy.array(numpy.linspace(0, 40,20,endpoint=False),dtype=int)
     tgrid, tlabel = pyplot.thetagrids(tgrid, tlabel)
 
     pretitle = None
     for key in kwargs:
         if ( key == 'pretitle' ): pretitle = kwargs[key]
 
-    if ( np.isreal(t) ): title = 'k = %d' % (t)
+    if ( numpy.isreal(t) ): title = 'k = %d' % (t)
     else:                title = str(t)
     if ( not (pretitle == None) ): title = pretitle + ' - ' + title
     pyplot.title(title,fontweight='bold',fontsize=14)
@@ -445,12 +498,14 @@ def get_IC(model, restart, Nens=None):
         '''
 
         if ( Nens == None ):
-            pert = 0.001 * ( np.random.randn(model.Ndof) )
+            pert = 0.001 * ( numpy.random.randn(model.Ndof) )
+            print model.Ndof
+            print pert.shape
             xa = xt + pert
         else:
-            pert = 0.001 * ( np.random.randn(model.Ndof,Nens) )
-            xa = np.transpose(xt + np.transpose(pert))
-            xa = np.transpose(np.transpose(xa) - np.mean(xa,axis=1) + xt)
+            pert = 0.001 * ( numpy.random.randn(model.Ndof,Nens) )
+            xa = numpy.transpose(xt + numpy.transpose(pert))
+            xa = numpy.transpose(numpy.transpose(xa) - numpy.mean(xa,axis=1) + xt)
 
         return xa
 
@@ -475,8 +530,8 @@ def get_IC(model, restart, Nens=None):
                 sys.exit(2)
             else:
                 print '... from t = %d in %s' % (read_index+1, restart.filename)
-                xt = np.squeeze(nc.variables['truth'][read_index,])
-                xa = np.transpose(np.squeeze(nc.variables['posterior'][read_index,]))
+                xt = numpy.squeeze(nc.variables['truth'][read_index,])
+                xa = numpy.transpose(numpy.squeeze(nc.variables['posterior'][read_index,]))
             nc.close()
         except Exception as Instance:
             print 'Exception occured during reading of %s' % (restart.filename)
@@ -485,25 +540,25 @@ def get_IC(model, restart, Nens=None):
             print Instance
             sys.exit(1)
 
-        if ( (len(np.shape(xa)) == 1) and (Nens != None) ):
+        if ( (len(numpy.shape(xa)) == 1) and (Nens != None) ):
             # populate initial ensemble analysis by perturbing the analysis and re-centering
-            pert = 0.001 * ( np.random.randn(model.Ndof,Nens) )
-            tmp = np.transpose(xa + np.transpose(pert))
-            xa = np.transpose(np.transpose(tmp) - np.mean(tmp,axis=1) + xa)
-        elif ( (len(np.shape(xa)) != 1) and (Nens != None) ):
+            pert = 0.001 * ( numpy.random.randn(model.Ndof,Nens) )
+            tmp = numpy.transpose(xa + numpy.transpose(pert))
+            xa = numpy.transpose(numpy.transpose(tmp) - numpy.mean(tmp,axis=1) + xa)
+        elif ( (len(numpy.shape(xa)) != 1) and (Nens != None) ):
             # populate initial ensemble analysis by picking a subset from the analysis ensemble
-            if ( Nens <= np.shape(xa)[1] ):
-                xa = np.squeeze(xa[:,0:Nens])
+            if ( Nens <= numpy.shape(xa)[1] ):
+                xa = numpy.squeeze(xa[:,0:Nens])
             else:
-                print 'size(Xa) = [%d, %d]' % (np.shape(xa)[0], np.shape(xa)[1])
+                print 'size(Xa) = [%d, %d]' % (numpy.shape(xa)[0], numpy.shape(xa)[1])
                 sys.exit(1)
-        elif ( (len(np.shape(xa)) != 1) and (Nens == None) ):
-            xa = np.mean(xa, axis=1)
+        elif ( (len(numpy.shape(xa)) != 1) and (Nens == None) ):
+            xa = numpy.mean(xa, axis=1)
 
         return [xt,xa]
 
     # insure the same sequence of random numbers EVERY TIME
-    np.random.seed(0)
+    numpy.random.seed(0)
 
     source = 'get_IC'
 
@@ -514,7 +569,7 @@ def get_IC(model, restart, Nens=None):
         if ( restart.time == None ):
             print '... from Miller et al., 1994'
 
-            xt = np.array([1.508870, -1.531271, 25.46091])
+            xt = numpy.array([1.508870, -1.531271, 25.46091])
 
             xa = perturb_truth(xt, model, Nens=Nens)
 
@@ -527,7 +582,7 @@ def get_IC(model, restart, Nens=None):
         if ( restart.time == None ):
             print '... from Lorenz and Emanuel, 1998'
 
-            xt    = np.ones(model.Ndof) * model.Par[0]
+            xt    = numpy.ones(model.Ndof) * model.Par[0]
             xt[0] = 1.001 * model.Par[0]
 
             xa = perturb_truth(xt, model, Nens=Nens)

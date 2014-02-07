@@ -26,6 +26,8 @@ import sys
 import getopt
 import numpy   as     np
 from   netCDF4 import Dataset
+from module_Lorenz import Lorenz
+from module_DA import DataAssim, EnsDataAssim, VarDataAssim
 ###############################################################
 
 ###############################################################
@@ -160,7 +162,7 @@ def write_diag(fname, time, outer, truth, prior, posterior, obs, obs_operator, o
             nc.variables['niters'][time,outer] = niters
 
         if not ( evratio == None ):
-            nc.variables['evratio'][time] = evratio
+            nc.variables['evratio'][time,outer] = evratio
 
         nc.close()
 
@@ -201,69 +203,75 @@ def read_diag_info(fname):
         print 'Error: File does not exist'
         sys.exit(2)
 
-    model = type('',(),{})
-    DA    = type('',(),{})
-    ensDA = type('',(),{})
-    varDA = type('',(),{})
-
     try:
 
         nc = Dataset(fname, mode='r', format='NETCDF4')
 
-        model.Name = nc.model
-        model.Ndof = len(nc.dimensions['ndof'])
-        model.dt   = nc.dt
-        if   ( model.Name == 'L63' ):
-            model.Par = [nc.sigma, nc.rho, nc.beta]
-        elif ( model.Name == 'L96' ):
-            model.Par = [nc.F, nc.F+nc.dF]
+        Name = nc.model
+        Ndof = len(nc.dimensions['ndof'])
+        dt   = nc.dt
+        if   ( Name == 'L63' ):
+            Par = [nc.sigma, nc.rho, nc.beta]
+        elif ( Name == 'L96' ):
+            Par = [nc.F, nc.F+nc.dF]
         else:
-            print 'model %s is not implemented' % (model.Name)
+            print 'model %s is not implemented' % (Name)
             sys.exit(2)
 
-        DA.nassim   = len(nc.dimensions['ntime'])
-        DA.ntimes   = nc.ntimes
-        DA.Nobs     = len(nc.dimensions['nobs'])
-        DA.t0       = 0.0
-        DA.maxouter = len(nc.dimensions['nouter'])
+        if ( Name in ['L63', 'L96'] ):
+            model = Lorenz()
+            model.init(Name=Name,Ndof=Ndof,Par=Par,dt=dt)
+
+        nassim   = len(nc.dimensions['ntime'])
+        ntimes   = nc.ntimes
+        Nobs     = len(nc.dimensions['nobs'])
+        maxouter = len(nc.dimensions['nouter'])
+
+        DA = DataAssim()
+        DA.init(nassim=nassim,ntimes=ntimes,maxouter=maxouter,Nobs=Nobs)
 
         if 'do_hybrid' in nc.ncattrs():
-            DA.do_hybrid   = nc.do_hybrid
-            DA.hybrid_wght = nc.hybrid_wght
-            DA.hybrid_rcnt = nc.hybrid_rcnt
+            setattr(DA,'do_hybrid',  nc.do_hybrid)
+            setattr(DA,'hybrid_wght',nc.hybrid_wght)
+            setattr(DA,'hybrid_rcnt',nc.hybrid_rcnt)
         else:
-            DA.do_hybrid   = False
+            setattr(DA,'do_hybrid',  False)
 
+        ensDA = EnsDataAssim()
         if 'Eupdate' in nc.ncattrs():
-            ensDA.update                  = nc.Eupdate
-            ensDA.Nens                    = len(nc.dimensions['ncopy'])
-            ensDA.inflation               = type('', (), {})
-            ensDA.inflation.inflate       = nc.Einflate
-            ensDA.inflation.infl_fac      = nc.Einfl_fac
-            ensDA.localization            = type('', (), {})
-            ensDA.localization.localize   = nc.Elocalize
-            ensDA.localization.cov_cutoff = nc.Ecov_cutoff
-            ensDA.localization.cov_trunc  = nc.Ecov_trunc
+            update     = nc.Eupdate
+            Nens       = len(nc.dimensions['ncopy'])
+            inflate    = nc.Einflate
+            infl_fac   = nc.Einfl_fac
+            localize   = nc.Elocalize
+            cov_cutoff = nc.Ecov_cutoff
+            cov_trunc  = nc.Ecov_trunc
+            ensDA.init(model,DA,\
+                       update=update,Nens=Nens,\
+                       inflate=inflate,infl_fac=infl_fac,\
+                       localize=localize,cov_cutoff=cov_cutoff,cov_trunc=cov_trunc)
 
+        varDA = VarDataAssim()
         if 'Vupdate' in nc.ncattrs():
-            varDA.update                  = nc.Vupdate
-            varDA.precondition            = nc.precondition
-            varDA.minimization            = type('', (), {})
-            varDA.minimization.maxiter    = nc.maxiter
-            varDA.minimization.tol        = nc.tol
-            varDA.inflation               = type('', (), {})
-            varDA.inflation.inflate       = nc.Vinflate
-            varDA.inflation.infl_fac      = nc.Vinfl_fac
-            varDA.localization            = type('', (), {})
-            varDA.localization.localize   = nc.Vlocalize
-            varDA.localization.cov_cutoff = nc.Vcov_cutoff
-            varDA.localization.cov_trunc  = nc.Vcov_trunc
-
-            if ( (varDA.update == 2) or (varDA.update == 4) ):
-                varDA.fdvar           = type('',(),{})
-                varDA.fdvar.offset    = nc.offset
-                varDA.fdvar.window    = nc.window
-                varDA.fdvar.nobstimes = nc.nobstimes
+            update       = nc.Vupdate
+            precondition = nc.precondition
+            maxiter      = nc.maxiter
+            tol          = nc.tol
+            inflate      = nc.Vinflate
+            infl_fac     = nc.Vinfl_fac
+            infl_adp     = nc.Vinfl_adp
+            localize     = nc.Vlocalize
+            cov_cutoff   = nc.Vcov_cutoff
+            cov_trunc    = nc.Vcov_trunc
+            window       = nc.window
+            offset       = nc.offset
+            nobstimes    = nc.nobstimes
+            varDA.init(model,DA,\
+                       update=update,precondition=precondition,\
+                       maxiter=maxiter,tol=tol,\
+                       inflate=inflate,infl_fac=infl_fac,infl_adp=infl_adp,\
+                       localize=localize,cov_cutoff=cov_cutoff,cov_trunc=cov_trunc,\
+                       window=window,offset=offset,nobstimes=nobstimes)
 
         nc.close()
 
@@ -321,17 +329,17 @@ def read_diag(fname, time, end_time=None):
         posterior    = np.squeeze(nc.variables[ 'posterior'   ][time:end_time,])
         obs          = np.squeeze(nc.variables[ 'obs'         ][time:end_time,])
         obs_operator = np.squeeze(nc.variables[ 'obs_operator'][time:end_time,])
-        obs_err_var   = np.squeeze(nc.variables['obs_err_var' ][time:end_time,])
+        obs_err_var  = np.squeeze(nc.variables['obs_err_var' ][time:end_time,])
 
         if ( DA.do_hybrid ):
             central_prior     = np.squeeze(nc.variables['central_prior'    ][time:end_time,])
             central_posterior = np.squeeze(nc.variables['central_posterior'][time:end_time,])
 
         if 'niters' in nc.variables.keys():
-            niters = np.squeeze(nc.variables['niters'][time:end_time])
+            niters = nc.variables['niters'][time:end_time]
 
         if 'evratio' in nc.variables.keys():
-            evratio = np.squeeze(nc.variables['evratio'][time:end_time])
+            evratio = nc.variables['evratio'][time:end_time]
 
         nc.close()
 
@@ -783,4 +791,33 @@ def read_clim_cov(model):
 
     return Bc
 # }}}
+###############################################################
+
+###############################################################
+class Container(object):
+
+    def __setattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+        else:
+            self.__dict__[key] = val
+
+    def __delattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+        else:
+            del self.__dict__[key]
+
+    def __init__(self,**kwargs):
+    #{{{
+        '''
+        Initializes a blank Container class for the purposes of
+        writing a diagnostic file attributes, or
+        restart file attributes
+        '''
+
+        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+
+        pass
+    #}}}
 ###############################################################

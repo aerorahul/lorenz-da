@@ -22,12 +22,367 @@ __status__    = "Prototype"
 
 ###############################################################
 import sys
-import numpy         as     np
-from   module_Lorenz import *
-from   module_IO     import *
+import numpy as np
 ###############################################################
 
 ###############################################################
+class DataAssim(object):
+
+    def __setattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+        else:
+            self.__dict__[key] = val
+
+    def __delattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+        else:
+            del self.__dict__[key]
+
+    def __init__(self):
+    #{{{
+        '''
+        Initializes an empty Data Assimilation class
+        '''
+        pass
+    #}}}
+
+    def init(self,nassim=100,ntimes=0.05,maxouter=1,**kwargs):
+    #{{{
+        '''
+        Populates the Data Assimilation class
+          nassim - number of assimilation cycles [100]
+          ntimes - interval between assimilation cycles [0.05]
+        maxouter - number of outer loops [1]
+
+        Also returns as self.
+        t0 - Set start time of assimilation interval to 0.0
+
+        These attributes will be added after initialization:
+         Nobs - number of observation in the data-assimilation cycle
+        tanal - time vector between two assimilation cycles
+        '''
+
+        self.nassim   = nassim
+        self.ntimes   = ntimes
+        self.maxouter = maxouter
+
+        self.t0       = 0.0
+
+        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+    #}}}
+
+class VarDataAssim(object):
+
+    def __setattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+        else:
+            self.__dict__[key] = val
+
+    def __delattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+        else:
+            del self.__dict__[key]
+
+    def __init__(self):
+    #{{{
+        '''
+        Initializes an empty Variational Data Assimilation class
+        '''
+        pass
+    #}}}
+
+    def init(self,model,DA, \
+            update=1,precondition=True, \
+            inflate=1,infl_fac=1.0,infl_adp=False, \
+            localize=1,cov_cutoff=0.0625,cov_trunc=None, \
+            maxiter=100, tol=1.0e-4, \
+            window=0.0,offset=1.0,nobstimes=1, \
+            **kwargs):
+    #{{{
+        '''
+        Populates the Variational Data Assimilation class
+               model - model class instance
+                  DA - Data assimilation class instance
+              update - flavour of variational update [1]
+                       0 = No update
+                       1 = 3DVar
+                       2 = 4DVar
+        precondition - precondition before update [True]
+             inflate - inflate (Bs) static background error cov. [1]
+                       0 = no-inflation
+                       1 = multiplicative inflation
+            infl_fac - inflation factor for inflating Bs [1.0]
+            infl_adp - adapt inflation factor for multiple outer loops [False]
+            localize - flavour for localizing Bs [1]
+                       0 = No localization
+                       1 = Gaspari-Cohn localization
+                       2 = Box car localization
+                       3 = Ramped localization
+          cov_cutoff - cutoff for localization [0.0625]
+           cov_trunc - truncation for localization [None]
+             maxiter - maximum allowed iterations for minimization [100]
+                 tol - tolerance to check for convergence in minimization [1.e-4]
+              window - if 4DVar, length of window between assimilations [0.75 * DA.ntimes]
+              offset - if 4DVar, start of the window from assimilation time [0.25]
+           nobstimes - divide the window in equal obs. bins [4]
+        '''
+
+        self.update       = update
+        self.precondition = precondition
+
+        self.inflation = inflation(infl_fac=infl_fac,infl_adp=infl_adp)
+
+        if ( cov_trunc == None ): cov_trunc = model.Ndof
+        self.localization = localization(localize=localize,cov_cutoff=cov_cutoff,cov_trunc=cov_trunc)
+
+        self.minimization = minimization(maxiter=maxiter,tol=tol)
+
+        self.fdvar = fdvar(model,DA,window=window,offset=offset,nobstimes=nobstimes)
+
+        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+    #}}}
+
+class EnsDataAssim(object):
+
+    def __setattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+        else:
+            self.__dict__[key] = val
+
+    def __delattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+        else:
+            del self.__dict__[key]
+
+    def __init__(self):
+    #{{{
+        '''
+        Initializes an empty Ensemble Data Assimilation class
+        '''
+        pass
+    #}}}
+
+    def init(self,model,DA, \
+            update=1,Nens=15, init_ens_infl_fac=1.0, \
+            inflate=1,infl_fac=1.0, \
+            localize=1,cov_cutoff=0.0625,cov_trunc=None, \
+            **kwargs):
+    #{{{
+        '''
+        Populates the Ensemble Data Assimilation class
+               model - model class instance
+                  DA - Data assimilation class instance
+              update - flavour of ensemble update [2]
+                       0 = No update
+                       1 = EnKF
+                       2 = EnSRF
+                       3 = EAKF
+                       4 = ETKF (not implemented yet)
+                Nens - number of ensemble members [15]
+   init_ens_infl_fac - inflation factor to inflate initial ensemble [1.0]
+             inflate - inflation method for sampling error [1]
+                       0 = no-inflation
+                       1 = multiplicative inflation (scale prior by factor)
+                       2 = additive inflation (add white noise [model-error] to prior)
+                       3 = covariance relaxation (add scaled prior variance to posterior)
+                       4 = spread restoration (scale posterior by a factor based on ratios)
+                       5 = adaptive inflation (not implemented yet)
+            infl_fac - inflation factor [1.0]
+            localize - flavour for localizing Be [1]
+                       0 = No localization
+                       1 = Gaspari-Cohn localization
+                       2 = Box car localization
+                       3 = Ramped localization
+          cov_cutoff - cutoff for localization [0.0625]
+           cov_trunc - truncation for localization [None]
+        '''
+
+        self.update = update
+        self.Nens   = Nens
+
+        self.init_ens_infl_fac = init_ens_infl_fac
+
+        self.inflation = inflation(infl_fac=infl_fac)
+
+        if ( cov_trunc == None ): cov_trunc = model.Ndof
+        self.localization = localization(localize=localize,cov_cutoff=cov_cutoff,cov_trunc=cov_trunc)
+
+        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+    #}}}
+
+class minimization(object):
+
+    def __setattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+        else:
+            self.__dict__[key] = val
+
+    def __delattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+        else:
+            del self.__dict__[key]
+
+    def __init__(self,maxiter=100,tol=1.0e-4,**kwargs):
+    # {{{
+        '''
+        Initializes the minimization class
+        maxiter - maximum iterations allowed for minimization [100]
+            tol - tolerance to check for convergence of minimization [1.e-4]
+        '''
+
+        self.maxiter = maxiter
+        self.tol     = tol
+
+        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+    #}}}
+
+class inflation(object):
+
+    def __setattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+        else:
+            self.__dict__[key] = val
+
+    def __delattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+        else:
+            del self.__dict__[key]
+
+    def __init__(self,inflate=1,infl_fac=1.0,infl_adp=False,**kwargs):
+    #{{{
+        '''
+        Initializes the inflation class
+         inflate - inflation method for inflating Bs / sampling error [1]
+                   0 = no-inflation
+                   1 = multiplicative inflation (scale Bs / prior ensemble by factor)
+                   2 = additive inflation (add white noise [model-error] to prior ensemble)
+                   3 = covariance relaxation (add scaled prior ensemble variance to posterior)
+                   4 = spread restoration (scale posterior ensemble variance by a factor based on ratios)
+                   5 = adaptive inflation (not implemented yet)
+        infl_fac - inflation factor [1.0]
+        infl_adp - adaptive inflation factor for Bs for multiple outer loops [False]
+        '''
+
+        self.inflate  = inflate
+        self.infl_fac = infl_fac
+        self.infl_adp = infl_adp
+
+        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+    #}}}
+
+class localization(object):
+
+    def __setattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+        else:
+            self.__dict__[key] = val
+
+    def __delattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+        else:
+            del self.__dict__[key]
+
+    def __init__(self,localize=1,cov_cutoff=0.0625,cov_trunc=40,**kwargs):
+    #{{{
+        '''
+        Initializes the localization class
+          localize - flavour for localizing Be [1]
+                     0 = No localization
+                     1 = Gaspari-Cohn localization
+                     2 = Box car localization
+                     3 = Ramped localization
+        cov_cutoff - cutoff for localization [0.0625]
+         cov_trunc - truncation for localization [None]
+        '''
+
+        self.localize   = localize
+        self.cov_cutoff = cov_cutoff
+        self.cov_trunc  = cov_trunc
+
+        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+    #}}}
+
+class fdvar(object):
+
+    def __setattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+        else:
+            self.__dict__[key] = val
+
+    def __delattr__(self,key,val):
+        if key in self.__dict__:
+            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+        else:
+            del self.__dict__[key]
+
+    def __init__(self,model,DA,window=0.0,offset=1.0,nobstimes=1,**kwargs):
+    #{{{
+        '''
+        Initializes the 4DVar class
+            model - model class instance
+               DA - Data assimilation class instance
+           window - length of window between assimilations [0.75 * DA.ntimes]
+           offset - start of the window from assimilation time [0.25]
+        nobstimes - divide the window in equal obs. bins [4]
+
+        Also returns as self.
+        tb - time index of background from previous analysis
+        ta - time index of analysis from previous analysis
+        tf - time index of end of window from previous analysis
+        tw - difference of indices between tf and tb
+
+        tbkgd - time vector to background from previous analysis
+        tanal - time vector to analysis from new background
+        tfore - time vector to end of window from previous analysis
+        twind - time vector from beginning of window to end of window
+
+        twind_obsInterval - interval between obs. in terms of time-steps
+           twind_obsTimes - time vector containing indices of obs. in window
+           twind_obsIndex - interval between obs. in terms of time-steps in terms of time-steps
+        '''
+
+        self.window    = window
+        self.offset    = offset
+        self.nobstimes = nobstimes
+
+        # check length of assimilation window if doing 4DVar
+        if ( self.offset * DA.ntimes + self.window - DA.ntimes < 0.0 ):
+            raise ValueError('Assimilation window for 4DVar is too short')
+
+        # time index from analysis to ... background, next analysis, end of window, window
+        self.tb = np.int(np.rint(self.offset * DA.ntimes/model.dt))
+        self.ta = np.int(np.rint(DA.ntimes/model.dt))
+        self.tf = np.int(np.rint((self.offset * DA.ntimes + self.window)/model.dt))
+        self.tw = self.tf - self.tb
+
+        # time vector from analysis to ... background, next analysis, end of window, window
+        self.tbkgd = np.linspace(DA.t0,self.tb,                self.tb+1) * model.dt
+        self.tanal = np.linspace(DA.t0,self.ta-self.tb,self.ta-self.tb+1) * model.dt
+        self.tfore = np.linspace(DA.t0,self.tf,                self.tf+1) * model.dt
+        self.twind = np.linspace(DA.t0,self.tw,                self.tw+1) * model.dt
+
+        # time vector, interval, indices of observations
+        if ( self.nobstimes > 1):
+            self.twind_obsInterval = self.tw / (self.nobstimes-1)
+            self.twind_obsTimes    = self.twind[::self.twind_obsInterval]
+            self.twind_obsIndex    = np.array(np.rint(self.twind_obsTimes / model.dt), dtype=int)
+
+        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+    #}}}
+
 def check_DA(DA):
 # {{{
     '''
@@ -152,7 +507,7 @@ def update_ensDA(Xb, y, R, H, ensDA, model):
         if   ( ensDA.inflation.inflate == 1 ): # multiplicative inflation
             Xbp = ensDA.inflation.infl_fac * Xbp
 
-        elif ( inflation.inflate == 2 ): # additive white model error (mean:zero, spread:ensDA.inflation.infl_fac)
+        elif ( ensDA.inflation.inflate == 2 ): # additive white model error (mean:zero, spread:ensDA.inflation.infl_fac)
             Xbp = Xbp + inflation.infl_fac * np.random.randn(model.Ndof,ensDA.Nens)
 
         Xb = np.transpose(np.transpose(Xbp) + xbm)
@@ -630,7 +985,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
     Rinv = np.linalg.inv(R)
 
     # advance the background through the assimilation window with full non-linear model
-    xnl = advance_model(model, xa, varDA.fdvar.twind, perfect=False)
+    xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
 
     gJ = np.zeros(np.shape(xb))
     d  = np.zeros(np.shape(y))
@@ -645,7 +1000,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
 
         tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
         if ( len(tint) != 0 ):
-            sxi = advance_model_tlm(model, gJ, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
+            sxi = model.advance_tlm(gJ, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
             gJ = sxi[-1,:].copy()
 
     dJ     = gJ.copy()
@@ -661,7 +1016,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
         niters = niters + 1
 
         # advance the direction of the gradient through the assimilation window with TL model
-        dJtl = advance_model_tlm(model, dJ, varDA.fdvar.twind, xnl, varDA.fdvar.twind, adjoint=False, perfect=False)
+        dJtl = model.advance_tlm(dJ, varDA.fdvar.twind, xnl, varDA.fdvar.twind, adjoint=False, perfect=False)
 
         AdJb = np.dot(Binv,dJ)
         AdJy = np.zeros(np.shape(xb))
@@ -675,7 +1030,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
 
             tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
             if ( len(tint) != 0 ):
-                sxi = advance_model_tlm(model, AdJy, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
+                sxi = model.advance_tlm(AdJy, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
                 AdJy = sxi[-1,:].copy()
 
         AdJ = AdJb + AdJy
@@ -815,7 +1170,7 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
     Rinv = np.linalg.inv(R)
 
     # advance the background through the assimilation window with full non-linear model
-    xnl = advance_model(model, xa, varDA.fdvar.twind, perfect=False)
+    xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
 
     gJ = np.zeros(np.shape(G)[-1])
     d  = np.zeros(np.shape(y))
@@ -830,7 +1185,7 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
 
         tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
         if ( len(tint) != 0 ):
-            sxi = advance_model_tlm(model, gJ, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
+            sxi = model.advance_tlm(gJ, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
             gJ = sxi[-1,:].copy()
 
     gJ = np.dot(np.transpose(G),gJ)
@@ -848,7 +1203,7 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
         niters = niters + 1
 
         # advance the direction of the gradient through the assimilation window with TL model
-        GdJtl = advance_model_tlm(model, np.dot(G,dJ), varDA.fdvar.twind, xnl, varDA.fdvar.twind, adjoint=False, perfect=False)
+        GdJtl = model.advance_tlm(np.dot(G,dJ), varDA.fdvar.twind, xnl, varDA.fdvar.twind, adjoint=False, perfect=False)
 
         AdJb = dJ.copy()
         AdJy = np.zeros(np.shape(xb))
@@ -862,7 +1217,7 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
 
             tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
             if ( len(tint) != 0 ):
-                sxi = advance_model_tlm(model, AdJy, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
+                sxi = model.advance_tlm(AdJy, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
                 AdJy = sxi[-1,:].copy()
 
         AdJy = np.dot(np.transpose(G),AdJy)
@@ -1175,7 +1530,7 @@ def EnsembleFourDvar_pc(xb, G, y, R, H, varDA, model):
     for outer in range(0,varDA.maxouter):
 
         # advance the background through the assimilation window with full non-linear model
-        xnl = advance_model(model, xa, varDA.fdvar.twind, perfect=False)
+        xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
 
         d  = np.zeros(np.shape(y))
         HG = G.copy()
@@ -1339,7 +1694,7 @@ def advance_ensemble(Xi, t, model, perfect=True, **kwargs):
     Xf = np.zeros(np.shape(Xi))
     for m in range(0, np.shape(Xi)[1]):
         xi = Xi[:,m].copy()
-        xs = advance_model(model, xi, t, perfect=perfect, **kwargs)
+        xs = model.advance(xi, t, perfect=perfect, **kwargs)
         Xf[:,m] = xs[-1,:].copy()
 
     return Xf
@@ -1367,26 +1722,23 @@ inflation_factor - Factor with which to inflate ensemble perturbations
 ###############################################################
 
 ###############################################################
-def compute_B(model,varDA,outer=0):
+def compute_B(varDA,Bc,outer=0):
 # {{{
     '''
     Load climatological background error covariance matrix and
     and make ready for variational update
 
-    B = compute_B(model,varDA,outer=0)
+    B = compute_B(varDA,Bc,outer=0)
 
-     B - background error covariance / preconditioning matrix
- model - model class
+    Bc - climatological background error covariance
  varDA - variational-based data assimilation class
- outer - outer loop index, if adaptively scaling B (0)
+ outer - outer loop index, if adaptively scaling Bc (0)
+     B - background error covariance matrix / preconditioning matrix
     '''
 
-    # load fixed background error covariance matrix; generated by 'model.Name'_stats.py
-    B = read_clim_cov(model)
-
-    # inflate climatological B
-    B *= varDA.inflation.infl_fac
-    if ( varDA.inflation.adaptive ): B /= ( outer + 1 )
+    # inflate climatological background error cov. matrix
+    B = varDA.inflation.infl_fac * Bc
+    if ( varDA.inflation.infl_adp ): B /= ( outer + 1 )
 
     # precondition B to sqrt(B)
     if ( varDA.precondition ):
@@ -1398,35 +1750,45 @@ def compute_B(model,varDA,outer=0):
 ###############################################################
 
 ###############################################################
-def create_obs(model,varDA,xt,H,R):
+def create_obs(model,varDA,xt,H,R,**kwargs):
 # {{{
     '''
     y = create_obs(model,varDA,xt,H,R)
 
-    Create observations for 3DVar / 4DVar within a specified obs. window
+    Create observations for EnKF / 3DVar / 4DVar within a specified obs. window
 
  model - model class
- varDA - variational-based data assimilation class
+ varDA - ensemble / variational-based data assimilation class
     xt - truth
      H - forward operator
      R - observation error covariance
      y - observation vector / matrix
     '''
-    # new observations from noise about truth; set verification values
-    if   ( varDA.update == 1 ):
+    # new observations from noise about truth
 
-        y = np.dot(H,xt + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
+    if ( not hasattr(varDA,'minimization') ):
+        # This is an ensemble update
+        y = np.zeros((1,model.Ndof))
+        y[0,:] = np.dot(H,xt + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
+        return y
 
-    elif ( varDA.update == 2 ):
+    if ( varDA.update == 1 ):
+        y = np.zeros((1,model.Ndof))
+        y[0,:] = np.dot(H,xt + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
+        return y
+
+    if ( varDA.update == 2 ):
 
         # integrate truth within the obs. window
-        xs = advance_model(model, xt, varDA.fdvar.twind, perfect=True)
+        xs = model.advance(xt, varDA.fdvar.twind, perfect=True)
 
         y = np.zeros((varDA.fdvar.nobstimes,model.Ndof))
 
         for i in range(varDA.fdvar.nobstimes):
             y[i,:] = np.dot(H,xs[varDA.fdvar.twind_obsIndex[i],:] + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
 
-    return y
+        return y
+
+    raise ValueError('create_obs should never reach here.')
 # }}}
 ###############################################################

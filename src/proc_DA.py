@@ -25,7 +25,6 @@ import sys
 import numpy         as     np
 from   argparse      import ArgumentParser, ArgumentDefaultsHelpFormatter
 from   matplotlib    import pyplot
-from   module_Lorenz import *
 from   module_IO     import *
 from   module_DA     import *
 from   plot_stats    import *
@@ -37,7 +36,7 @@ def main():
     parser = ArgumentParser(description = 'Process the diag file written by ???DA.py', formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('-f','--filename',help='name of the diag file to read',type=str,required=True)
     parser.add_argument('-m','--measure',help='measure to evaluate performance',type=str,required=False,choices=['obs','truth'],default='truth')
-    parser.add_argument('-b','--begin_index',help='starting index to read',type=int,required=False,default=0)
+    parser.add_argument('-b','--begin_index',help='starting index to read',type=int,required=False,default=1)
     parser.add_argument('-t','--plot_index',help='time index to plot',type=int,required=False,default=-1)
     parser.add_argument('-s','--save_figure',help='save figures',action='store_true',required=False)
     args = parser.parse_args()
@@ -85,7 +84,7 @@ def main():
         var_evratio = np.zeros(np.shape(xbm)[0])
         Bs = varDA.inflation.infl_fac * read_clim_cov(model)
         if ( DA.do_hybrid ): L = localization_operator(model,ensDA.localization)
-        for i in range(0,DA.nassim):
+        for i in range(DA.nassim):
             if ( DA.do_hybrid ): xtmp = xbc
             else:                xtmp = xbm
             innov  = np.nansum((y[i,:model.Ndof] - np.dot(np.diag(H[i,:]),xtmp[i,:]))**2)
@@ -160,8 +159,9 @@ def main():
 
     # plot the iteration statistics and/or error-to-variance ratio
     if ( hasattr(varDA,'update') ):
-        fig = plot_iteration_stats(niters[:,-1],pretitle=vstr)
-        if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-niters' % vstr)
+        for outer in range(DA.maxouter):
+            fig = plot_iteration_stats(np.squeeze(niters[:,outer]),pretitle=vstr)
+            if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-niters-%d' % (vstr,outer+1))
         fig = plot_error_variance_stats(var_evratio, sStat=sStat, pretitle=vstr)
         if ( save_fig ): save_figure(fig, fname = fname_fig + '%s-evratio' % vstr)
     if ( hasattr(ensDA,'update') ):

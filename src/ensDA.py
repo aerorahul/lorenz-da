@@ -48,22 +48,22 @@ def main():
     DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))
 
     # create diagnostic file
-    create_diag(diag_file, model.Ndof, nens=ensDA.Nens)
-    write_diag(diag_file.filename, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), np.diag(H), np.diag(R), evratio = np.NaN)
+    create_diag(diag_file, model.Ndof, nens=ensDA.Nens, nouter=1)
+    write_diag(diag_file.filename, 0, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), np.diag(H), np.diag(R), evratio = np.NaN)
 
     print 'Cycling ON the attractor ...'
 
-    for k in range(0, DA.nassim):
+    for k in range(DA.nassim):
 
         print '========== assimilation time = %5d ========== ' % (k+1)
 
-        # advance truth with the full nonlinear model
-        xs = advance_model(model, xt, DA.tanal, perfect=True)
+        # advance truth with the full nonlinear model; set verification values
+        xs = model.advance(xt, DA.tanal, perfect=True)
         xt = xs[-1,:].copy()
-
-        # new observations from noise about truth; set verification values
-        y   = np.dot(H,xt + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
         ver = xt.copy()
+
+        # new observations from noise about truth
+        y = create_obs(model,ensDA,xt,H,R)
 
         # advance analysis ensemble with the full nonlinear model
         Xb = advance_ensemble(Xa, DA.tanal, model, perfect=False)
@@ -72,7 +72,7 @@ def main():
         Xa, evratio = update_ensDA(Xb, y, R, H, ensDA, model)
 
         # write diagnostics to disk
-        write_diag(diag_file.filename, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, np.diag(H), np.diag(R), evratio = evratio)
+        write_diag(diag_file.filename, k+1, 0, ver, np.transpose(Xb), np.transpose(Xa), y, np.diag(H), np.diag(R), evratio = evratio)
 
     print '... all done ...'
     sys.exit(0)

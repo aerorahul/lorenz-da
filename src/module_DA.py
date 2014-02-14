@@ -379,6 +379,7 @@ class fdvar(object):
             self.twind_obsInterval = self.tw / (self.nobstimes-1)
             self.twind_obsTimes    = self.twind[::self.twind_obsInterval]
             self.twind_obsIndex    = np.array(np.rint(self.twind_obsTimes / model.dt), dtype=int)
+            self.twind_obs         = np.linspace(DA.t0,self.twind_obsInterval,self.twind_obsInterval+1) * model.dt
 
         for key, value in kwargs.iteritems(): self.__setattr__(key,value)
     #}}}
@@ -1527,53 +1528,51 @@ def EnsembleFourDvar_pc(xb, G, y, R, H, varDA, model):
     xa   = xb.copy()
     Rinv = np.linalg.inv(R)
 
-    for outer in range(0,varDA.maxouter):
+    # advance the background through the assimilation window with full non-linear model
+    xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
 
-        # advance the background through the assimilation window with full non-linear model
-        xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
+    d  = np.zeros(np.shape(y))
+    HG = G.copy()
+    gJ = np.zeros(np.shape(G)[-1])
+    for i in range(varDA.fdvar.nobstimes):
 
-        d  = np.zeros(np.shape(y))
-        HG = G.copy()
-        gJ = np.zeros(np.shape(G)[-1])
-        for i in range(0,varDA.fdvar.nobstimes):
+        valInd = np.isfinite(y[i,])
+        d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
 
+        HG[i,:,:] = np.dot(H,G[i,:,:])
+        gJ = gJ + np.dot(np.transpose(HG[i,valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
+
+    dJ     = gJ.copy()
+    w      = np.zeros(np.shape(gJ))
+    niters = 0
+
+    residual_first = np.sum(gJ**2)
+    residual_tol   = 1.0
+    print 'initial residual = %15.10f' % (residual_first)
+
+    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
+
+        niters = niters + 1
+
+        AdJ = np.zeros(np.shape(dJ))
+        for i in range(varDA.fdvar.nobstimes):
             valInd = np.isfinite(y[i,])
-            d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
+            AdJ = AdJ + np.dot(np.transpose(HG[i,valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(HG[i,valInd,:],dJ)))
 
-            HG[i,:,:] = np.dot(H,G[i,:,:])
-            gJ = gJ + np.dot(np.transpose(HG[i,valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
+        AdJ = dJ + AdJ
 
-        dJ     = gJ.copy()
-        w      = np.zeros(np.shape(gJ))
-        niters = 0
+        [w, gJ, dJ] = minimize(varDA.minimization, w, gJ, dJ, AdJ)
 
-        residual_first = np.sum(gJ**2)
-        residual_tol   = 1.0
-        print 'initial residual = %15.10f' % (residual_first)
+        residual = np.sum(gJ**2)
+        residual_tol = residual / residual_first
 
-        while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
+        if ( not np.mod(niters,5) ):
+            print '        residual = %15.10f after %4d iterations' % (residual, niters)
 
-            niters = niters + 1
+    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
+    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
-            AdJ = np.zeros(np.shape(dJ))
-            for i in range(0,varDA.fdvar.nobstimes):
-                valInd = np.isfinite(y[i,])
-                AdJ = AdJ + np.dot(np.transpose(HG[i,valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(HG[i,valInd,:],dJ)))
-
-            AdJ = dJ + AdJ
-
-            [w, gJ, dJ] = minimize(varDA.minimization, w, gJ, dJ, AdJ)
-
-            residual = np.sum(gJ**2)
-            residual_tol = residual / residual_first
-
-            if ( not np.mod(niters,5) ):
-                print '        residual = %15.10f after %4d iterations' % (residual, niters)
-
-        if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
-        print '  final residual = %15.10f after %4d iterations' % (residual, niters)
-
-        xa = xa + np.dot(G[0,:,:],w)
+    xa = xa + np.dot(G[0,:,:],w)
 
     return xa, niters
 # }}}

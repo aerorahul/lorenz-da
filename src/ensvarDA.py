@@ -38,148 +38,82 @@ def main():
     # check for valid ensemble and variational data assimilation options
     check_DA(DA)
     check_ensDA(ensDA)
-    if ( DA.do_hybrid ): check_varDA(varDA)
+    check_varDA(varDA)
 
     # get IC's
     [xt, Xa] = get_IC(model, restart, Nens=ensDA.Nens)
     Xa = np.transpose( inflate_ensemble(np.transpose(Xa), ensDA.init_ens_infl_fac) )
     Xb = Xa.copy()
-    if ( DA.do_hybrid ):
-        xac = np.mean(Xa,axis=1)
-        xbc = np.mean(Xb,axis=1)
-        if   ( varDA.update == 1 ):
-            Xbwin = np.zeros((                      model.Ndof,ensDA.Nens))
-        elif ( varDA.update == 2 ):
-            Xbwin = np.zeros((varDA.fdvar.nobstimes,model.Ndof,ensDA.Nens))
-            Xawin = np.zeros((varDA.fdvar.nobstimes,model.Ndof,ensDA.Nens))
+    xac = np.mean(Xa,axis=1)
+    xbc = np.mean(Xb,axis=1)
+    Xbwin = np.zeros((varDA.fdvar.nobstimes,model.Ndof,ensDA.Nens))
+    Xawin = np.zeros((varDA.fdvar.nobstimes,model.Ndof,ensDA.Nens))
 
     # construct localization matrix once and for all ...
     L = localization_operator(model,ensDA.localization)
     [U,S2,_] = np.linalg.svd(L, full_matrices=True, compute_uv=True)
     Lp = np.dot(U[:,:varDA.localization.cov_trunc],np.diag(np.sqrt(S2[:varDA.localization.cov_trunc])))
 
-    if ( DA.do_hybrid and varDA.update == 2 ):
-        # check length of assimilation window
-        if ( varDA.fdvar.offset * DA.ntimes + varDA.fdvar.window - DA.ntimes < 0.0 ):
-            print '4DVar assimilation window is too short'
-            sys.exit(2)
-
-        # time index from analysis to ... background, next analysis, end of window, window
-        varDA.fdvar.tb = np.int(np.rint(varDA.fdvar.offset * DA.ntimes/model.dt))
-        varDA.fdvar.ta = np.int(np.rint(DA.ntimes/model.dt))
-        varDA.fdvar.tf = np.int(np.rint((varDA.fdvar.offset * DA.ntimes + varDA.fdvar.window)/model.dt))
-        varDA.fdvar.tw = varDA.fdvar.tf - varDA.fdvar.tb
-
-        # time vector from analysis to ... background, next analysis, end of window, window
-        varDA.fdvar.tbkgd = np.linspace(DA.t0,varDA.fdvar.tb,   varDA.fdvar.tb   +1) * model.dt
-        varDA.fdvar.tanal = np.linspace(DA.t0,varDA.fdvar.ta-varDA.fdvar.tb,varDA.fdvar.ta-varDA.fdvar.tb+1) * model.dt
-        varDA.fdvar.tfore = np.linspace(DA.t0,varDA.fdvar.tf,   varDA.fdvar.tf   +1) * model.dt
-        varDA.fdvar.twind = np.linspace(DA.t0,varDA.fdvar.tw,   varDA.fdvar.tw   +1) * model.dt
-
-        # time vector, interval, indices of observations
-        varDA.fdvar.twind_obsInterval = varDA.fdvar.tw / (varDA.fdvar.nobstimes-1)
-        varDA.fdvar.twind_obsTimes    = varDA.fdvar.twind[::varDA.fdvar.twind_obsInterval]
-        varDA.fdvar.twind_obsIndex    = np.array(np.rint(varDA.fdvar.twind_obsTimes / model.dt), dtype=int)
-        varDA.fdvar.twind_obs         = np.linspace(DA.t0,varDA.fdvar.twind_obsInterval, varDA.fdvar.twind_obsInterval +1) * model.dt
-
-    # time between assimilations
-    DA.tanal = model.dt * np.linspace(DA.t0,np.rint(DA.ntimes/model.dt),np.int(np.rint(DA.ntimes/model.dt)+1))
+    nobs = model.Ndof*varDA.fdvar.nobstimes
+    y    = np.tile(np.dot(H,xt),[varDA.fdvar.nobstimes,1])
 
     # create diagnostic file
-    create_diag(diag_file, model.Ndof, nens=ensDA.Nens, hybrid=DA.do_hybrid)
-    if ( DA.do_hybrid ):
-        write_diag(diag_file.filename, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), np.diag(H), np.diag(R), central_prior=xbc, central_posterior=xac, evratio=np.NaN, niters=np.NaN)
-    else:
-        write_diag(diag_file.filename, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), np.diag(H), np.diag(R), evratio=np.NaN)
+    create_diag(diag_file, model.Ndof, nens=ensDA.Nens, nobs=nobs, nouter=DA.maxouter, hybrid=DA.do_hybrid)
+    for outer in range(DA.maxouter):
+        write_diag(diag_file.filename, 0, outer, xt, np.transpose(Xb), np.transpose(Xa), np.reshape(y,[nobs]), np.diag(H), np.diag(R), central_prior=xbc, central_posterior=xac, evratio=np.NaN, niters=np.NaN)
 
-    print 'Cycling ON the attractor ...'
-
-    for k in range(0, DA.nassim):
+    for k in range(DA.nassim):
 
         print '========== assimilation time = %5d ========== ' % (k+1)
 
-        # advance truth with the full nonlinear model
-        if ( DA.do_hybrid and varDA.update == 2 ):
-            xs = advance_model(model, xt, varDA.fdvar.tfore, perfect=True)
-            xt = xs[varDA.fdvar.ta,:].copy()
-        else:
-            xs = advance_model(model, xt, DA.tanal, perfect=True)
-            xt = xs[-1,:].copy()
-
-        # new observations from noise about truth; set verification values
-        y   = np.dot(H,xt + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
+        # advance truth with the full nonlinear model; set verification values
+        xs = model.advance(xt, varDA.fdvar.tbkgd, perfect=True)
+        xt = xs[-1,:].copy()
         ver = xt.copy()
-        if ( DA.do_hybrid ):
-            if   ( varDA.update == 1 ):
-                ywin = y.copy()
-            elif ( varDA.update == 2 ):
-                ywin = np.zeros((varDA.fdvar.nobstimes,model.Ndof))
-                for i in range(0,varDA.fdvar.nobstimes):
-                    ywin[i,:] = np.dot(H,xs[varDA.fdvar.twind_obsIndex[i]+varDA.fdvar.tb,:] + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
-                oind = np.where(varDA.fdvar.twind_obsIndex + varDA.fdvar.tb == varDA.fdvar.ta)
-                if ( len(oind[0]) != 0 ): ywin[oind[0][0],:] = y.copy()
 
-        if ( DA.do_hybrid ): # advance and update BOTH central and ensemble (mean and perturbations)
+        # new observations from noise about truth
+        y = create_obs(model,varDA,xt,H,R)
 
-            if   ( varDA.update == 1 ):
+        # advance the ensemble to the beginning of the window
+        Xb = advance_ensemble(Xa, varDA.fdvar.tbkgd, model, perfect=False)
+        Xbwin[0,:,:] = Xb.copy()
+        Xa, evratio = update_ensDA(Xb, np.squeeze(y[0,:]), R, H, ensDA, model)
+        Xawin[0,:,:] = Xa.copy()
 
-                Xb = advance_ensemble(Xa, DA.tanal, model, perfect=False)
-                Xbwin = Xb.copy()
+        # advance the central analysis next with the full nonlinear model
+        xs = model.advance(xac, varDA.fdvar.tbkgd, perfect=False)
+        xbc = xs[-1,:].copy()
 
-                Xa, evratio = update_ensDA(Xb, y, R, H, ensDA, model)
+        # update the central background
+        for outer in range(DA.maxouter):
 
-            elif ( varDA.update == 2 ):
-
-                Xbwin[0,:,:] = advance_ensemble(Xa, varDA.fdvar.tbkgd, model, perfect=False)
-
-                for i in range(0,varDA.fdvar.nobstimes):
-
-                    if ( varDA.fdvar.tb + varDA.fdvar.twind_obsIndex[i] <= varDA.fdvar.ta ):
-                        Xawin[i,:,:], evratio = update_ensDA(Xbwin[i,:,:], ywin[i,:], R, H, ensDA, model)
-                    else:
-                        Xawin[i,:,:] = Xbwin[i,:,:].copy()
-
-                    if ( i < varDA.fdvar.nobstimes-1 ):
-                        Xbwin[i+1,:,:] = advance_ensemble(Xawin[i,:,:], varDA.fdvar.twind_obs, model, perfect=False)
-
-                    if ( varDA.fdvar.tb + varDA.fdvar.twind_obsIndex[i] == varDA.fdvar.ta ):
-                        Xb = Xbwin[i,:,:].copy()
-                        Xa = Xawin[i,:,:].copy()
-                        y  = ywin[ i,:  ].copy()
+            # advance the ensemble through the window
+            for i in range(1,varDA.fdvar.nobstimes):
+                Xbwin[i,:,:] = advance_ensemble(Xbwin[i-1,:,:], varDA.fdvar.twind_obs, model, perfect=False)
 
             # precondition before varDA
-            G = precondition(Xbwin, varDA, ensDA, model, L=Lp)
+            B = precondition(Xbwin, varDA, ensDA, model, L=Lp)
 
-            # advance central analysis with the full nonlinear model
-            xs = advance_model(model, xac, DA.tanal, perfect=False)
-            xbc = xs[-1,:].copy()
-            if   ( varDA.update == 1 ): xbcwin = xs[-1,            :].copy()
-            elif ( varDA.update == 2 ): xbcwin = xs[varDA.fdvar.tb,:].copy()
+            # update step
+            xac, niters = update_ensvarDA(xbc, B, np.squeeze(y), R, H, varDA, model)
 
-            # update the central background
-            xacwin, niters = update_ensvarDA(xbcwin, G, ywin, R, H, varDA, model)
+            Xb = np.squeeze(Xbwin[0,:,:])
+            Xa = np.squeeze(Xawin[0,:,:])
 
-            # if doing 4Dvar, step to the next assimilation time from the beginning of assimilation window
-            if   ( varDA.update == 1 ):
-                xac = xacwin.copy()
-            elif ( varDA.update == 2 ):
-                xs = advance_model(model, xacwin, varDA.fdvar.tanal, perfect=False)
-                xac = xs[-1,:].copy()
+            # write diagnostics to disk for each outer loop (at the beginning of the window)
+            write_diag(diag_file.filename, k+1, outer, ver, np.transpose(Xb), np.transpose(Xa),
+                    np.reshape(y,[nobs]), np.diag(H), np.diag(R), central_prior=xbc,
+                    central_posterior=xac, evratio=np.NaN, niters=niters)
 
-        else: # advance and update ONLY ensemble (mean and perturbations)
+            Xbwin[0,:,:] = np.transpose(np.transpose(Xb) - np.mean(Xb,axis=1) + xac)
 
-            Xb = advance_ensemble(Xa, DA.tanal, model, perfect=False)
-            Xa, evratio = update_ensDA(Xb, y, R, H, ensDA, model)
+        if ( DA.hybrid_rcnt ): Xa = np.transpose(np.transpose(Xa) - np.mean(Xa,axis=1) + xac)
 
-        # write diagnostics to disk before recentering
-        if ( DA.do_hybrid ):
-            write_diag(diag_file.filename, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, np.diag(H), np.diag(R), central_prior=xbc, central_posterior=xac, evratio=evratio, niters=niters)
-        else:
-            write_diag(diag_file.filename, k+1, ver, np.transpose(Xb), np.transpose(Xa), y, np.diag(H), np.diag(R), evratio=evratio)
-
-        # recenter ensemble about central analysis
-        if ( DA.do_hybrid ):
-            if ( DA.hybrid_rcnt ): Xa = np.transpose(np.transpose(Xa) - np.mean(Xa,axis=1) + xac)
+        # if doing 4Dvar, step to the next assimilation time from the beginning of assimilation window
+        if ( varDA.update == 2 ):
+            xt  = model.advance(  xt,  varDA.fdvar.tanal,        perfect=True )[-1,:].copy()
+            xac = model.advance(  xac, varDA.fdvar.tanal,        perfect=False)[-1,:].copy()
+            Xa  = advance_ensemble(Xa, varDA.fdvar.tanal, model, perfect=False)
 
     print '... all done ...'
     sys.exit(0)

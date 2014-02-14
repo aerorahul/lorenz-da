@@ -103,7 +103,7 @@ def main():
             # update step
             xac, niters = update_varDA(xbc, B, np.squeeze(y), R, H, varDA, model)
 
-            # write diagnostics to disk for each outer loop (at the next analysis time)
+            # write diagnostics to disk for each outer loop (at the beginning of the window)
             write_diag(diag_file.filename, k+1, outer, ver, np.transpose(Xb), np.transpose(Xa), y, np.diag(H), np.diag(R), central_prior=xbc, central_posterior=xac, evratio=evratio, niters=niters)
 
         # if doing 4Dvar, step to the next assimilation time from the beginning of assimilation window

@@ -33,24 +33,23 @@ from   argparse      import ArgumentParser, ArgumentDefaultsHelpFormatter
 ###############################################################
 
 parser = ArgumentParser(description = 'Test TLM and Adjoint for LXX models', formatter_class=ArgumentDefaultsHelpFormatter)
-parser.add_argument('-m','--model',help='model name',type=str,required=False,choices=['L63','L96'],default='L63')
+parser.add_argument('-m','--model',help='model name',type=str,required=False,choices=['L63','L96'],default='L96')
 args = parser.parse_args()
 
 ###############################################################
 # insure the same sequence of random numbers EVERY TIME
 np.random.seed(0)
 
-model      = type('',(),{})  # model Class
-model.Name = args.model
-
-if   ( model.Name == 'L63' ):
-    model.Ndof = 3                          # model degrees of freedom
-    model.Par  = [10.0, 28.0, 8.0/3.0]      # model parameters [sigma, rho, beta]
-    model.dt   = 1.0e-3                     # model time-step
-elif ( model.Name == 'L96' ):
-    model.Ndof = 40                         # model degrees of freedom
-    model.Par  = [8.0, 8.4]                 # model parameters F, F+dF
-    model.dt   = 1.0e-4                     # model time-step
+model = Lorenz() # model Class
+if   ( args.model == 'L63' ):
+    Ndof = 3                          # model degrees of freedom
+    Par  = [10.0, 28.0, 8.0/3.0]      # model parameters [sigma, rho, beta]
+    dt   = 1.0e-3                     # model time-step
+elif ( args.model == 'L96' ):
+    Ndof = 40                         # model degrees of freedom
+    Par  = [8.0, 8.4]                 # model parameters F, F+dF
+    dt   = 1.0e-4                     # model time-step
+model.init(Name=args.model,Ndof=Ndof,Par=Par,dt=dt)
 
 IC          = type('',(),{})
 IC.time     = None
@@ -66,7 +65,7 @@ print 'spinning-up ON the attractor ...'
 print '--------------------------------'
 
 ts = np.rint(np.linspace(0,1000*tf/model.dt,1000*tf/model.dt+1)) * model.dt
-xs = advance_model(model, x0, ts, perfect=True)
+xs = model.advance(x0, ts, perfect=True)
 x0 = xs[-1,:].copy()
 
 if   ( model.Name == 'L63' ): exec('plot_%s(att=xs)'                         % (model.Name            ))
@@ -74,15 +73,15 @@ elif ( model.Name == 'L96' ): exec('plot_%s(ver=xs[-1,:],obs=xs[-1,:],N=%d)' % (
 
 ts = np.rint(np.linspace(0,tf/model.dt,tf/model.dt+1)) * model.dt
 
-xs = advance_model(model, x0, ts, perfect=True, rtol=tol, atol=tol)
+xs = model.advance(x0, ts, perfect=True, rtol=tol, atol=tol)
 xsf = xs[-1,:].copy()
 
 xp0 = np.random.randn(model.Ndof) * pert
 
-xsp = advance_model(model, x0+xp0, ts, perfect=True, rtol=tol, atol=tol)
+xsp = model.advance(x0+xp0, ts, perfect=True, rtol=tol, atol=tol)
 xspf = xsp[-1,:].copy()
 
-xp = advance_model_tlm(model, xp0, ts, xs, ts, adjoint=False, perfect=True, rtol=tol, atol=tol)
+xp = model.advance_tlm(xp0, ts, xs, ts, adjoint=False, perfect=True, rtol=tol, atol=tol)
 xpf = xp[-1,:].copy()
 
 print 'check TLM ..'
@@ -91,7 +90,7 @@ for j in range(0,model.Ndof):
 print '--------------------------------'
 
 xa0 = xpf.copy()
-xa = advance_model_tlm(model, xa0, ts, xs, ts, adjoint=True, perfect=True, rtol=tol, atol=tol)
+xa = model.advance_tlm(xa0, ts, xs, ts, adjoint=True, perfect=True, rtol=tol, atol=tol)
 xaf = xa[-1,:].copy()
 
 q1 = np.dot(np.transpose(xpf),xpf)

@@ -63,7 +63,7 @@ def main():
         ver = xt.copy()
 
         # new observations from noise about truth
-        y = create_obs(model,ensDA,xt,H,R)
+        y = np.squeeze(create_obs(model,ensDA,xt,H,R))
 
         # advance analysis ensemble with the full nonlinear model
         Xb = advance_ensemble(Xa, DA.tanal, model, perfect=False)

@@ -42,19 +42,18 @@ def main():
 
     method = args.covariances # choose method to create B: NMC / Climo / EnKF
 
-    model      = type('',(),{})  # model Class
-    model.Name = args.model      # model name
-
-    if   ( model.Name == 'L63' ):
-        model.Ndof = 3                          # model degrees of freedom
-        model.Par  = [10.0, 28.0, 8.0/3.0]      # model parameters [sigma, rho, beta]
-        model.dt   = 1.0e-4                     # model time-step
-        tf         =  0.25                      # time for forecast (6 hours)
-    elif ( model.Name == 'L96' ):
-        model.Ndof = 40                         # model degrees of freedom
-        model.Par  = [8.0, 8.4]                 # model parameters F, F+dF
-        model.dt   = 1.0e-4                     # model time-step
-        tf         =  0.05                      # time for forecast (6 hours)
+    model = Lorenz()
+    if   ( args.model == 'L63' ):
+        Ndof = 3                          # model degrees of freedom
+        Par  = [10.0, 28.0, 8.0/3.0]      # model parameters [sigma, rho, beta]
+        dt   = 1.0e-4                     # model time-step
+        tf   =  0.25                      # time for forecast (6 hours)
+    elif ( args.model == 'L96' ):
+        Ndof = 40                         # model degrees of freedom
+        Par  = [8.0, 8.4]                 # model parameters F, F+dF
+        dt   = 1.0e-4                     # model time-step
+        tf   =  0.05                      # time for forecast (6 hours)
+    model.init(Name=args.model,Ndof=Ndof,Par=Par,dt=dt)
 
     if ( (method == 'NMC') or (method == 'Climo') ):
 
@@ -79,7 +78,7 @@ def main():
         # get a state on the attractor
         print 'spinning-up onto the attractor ...'
         ts = np.arange(0.0,ts+model.dt,model.dt)       # how long to run onto the attractor
-        xs = advance_model(model, x0, ts, perfect=True)
+        xs = model.advance(x0, ts, perfect=True)
 
         # use the end state as IC
         xt = xs[-1,:]
@@ -96,13 +95,13 @@ def main():
         tf2 = np.arange(0.0,4*tf+model.dt,model.dt)
 
         for i in range(0,Ne):
-            xs = advance_model(model, xt, tf0, perfect=True)
+            xs = model.advance(xt, tf0, perfect=True)
             xt = xs[-1,:].copy()
 
-            xs = advance_model(model, xt, tf1, perfect=False)
+            xs = model.advance(xt, tf1, perfect=False)
             x24 = xs[-1,:].copy()
 
-            xs = advance_model(model, x24, tf2, perfect=False)
+            xs = model.advance(x24, tf2, perfect=False)
             x48 = xs[-1,:].copy()
 
             X[:,i] = x48 - x24

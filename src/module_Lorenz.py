@@ -499,8 +499,6 @@ def get_IC(model, restart, Nens=None):
 
         if ( Nens == None ):
             pert = 0.001 * ( numpy.random.randn(model.Ndof) )
-            print model.Ndof
-            print pert.shape
             xa = xt + pert
         else:
             pert = 0.001 * ( numpy.random.randn(model.Ndof,Nens) )

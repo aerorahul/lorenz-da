@@ -115,19 +115,20 @@ def main():
 
         print 'Using the EnKF output to create B'
         [model_tmp, DA, ensDA, varDA] = read_diag_info(fname)
-        _, Xb, _, _, _, _, _ = read_diag(fname, 0, end_time=DA.nassim)
 
         if ( (model.Name != model_tmp.Name) or (model.Ndof != model_tmp.Ndof) ):
             print 'mismatch between models, please verify'
             sys.exit(1)
 
         print 'no. of samples ... %d' % DA.nassim
-        Ntim = DA.nassim
-        offset = 500
+        offset = 501
         print 'removing first %d samples to account for spin-up ...' % offset
+        Ntim = DA.nassim - offset
 
-        Bi = np.zeros((Ntim-offset,model.Ndof,model.Ndof))
-        for i in range(offset+0,Ntim): Bi[i-offset,] = np.cov(np.transpose(np.squeeze(Xb[i,])),ddof=1)
+        _, Xb, _, _, _, _, _ = read_diag(fname, offset, end_time=DA.nassim)
+
+        Bi = np.zeros((Ntim,model.Ndof,model.Ndof))
+        for i in range(Ntim): Bi[i,] = np.cov(np.transpose(np.squeeze(Xb[i,])),ddof=1)
 
         B = np.mean(Bi,axis=0)
 

@@ -374,7 +374,7 @@ def plot_cov(cov_mat,title='Covariance Matrix'):
     pyplot.clf()
     pyplot.hold(True)
     cmax = np.round(np.max(np.abs(cov_mat)),2)
-    pyplot.imshow(cov_mat, cmap=cm.get_cmap(name='PuOr_r', lut=128), interpolation='nearest')
+    pyplot.imshow(cov_mat, cmap=cm.get_cmap(name='RdBu_r', lut=32+1), interpolation='nearest')
     pyplot.gca().invert_yaxis()
     pyplot.colorbar()
     pyplot.clim(-cmax,cmax)

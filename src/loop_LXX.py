@@ -21,17 +21,28 @@ __status__    = "Prototype"
 ###############################################################
 
 ###############################################################
-import sys
-import numpy         as     np
-from   module_Lorenz import *
-from   module_IO     import *
+import os, sys, numpy
+from   argparse      import ArgumentParser, ArgumentDefaultsHelpFormatter
+from   matplotlib    import pyplot
+from   module_Lorenz import plot_L96
+from   module_IO     import read_diag_info, read_diag
 ###############################################################
 
 ###############################################################
 def main():
 
-    # get the name of output diagnostic file to read
-    [_, fname, sOI, eOI] = get_input_arguments()
+    parser = ArgumentParser(description = 'Process the diag file written by ???DA.py', formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-f','--filename',help='name of the diag file to read',type=str,required=True)
+    parser.add_argument('-b','--begin_index',help='starting index to read',type=int,required=False,default=1)
+    parser.add_argument('-e','--end_index',help='ending index to read',type=int,required=False,default=-1)
+    parser.add_argument('-s','--save_figure',help='save figures',action='store_true',required=False)
+    args = parser.parse_args()
+
+    fname    = args.filename
+    sOI      = args.begin_index
+    eOI      = args.end_index
+    save_fig = args.save_figure
+
     if ( not os.path.isfile(fname) ):
         print '%s does not exist' % fname
         sys.exit(1)
@@ -44,7 +55,7 @@ def main():
     # print some info so the user knows the script is doing something
     print 'no. of assimilation cycles = %d' % DA.nassim
 
-    if ( sOI == -1 ): sOI = 0
+    if ( sOI == -1 ): sOI = DA.nassim-1
     if ( eOI == -1 ): eOI = DA.nassim
 
     # read diagnostics from file
@@ -54,10 +65,10 @@ def main():
         xt, Xb, Xa, y, H, R, tmpvar                    = read_diag(fname, 0, end_time=DA.nassim)
 
     if ( hasattr(ensDA,'update') ):
-        Xb      = np.transpose(Xb, (0,2,1))
-        Xa      = np.transpose(Xa, (0,2,1))
-        xbm     = np.mean(Xb, axis=2)
-        xam     = np.mean(Xa, axis=2)
+        Xb      = numpy.transpose(Xb, (0,2,1))
+        Xa      = numpy.transpose(Xa, (0,2,1))
+        xbm     = numpy.mean(Xb, axis=2)
+        xam     = numpy.mean(Xa, axis=2)
     else:
         xbm     = Xb.copy()
         xam     = Xa.copy()
@@ -79,12 +90,17 @@ def main():
     # Loop through the states
     for t in range(sOI, eOI):
 
-        fig = plot_L96(obs=y[t,], ver=xt[t,], xb=Xb[t,], xa=Xa[t,], t=t+1, N=model.Ndof, pretitle=fstr)
+        fig = plot_L96(obs=y[t,], ver=xt[t,], xb=Xb[t,], xa=Xa[t,], t=t, N=model.Ndof, pretitle=fstr, figNum=1)
 
-        fname = fname_fig + '_%04d.png' % (t+1)
-        print 'Saving frame', fname
-        fig.savefig(fname)
+        fname = fname_fig + '_%05d.png' % (t)
+        if ( save_fig ):
+            print 'Saving frame %d as %s'  % (t, fname)
+            fig.savefig(fname)
+        else:
+            print 'Showing frame %d as %s' % (t, fname)
+            pyplot.pause(0.1)
 
+    if ( not save_fig ): pyplot.show()
     print '... all done'
     sys.exit(0)
 ###############################################################

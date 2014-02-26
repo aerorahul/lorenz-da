@@ -131,7 +131,7 @@ def plot_rmse(xbrmse=None, xarmse=None, xyrmse=None, yscale='semilog', figNum=No
     title = 'Root Mean Squared Error'
     if ( not (pretitle == None) ): title = pretitle + ' - ' + title
     pyplot.title(title,fontweight='bold',fontsize=14)
-    pyplot.legend(loc=0,ncol=2)
+    pyplot.legend(loc='lower right',ncol=2)
     pyplot.hold(False)
     fig.canvas.set_window_title(title)
     return fig

@@ -52,7 +52,7 @@ varDA                         = type('',(),{}) # VarDA class
 varDA.minimization            = type('',(),{}) # minimization class
 varDA.localization            = type('',(),{}) # localization class
 varDA.update                  = 1              # DA method (1= 3Dvar; 2= 4Dvar)
-varDA.precondition            = True           # precondition before minimization
+varDA.precondition            = 1              # precondition before minimization (0= None; 1= sqrtB; 2= FullB)
 varDA.maxouter                = 1              # no. of outer loops
 varDA.minimization.maxiter    = 1000           # maximum iterations
 varDA.minimization.tol        = 1e-4           # tolerance to end the variational minimization iteration
@@ -76,7 +76,7 @@ diag_file.attributes = {'model'       : model.Name,
                         'dt'          : model.dt,
                         'Vupdate'     : varDA.update,
                         'maxouter'    : varDA.maxiter,
-                        'precondition': int(varDA.precondition),
+                        'precondition': varDA.precondition,
                         'Vlocalize'   : varDA.localization.localize,
                         'Vcov_cutoff' : varDA.localization.cov_cutoff,
                         'Vcov_trunc'  : varDA.localization.cov_trunc,

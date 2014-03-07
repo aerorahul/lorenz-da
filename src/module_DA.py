@@ -96,7 +96,7 @@ class VarDataAssim(object):
     #}}}
 
     def init(self,model,DA, \
-            update=1,precondition=True, \
+            update=1,precondition=1, \
             inflate=1,infl_fac=1.0,infl_adp=False, \
             localize=1,cov_cutoff=0.0625,cov_trunc=None, \
             maxiter=100, tol=1.0e-4, \
@@ -111,7 +111,7 @@ class VarDataAssim(object):
                        0 = No update
                        1 = 3DVar
                        2 = 4DVar
-        precondition - precondition before update [True]
+        precondition - precondition before update [1]
              inflate - inflate (Bs) static background error cov. [1]
                        0 = no-inflation
                        1 = multiplicative inflation
@@ -503,7 +503,7 @@ def update_ensDA(Xb, y, R, H, ensDA, model):
     if ( (ensDA.inflation.inflate == 1) or (ensDA.inflation.inflate == 2) ):
 
         xbm = np.mean(Xb,axis=1)
-        Xbp = np.transpose(np.transpose(Xb) - xbm)
+        Xbp = (Xb.T - xbm).T
 
         if   ( ensDA.inflation.inflate == 1 ): # multiplicative inflation
             Xbp = ensDA.inflation.infl_fac * Xbp
@@ -511,16 +511,16 @@ def update_ensDA(Xb, y, R, H, ensDA, model):
         elif ( ensDA.inflation.inflate == 2 ): # additive white model error (mean:zero, spread:ensDA.inflation.infl_fac)
             Xbp = Xbp + inflation.infl_fac * np.random.randn(model.Ndof,ensDA.Nens)
 
-        Xb = np.transpose(np.transpose(Xbp) + xbm)
+        Xb = (Xbp.T + xbm).T
 
     temp_ens = Xb.copy()
 
     # initialize innovation and total variance
-    innov  = np.zeros(np.shape(y)[0]) * np.NaN
-    totvar = np.zeros(np.shape(y)[0]) * np.NaN
+    innov  = np.zeros(y.shape[0]) * np.NaN
+    totvar = np.zeros(y.shape[0]) * np.NaN
 
     # assimilate all obs., one-by-one
-    for ob in range(0, np.shape(y)[0]):
+    for ob in range(y.shape[0]):
 
         if ( np.isnan(y[ob]) ): continue
 
@@ -556,12 +556,12 @@ def update_ensDA(Xb, y, R, H, ensDA, model):
 
     # compute analysis mean and perturbations
     xam = np.mean(Xa,axis=1)
-    Xap = np.transpose(np.transpose(Xa) - xam)
+    Xap = (Xa.T - xam).T
 
     # posterior inflation
     if   ( ensDA.inflation.inflate == 3 ): # covariance relaxation (Zhang & Snyder)
         xbm = np.mean(Xb,axis=1)
-        Xbp = np.transpose(np.transpose(Xb) - xbm)
+        Xbp = (Xb.T - xbm).T
         Xap = Xbp * ensDA.inflation.infl_fac + Xap * (1.0 - ensDA.inflation.infl_fac)
 
     elif ( ensDA.inflation.inflate == 4 ): # posterior spread restoration (Whitaker & Hamill)
@@ -571,7 +571,7 @@ def update_ensDA(Xb, y, R, H, ensDA, model):
             Xap[i,:] =  np.sqrt((ensDA.inflation.infl_fac * (xbs[i] - xas[dof])/xas[i]) + 1.0) * Xap[i,:]
 
     # add inflated perturbations back to analysis mean
-    Xa = np.transpose(np.transpose(Xap) + xam)
+    Xa = (Xap.T + xam).T
 
     # check for filter divergence
     error_variance_ratio = np.nansum(innov**2) / np.nansum(totvar)
@@ -803,14 +803,16 @@ def check_varDA(varDA):
 
     fail = False
 
+    if   ( varDA.precondition == 0 ): pstr = 'no'
+    elif ( varDA.precondition == 1 ): pstr = 'square-root B'
+    elif ( varDA.precondition == 2 ): pstr = 'full B'
+
     if   ( varDA.update == 0 ):
         print 'Running "No Assimilation"'
     elif ( varDA.update == 1 ):
-        if ( varDA.precondition ): print 'Assimilate observations using 3DVar [using incremental formulation] with preconditioning'
-        else:                      print 'Assimilate observations using 3DVar [using incremental formulation] without preconditioning'
+        print 'Assimilate observations using 3DVar [using incremental formulation] with %s preconditioning'% (pstr)
     elif ( varDA.update == 2 ):
-        if ( varDA.precondition ): print 'Assimilate observations using 4DVar [using incremental formulation] with preconditioning'
-        else:                      print 'Assimilate observations using 4DVar [using incremental formulation] without preconditioning'
+        print 'Assimilate observations using 4DVar [using incremental formulation] with %s preconditioning'% (pstr)
     else:
         print 'Invalid assimilation algorithm'
         print 'varDA.update must be one of : 0 | 1 | 2'
@@ -852,12 +854,10 @@ def update_varDA(xb, B, y, R, H, varDA, model):
         xa, niters = xb, np.NaN
 
     elif ( varDA.update == 1 ):
-        if ( varDA.precondition ): xa, niters = ThreeDvar_pc(xb, B, y, R, H, varDA, model)
-        else:                      xa, niters = ThreeDvar(   xb, B, y, R, H, varDA, model)
+        xa, niters = ThreeDvar(xb, B, y, R, H, varDA, model)
 
     elif ( varDA.update == 2 ):
-        if ( varDA.precondition ): xa, niters = FourDvar_pc(xb, B, y, R, H, varDA, model)
-        else:                      xa, niters = FourDvar(   xb, B, y, R, H, varDA, model)
+        xa, niters = FourDvar( xb, B, y, R, H, varDA, model)
 
     else:
         print 'invalid update algorithm ...'
@@ -878,7 +878,7 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
     xa, niters = ThreeDvar(xb, B, y, R, H, varDA, model)
 
           xb - prior
-           B - background error covariance
+           B - Background error covariance / preconditioning matrix
            y - observations
            R - observation error covariance
            H - forward operator
@@ -888,6 +888,7 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
       niters - number of iterations required for minimizing the cost function
     '''
 
+    # NO PRECONDITIONING
     # increment  : x - xb = dx
     # innovation :      d = y - H(xb)
     #                  dy = Hdx - d
@@ -899,18 +900,32 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
     # gJy = H^T R^{-1} dy
     # gJ  = [ B^{-1} + H^T R^{-1} H ] dx - H^T R^{-1} d
 
+    # PRECONDITION WITH sqrt(B) = G
+    # increment  : x - xb = dx        = Gw
+    # innovation :      d = y - H(xb)
+    #                  dy = Hdx - d   = HGw - d
+    # cost function:           J(w) =  Jb +  Jy
+    # cost function gradient: gJ(w) = gJb + gJy
+    #  Jb = 0.5 * w^T w
+    #  Jy = 0.5 * dy^T R^{-1} dy
+    # gJb = w
+    # gJy = G^T H^T R^{-1} dy
+    # gJ  = [ I + G^T H^T R^{-1} H G ] w - G^T H^T R^{-1} d
+
     xa   = xb.copy()
-    Binv = np.linalg.inv(B)
     Rinv = np.linalg.inv(R)
+    if ( varDA.precondition == 0 ): Binv = np.linalg.inv(B)
 
     valInd  = np.isfinite(y)
 
     d  = y[valInd] - np.dot(H[valInd,:],xa)
-    gJ = np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d))
 
-    dJ      = gJ.copy()
-    dx      = np.zeros(np.shape(gJ))
-    niters  = 0
+    gJ = np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),d))
+    if ( varDA.precondition == 1 ): gJ = np.dot(B.T,gJ)
+
+    dJ     = gJ.copy()
+    w      = np.zeros(gJ.shape)
+    niters = 0
 
     residual_first = np.sum(gJ**2)
     residual_tol   = 1.0
@@ -920,9 +935,15 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
 
         niters = niters + 1
 
-        AdJ = np.dot(Binv,dJ) + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],dJ)))
+        if   ( varDA.precondition == 0 ): BdJ = dJ.copy()
+        elif ( varDA.precondition == 1 ): BdJ = np.dot(B,dJ)
 
-        [dx, gJ, dJ] = minimize(varDA.minimization, dx, gJ, dJ, AdJ)
+        AdJ = np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],BdJ)))
+
+        if   ( varDA.precondition == 0 ): AdJ = np.dot(Binv,dJ) + AdJ
+        elif ( varDA.precondition == 1 ): AdJ = dJ + np.dot(B.T,AdJ)
+
+        [w, gJ, dJ] = minimize(varDA, w, gJ, dJ, AdJ)
 
         residual     = np.sum(gJ**2)
         residual_tol = residual / residual_first
@@ -934,14 +955,18 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
     print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
     # check for filter divergence
-    error_variance_ratio = np.sum(d**2) / np.sum(np.diag(B+R))
+    total_error = np.sum(d**2)
+    if   ( varDA.precondition == 0 ): total_variance = np.sum(np.diag(B            +R))
+    elif ( varDA.precondition == 1 ): total_variance = np.sum(np.diag(np.dot(B,B.T)+R))
+    error_variance_ratio = total_error / total_variance
     if ( 0.5 < error_variance_ratio < 2.0 ):
         print 'total error / total variance = %f' % (error_variance_ratio)
     else:
         print "\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" % (error_variance_ratio)
 
     # 3DVAR estimate
-    xa = xa + dx
+    if   ( varDA.precondition == 0 ): xa = xa + w
+    elif ( varDA.precondition == 1 ): xa = xa + np.dot(B,w)
 
     return xa, niters
 # }}}
@@ -958,7 +983,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
     xa, niters = FourDvar(xb, B, y, R, H, varDA, model)
 
           xb - prior
-           B - background error covariance
+           B - Background error covariance / preconditioning matrix
            y - observations
            R - observation error covariance
            H - forward operator
@@ -968,6 +993,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
       niters - number of iterations required for minimizing the cost function
     '''
 
+    # NO PRECONDITIONING
     # increment  : xo - xbo = dxo
     #                         dxi = Mdxo
     # innovation :      di = yi - H(xbi) = yi - H(M(xbo))
@@ -980,180 +1006,8 @@ def FourDvar(xb, B, y, R, H, varDA, model):
     # gJy = \sum M^T H^T R^{-1} dyi
     # gJ  = [ B^{-1} + \sum M^T H^T R^{-1} H M ] dxo - \sum M^T H^T R^{-1} di
 
-    # start with background
-    xa   = xb.copy()
-    Binv = np.linalg.inv(B)
-    Rinv = np.linalg.inv(R)
 
-    # advance the background through the assimilation window with full non-linear model
-    xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
-
-    gJ = np.zeros(np.shape(xb))
-    d  = np.zeros(np.shape(y))
-    for j in range(0,varDA.fdvar.nobstimes):
-
-        i = varDA.fdvar.nobstimes - j - 1
-
-        valInd = np.isfinite(y[i,])
-
-        d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
-        gJ = gJ + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
-
-        tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
-        if ( len(tint) != 0 ):
-            sxi = model.advance_tlm(gJ, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
-            gJ = sxi[-1,:].copy()
-
-    dJ     = gJ.copy()
-    dxo    = np.zeros(np.shape(gJ))
-    niters = 0
-
-    residual_first = np.sum(gJ**2)
-    residual_tol   = 1.0
-    print 'initial residual = %15.10f' % (residual_first)
-
-    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
-
-        niters = niters + 1
-
-        # advance the direction of the gradient through the assimilation window with TL model
-        dJtl = model.advance_tlm(dJ, varDA.fdvar.twind, xnl, varDA.fdvar.twind, adjoint=False, perfect=False)
-
-        AdJb = np.dot(Binv,dJ)
-        AdJy = np.zeros(np.shape(xb))
-        for j in range(0,varDA.fdvar.nobstimes):
-
-            i = varDA.fdvar.nobstimes - j - 1
-
-            valInd = np.isfinite(y[i,])
-
-            AdJy = AdJy + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],dJtl[varDA.fdvar.twind_obsIndex[i],:])))
-
-            tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
-            if ( len(tint) != 0 ):
-                sxi = model.advance_tlm(AdJy, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
-                AdJy = sxi[-1,:].copy()
-
-        AdJ = AdJb + AdJy
-
-        [dxo, gJ, dJ] = minimize(varDA.minimization, dxo, gJ, dJ, AdJ)
-
-        residual = np.sum(gJ**2)
-        residual_tol = residual / residual_first
-
-        if ( not np.mod(niters,5) ):
-            print '        residual = %15.10f after %4d iterations' % (residual, niters)
-
-    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
-    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
-
-    # 4DVAR estimate
-    xa = xa + dxo
-
-    return xa, niters
-# }}}
-###############################################################
-
-###############################################################
-def ThreeDvar_pc(xb, G, y, R, H, varDA, model):
-# {{{
-    '''
-    Update the prior with 3Dvar algorithm (with preconditioning) to produce a posterior.
-    In this implementation, the incremental form is used.
-    It is the same as the classical formulation.
-
-    xa, niters = ThreeDvar_pc(xb, G, y, R, H, varDA, model)
-
-          xb - prior
-           G - preconditioning matrix
-           y - observations
-           R - observation error covariance
-           H - forward operator
-       varDA - variational data assimilation class
-       model - model class
-          xa - posterior
-      niters - number of iterations required for minimizing the cost function
-    '''
-
-    # increment  : x - xb = dx        = Gw
-    # innovation :      d = y - H(xb)
-    #                  dy = Hdx - d   = HGw - d
-    # cost function:           J(w) =  Jb +  Jy
-    # cost function gradient: gJ(w) = gJb + gJy
-    #  Jb = 0.5 * w^T w
-    #  Jy = 0.5 * dy^T R^{-1} dy
-    # gJb = w
-    # gJy = G^T H^T R^{-1} dy
-    # gJ  = [ I + G^T H^T R^{-1} H G ] w - G^T H^T R^{-1} d
-
-    xa   = xb.copy()
-    Rinv = np.linalg.inv(R)
-
-    valInd  = np.isfinite(y)
-
-    d  = y[valInd] - np.dot(H[valInd,:],xa)
-    gJ = np.dot(np.transpose(G),np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d)))
-
-    dJ     = gJ.copy()
-    w      = np.zeros(np.shape(gJ))
-    niters = 0
-
-    residual_first = np.sum(gJ**2)
-    residual_tol   = 1.0
-    print 'initial residual = %15.10f' % (residual_first)
-
-    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
-
-        niters = niters + 1
-
-        AdJ = dJ + np.dot(np.transpose(G),np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],np.dot(G,dJ)))))
-
-        [w, gJ, dJ] = minimize(varDA.minimization, w, gJ, dJ, AdJ)
-
-        residual     = np.sum(gJ**2)
-        residual_tol = residual / residual_first
-
-        if ( not np.mod(niters,5) ):
-            print '        residual = %15.10f after %4d iterations' % (residual, niters)
-
-    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
-    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
-
-    # check for filter divergence
-    error_variance_ratio = np.sum(d**2) / np.sum(np.diag(np.dot(G,np.transpose(G))+R))
-    if ( 0.5 < error_variance_ratio < 2.0 ):
-        print 'total error / total variance = %f' % (error_variance_ratio)
-    else:
-        print "\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" % (error_variance_ratio)
-
-    # 3DVAR estimate
-    xa = xa + np.dot(G,w)
-
-    return xa, niters
-# }}}
-###############################################################
-
-###############################################################
-def FourDvar_pc(xb, G, y, R, H, varDA, model):
-# {{{
-    '''
-    Update the prior with 4Dvar algorithm (with preconditioning) to produce a posterior.
-    In this implementation, the incremental form is used.
-    It is the same as the classical formulation.
-
-    xa, niters = FourDvar_pc(xb, G, y, R, H, varDA, model)
-
-          xb - prior
-           G - preconditioning matrix
-           y - observations
-           R - observation error covariance
-           H - forward operator
-       varDA - variational data assimilation class
-       model - model class
-          xa - posterior
-      niters - number of iterations required for minimizing the cost function
-    '''
-
+    # PRECONDITION WITH sqrt(B) = G
     # increment  : xo - xbo = dxo                         = Gw
     #                         dxi = Mdxo                  = MGw
     # innovation :      di = yi - H(xbi) = yi - H(M(xbo))
@@ -1169,12 +1023,14 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
     # start with background
     xa   = xb.copy()
     Rinv = np.linalg.inv(R)
+    if ( varDA.precondition == 0 ): Binv = np.linalg.inv(B)
 
     # advance the background through the assimilation window with full non-linear model
     xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
 
-    gJ = np.zeros(np.shape(G)[-1])
-    d  = np.zeros(np.shape(y))
+    gJ = np.zeros(xb.shape)
+    d  = np.zeros( y.shape)
+
     for j in range(0,varDA.fdvar.nobstimes):
 
         i = varDA.fdvar.nobstimes - j - 1
@@ -1182,17 +1038,18 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
         valInd = np.isfinite(y[i,])
 
         d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
-        gJ = gJ + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
+
+        gJ = gJ + np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
 
         tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
         if ( len(tint) != 0 ):
             sxi = model.advance_tlm(gJ, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
             gJ = sxi[-1,:].copy()
 
-    gJ = np.dot(np.transpose(G),gJ)
+    if ( varDA.precondition == 1 ): gJ = np.dot(B.T,gJ)
 
     dJ     = gJ.copy()
-    w      = np.zeros(np.shape(gJ))
+    w      = np.zeros(gJ.shape)
     niters = 0
 
     residual_first = np.sum(gJ**2)
@@ -1203,28 +1060,35 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
 
         niters = niters + 1
 
-        # advance the direction of the gradient through the assimilation window with TL model
-        GdJtl = model.advance_tlm(np.dot(G,dJ), varDA.fdvar.twind, xnl, varDA.fdvar.twind, adjoint=False, perfect=False)
+        if   ( varDA.precondition == 0 ): BdJ = dJ.copy()
+        elif ( varDA.precondition == 1 ): BdJ = np.dot(B,dJ)
 
-        AdJb = dJ.copy()
-        AdJy = np.zeros(np.shape(xb))
+        # advance the direction of the gradient through the assimilation window with TL model
+        BdJtl = model.advance_tlm(BdJ, varDA.fdvar.twind, xnl, varDA.fdvar.twind, adjoint=False, perfect=False)
+
+        if   ( varDA.precondition == 0 ): AdJb = np.dot(Binv,dJ)
+        elif ( varDA.precondition == 1 ): AdJb = dJ.copy()
+
+        AdJy = np.zeros(xb.shape)
+
         for j in range(0,varDA.fdvar.nobstimes):
 
             i = varDA.fdvar.nobstimes - j - 1
 
             valInd = np.isfinite(y[i,])
 
-            AdJy = AdJy + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],GdJtl[varDA.fdvar.twind_obsIndex[i],:])))
+            AdJy = AdJy + np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],BdJtl[varDA.fdvar.twind_obsIndex[i],:])))
 
             tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
             if ( len(tint) != 0 ):
                 sxi = model.advance_tlm(AdJy, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
                 AdJy = sxi[-1,:].copy()
 
-        AdJy = np.dot(np.transpose(G),AdJy)
+        if ( varDA.precondition == 1 ): AdJy = np.dot(B.T,AdJy)
+
         AdJ = AdJb + AdJy
 
-        [w, gJ, dJ] = minimize(varDA.minimization, w, gJ, dJ, AdJ)
+        [w, gJ, dJ] = minimize(varDA, w, gJ, dJ, AdJ)
 
         residual = np.sum(gJ**2)
         residual_tol = residual / residual_first
@@ -1236,7 +1100,8 @@ def FourDvar_pc(xb, G, y, R, H, varDA, model):
     print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
     # 4DVAR estimate
-    xa = xa + np.dot(G,w)
+    if   ( varDA.precondition == 0 ): xa = xa + w
+    elif ( varDA.precondition == 1 ): xa = xa + np.dot(B,w)
 
     return xa, niters
 # }}}
@@ -1302,7 +1167,7 @@ def ThreeDvar_adj(gradJ, B, y, R, H, varDA, model):
 
     gJ     = gradJ.copy()
     dJ     = gJ.copy()
-    q      = np.zeros(np.shape(gJ))
+    q      = np.zeros(gJ.shape)
     niters = 0
 
     residual_first = np.sum(gJ**2)
@@ -1313,9 +1178,9 @@ def ThreeDvar_adj(gradJ, B, y, R, H, varDA, model):
 
         niters = niters + 1
 
-        AdJ = np.dot(Binv,dJ) + np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],dJ)))
+        AdJ = np.dot(Binv,dJ) + np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],dJ)))
 
-        [q, gJ, dJ] = minimize(varDA.minimization, q, gJ, dJ, AdJ)
+        [q, gJ, dJ] = minimize(varDA, q, gJ, dJ, AdJ)
 
         residual     = np.sum(gJ**2)
         residual_tol = residual / residual_first
@@ -1393,10 +1258,10 @@ def ThreeDvar_pc_adj(gradJ, G, y, R, H, varDA, model):
 
     valInd  = np.isfinite(y)
 
-    w      = np.dot(np.transpose(G),gradJ)
+    w      = np.dot(G.T,gradJ)
     gJ     = w.copy()
     dJ     = gJ.copy()
-    q      = np.zeros(np.shape(gJ))
+    q      = np.zeros(gJ.shape)
     niters = 0
 
     residual_first = np.sum(gJ**2)
@@ -1407,9 +1272,9 @@ def ThreeDvar_pc_adj(gradJ, G, y, R, H, varDA, model):
 
         niters = niters + 1
 
-        AdJ = dJ + np.dot(np.transpose(G),np.dot(np.transpose(H[valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],np.dot(G,dJ)))))
+        AdJ = dJ + np.dot(G.T,np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],np.dot(G,dJ)))))
 
-        [q, gJ, dJ] = minimize(varDA.minimization, q, gJ, dJ, AdJ)
+        [q, gJ, dJ] = minimize(varDA, q, gJ, dJ, AdJ)
 
         residual     = np.sum(gJ**2)
         residual_tol = residual / residual_first
@@ -1471,7 +1336,7 @@ def EnsembleThreeDvar_pc(xb, G, y, R, H, varDA, model):
     It is the same as the classical formulation.
     The Ensemble-Three-D variational with preconditioning is the same as the
     vanilla Three-D variational with preconditioning.
-    Thus, this routine simply calls ThreeDvar_pc and is a interface stub.
+    Thus, this routine simply calls ThreeDvar and is a interface stub.
 
     xa, niters = EnsembleThreeDvar_pc(xb, G, y, R, H, varDA, model)
 
@@ -1485,7 +1350,7 @@ def EnsembleThreeDvar_pc(xb, G, y, R, H, varDA, model):
           xa - posterior
       niters - number of iterations required for minimizing the cost function
     '''
-    xa, niters = ThreeDvar_pc(xb, G, y, R, H, varDA, model)
+    xa, niters = ThreeDvar(xb, G, y, R, H, varDA, model)
 
     return xa, niters
 # }}}
@@ -1531,19 +1396,19 @@ def EnsembleFourDvar_pc(xb, G, y, R, H, varDA, model):
     # advance the background through the assimilation window with full non-linear model
     xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
 
-    d  = np.zeros(np.shape(y))
+    d  = np.zeros(y.shape)
     HG = G.copy()
-    gJ = np.zeros(np.shape(G)[-1])
+    gJ = np.zeros(G.shape[-1])
     for i in range(varDA.fdvar.nobstimes):
 
         valInd = np.isfinite(y[i,])
         d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
 
         HG[i,:,:] = np.dot(H,G[i,:,:])
-        gJ = gJ + np.dot(np.transpose(HG[i,valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
+        gJ = gJ + np.dot(HG[i,valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
 
     dJ     = gJ.copy()
-    w      = np.zeros(np.shape(gJ))
+    w      = np.zeros(gJ.shape)
     niters = 0
 
     residual_first = np.sum(gJ**2)
@@ -1554,14 +1419,14 @@ def EnsembleFourDvar_pc(xb, G, y, R, H, varDA, model):
 
         niters = niters + 1
 
-        AdJ = np.zeros(np.shape(dJ))
+        AdJ = np.zeros(dJ.shape)
         for i in range(varDA.fdvar.nobstimes):
             valInd = np.isfinite(y[i,])
-            AdJ = AdJ + np.dot(np.transpose(HG[i,valInd,:]),np.dot(np.diag(Rinv[valInd,valInd]),np.dot(HG[i,valInd,:],dJ)))
+            AdJ = AdJ + np.dot(HG[i,valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(HG[i,valInd,:],dJ)))
 
         AdJ = dJ + AdJ
 
-        [w, gJ, dJ] = minimize(varDA.minimization, w, gJ, dJ, AdJ)
+        [w, gJ, dJ] = minimize(varDA, w, gJ, dJ, AdJ)
 
         residual = np.sum(gJ**2)
         residual_tol = residual / residual_first
@@ -1579,24 +1444,70 @@ def EnsembleFourDvar_pc(xb, G, y, R, H, varDA, model):
 ###############################################################
 
 ###############################################################
-def minimize(minimization, xo, gJo, dJo, AdJo):
+def minimize(varDA, xo, gJo, dJo, AdJo):
 # {{{
     '''
-    Perform minimization using conjugate gradient method
+    Perform minimization using [bi-]conjugate gradient methods
 
-    [x, gJ, dJ] = minimize(minimization, xo, gJo, dJo, AdJo)
+    [x, gJ, dJ] = minimize(varDA, xo, gJo, dJo, AdJo)
 
-minimization - minimization class
+       varDA - variational data-assimilation class
           xo - quantity to minimize
          gJo - current gradient of the cost function
          dJo - direction of the gradient of the cost function
         AdJo - direction of the gradient of the cost function
     '''
 
-    alpha = np.dot(np.transpose(gJo),gJo) / np.dot(np.transpose(dJo),AdJo)
+    if   ( varDA.precondition in [0, 1] ):
+        x, gJ, dJ = cg(  xo, gJo, dJo, AdJo)
+    elif ( varDA.precondition in [2]    ):
+        x, gJ, dJ = bicg(xo, gJo, dJo, AdJo)
+    return [x, gJ, dJ]
+# }}}
+###############################################################
+
+###############################################################
+def cg(xo, gJo, dJo, AdJo):
+# {{{
+    '''
+    Perform minimization using conjugate gradient method
+
+    [x, gJ, dJ] = cg(minimization, xo, gJo, dJo, AdJo)
+
+      xo - quantity to minimize
+     gJo - current gradient of the cost function
+     dJo - direction of the gradient of the cost function
+    AdJo - direction of the gradient of the cost function
+    '''
+
+    alpha = np.dot(gJo.T,gJo) / np.dot(dJo.T,AdJo)
     x  = xo  + alpha * dJo
     gJ = gJo - alpha * AdJo
-    beta = np.dot(np.transpose(gJ),gJ) / np.dot(np.transpose(gJo),gJo)
+    beta = np.dot(gJ.T,gJ) / np.dot(gJo.T,gJo)
+    dJ = gJ + beta * dJo
+
+    return [x, gJ, dJ]
+# }}}
+###############################################################
+
+###############################################################
+def bicg(xo, gJo, dJo, AdJo):
+# {{{
+    '''
+    Perform minimization using bi-conjugate gradient method
+
+    [x, gJ, dJ] = bicg(minimization, xo, gJo, dJo, AdJo)
+
+      xo - quantity to minimize
+     gJo - current gradient of the cost function
+     dJo - direction of the gradient of the cost function
+    AdJo - direction of the gradient of the cost function
+    '''
+
+    alpha = np.dot(gJo.T,gJo) / np.dot(dJo.T,AdJo)
+    x  = xo  + alpha * dJo
+    gJ = gJo - alpha * AdJo
+    beta = np.dot(gJ.T,gJ) / np.dot(gJo.T,gJo)
     dJ = gJ + beta * dJo
 
     return [x, gJ, dJ]
@@ -1620,7 +1531,7 @@ def precondition(X, varDA, ensDA, model, L=None):
 
     if   ( varDA.update == 1 ):
 
-        Xp = np.transpose(np.transpose(X) - np.mean(X,axis=1))
+        Xp = (X.T - np.mean(X,axis=1)).T
         if ( L == None ):
             G = Xp.copy()
         else:
@@ -1636,7 +1547,7 @@ def precondition(X, varDA, ensDA, model, L=None):
         else:             G = np.zeros((varDA.fdvar.nobstimes,model.Ndof,varDA.localization.cov_trunc*ensDA.Nens))
 
         for i in range(0,varDA.fdvar.nobstimes):
-            Xp = np.transpose(np.transpose(X[i,:,:]) - np.mean(X[i,:,:],axis=1))
+            Xp = (X[i,:,:].T - np.mean(X[i,:,:],axis=1)).T
             if ( L == None ):
                 G[i,:,:] = Xp.copy()
             else:
@@ -1690,8 +1601,8 @@ def advance_ensemble(Xi, t, model, perfect=True, **kwargs):
        Xf - Ensemble of final states; size(Xf) = [N == Ndof, M == Nens]
     '''
 
-    Xf = np.zeros(np.shape(Xi))
-    for m in range(0, np.shape(Xi)[1]):
+    Xf = np.zeros(Xi.shape)
+    for m in range(0, Xi.shape[1]):
         xi = Xi[:,m].copy()
         xs = model.advance(xi, t, perfect=perfect, **kwargs)
         Xf[:,m] = xs[-1,:].copy()
@@ -1740,7 +1651,7 @@ def compute_B(varDA,Bc,outer=0):
     if ( varDA.inflation.infl_adp ): B /= ( outer + 1 )
 
     # precondition B to sqrt(B)
-    if ( varDA.precondition ):
+    if ( varDA.precondition == 1 ):
         [U,S2,_] = np.linalg.svd(B, full_matrices=True, compute_uv=True)
         B = np.dot(U,np.diag(np.sqrt(S2)))
 

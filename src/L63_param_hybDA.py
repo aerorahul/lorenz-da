@@ -68,7 +68,7 @@ varDA                      = type('',(),{})   # variational data assimilation Cl
 varDA.minimization         = type('',(),{})   # minimization Class
 varDA.localization         = type('',(),{})   # localization Class
 varDA.update               = 1                # variational-based DA method (1 = 3Dvar; 2= 4Dvar)
-varDA.precondition         = True             # precondition before minimization
+varDA.precondition         = 1                # precondition before minimization (0= None; 1= sqrtB; 2= FullB)
 varDA.maxouter             = 1                # no. of outer loops
 varDA.minimization.maxiter = 1000             # maximum iterations for minimization
 varDA.minimization.tol     = 1e-4             # tolerance to end the variational minimization iteration
@@ -101,7 +101,7 @@ diag_file.attributes = {'model'       : model.Name,
                         'inflate'     : ensDA.inflation.inflate,
                         'infl_fac'    : ensDA.inflation.infl_fac,
                         'Vupdate'     : varDA.update,
-                        'precondition': int(varDA.precondition),
+                        'precondition': varDA.precondition,
                         'maxouter'    : varDA.maxouter,
                         'Vlocalize'   : varDA.localization.localize,
                         'Vcov_cutoff' : varDA.localization.cov_cutoff,

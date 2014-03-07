@@ -81,7 +81,7 @@ ensDA.init(model,DA,\
 
 # Initialize Variational Data Assimilation class
 update       = 2              # variational-based DA method (1= 3Dvar; 2= 4Dvar)
-precondition = True           # precondition before minimization
+precondition = 1              # precondition before minimization (0= None; 1= sqrtB, 2=FullB)
 maxiter      = 100            # maximum iterations for minimization
 tol          = 1e-4           # tolerance to end the variational minimization iteration
 inflate      = True           # inflate [ > 1.0 ] / deflate [ < 1.0 ] static covariance
@@ -117,7 +117,7 @@ attributes = {'model'       : model.Name,
               'Einflate'    : ensDA.inflation.inflate,
               'Einfl_fac'   : ensDA.inflation.infl_fac,
               'Vupdate'     : varDA.update,
-              'precondition': int(varDA.precondition),
+              'precondition': varDA.precondition,
               'maxiter'     : varDA.minimization.maxiter,
               'tol'         : varDA.minimization.tol,
               'Vinflate'    : int(varDA.inflation.inflate),

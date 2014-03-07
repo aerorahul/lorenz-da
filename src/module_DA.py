@@ -912,22 +912,53 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
     # gJy = G^T H^T R^{-1} dy
     # gJ  = [ I + G^T H^T R^{-1} H G ] w - G^T H^T R^{-1} d
 
+    # PRECONDITION WITH B
+    # increment  : x - xb = dx        = Bw
+    # innovation :      d = y - H(xb)
+    #                  dy = Hdx - d
+    # cost function:           J(w,dx) =  Jb +  Jy
+    # cost function gradient: gJ(w,dx) = gJb + gJy
+    #  Jb = 0.5 * w^T w
+    #  Jy = 0.5 * [Hdx-d]^T R^{-1} [Hdx-d]
+    # gJb = w
+    # gJy = H^T R^{-1} dy
+    # gJ  = [ w + H^T R^{-1} H dx ] - H^T R^{-1} d
+
     xa   = xb.copy()
     Rinv = np.linalg.inv(R)
-    if ( varDA.precondition == 0 ): Binv = np.linalg.inv(B)
+    Binv = np.linalg.inv(B)
 
-    valInd  = np.isfinite(y)
+    valInd = np.isfinite(y)
 
-    d  = y[valInd] - np.dot(H[valInd,:],xa)
+    d = y[valInd] - np.dot(H[valInd,:],xa)
 
-    gJ = np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),d))
-    if ( varDA.precondition == 1 ): gJ = np.dot(B.T,gJ)
+    g = np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),d)) # g = H^T R^{-1} d
 
-    dJ     = gJ.copy()
-    w      = np.zeros(gJ.shape)
+    if   ( varDA.precondition == 0 ):
+        r  = g.copy()
+        s  = 0.0
+        p  = r.copy()
+        q  = 0.0
+        dx = np.zeros(r.shape)
+        w  = 0.0
+    elif ( varDA.precondition == 1 ):
+        r  = np.dot(B.T,g)
+        s  = 0.0
+        p  = r.copy()
+        q  = 0.0
+        dx = 0.0
+        w  = np.zeros(r.shape)
+    elif ( varDA.precondition == 2 ):
+        r  = -g
+        s  = np.dot(B,r)
+        p  = -s
+        q  = -r
+        dx = np.zeros(xa.shape)
+        w  = np.zeros(B.shape[0])
+
     niters = 0
 
-    residual_first = np.sum(gJ**2)
+    residual_first = np.sum(r**2+s**2)
     residual_tol   = 1.0
     print 'initial residual = %15.10f' % (residual_first)
 
@@ -935,17 +966,19 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
 
         niters = niters + 1
 
-        if   ( varDA.precondition == 0 ): BdJ = dJ.copy()
-        elif ( varDA.precondition == 1 ): BdJ = np.dot(B,dJ)
+        if   ( varDA.precondition == 0 ): tmp = p.copy()
+        elif ( varDA.precondition == 1 ): tmp = np.dot(B,p)
+        elif ( varDA.precondition == 2 ): tmp = p.copy()
 
-        AdJ = np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],BdJ)))
+        Ap = np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],tmp)))
 
-        if   ( varDA.precondition == 0 ): AdJ = np.dot(Binv,dJ) + AdJ
-        elif ( varDA.precondition == 1 ): AdJ = dJ + np.dot(B.T,AdJ)
+        if   ( varDA.precondition == 0 ): Ap = np.dot(Binv,p) + Ap
+        elif ( varDA.precondition == 1 ): Ap = p + np.dot(B.T,Ap)
+        elif ( varDA.precondition == 2 ): Ap = q + Ap
 
-        [w, gJ, dJ] = minimize(varDA, w, gJ, dJ, AdJ)
+        [dx,w,r,s,p,q] = minimize(varDA,dx,w,r,s,p,q,Ap,B)
 
-        residual     = np.sum(gJ**2)
+        residual     = np.sum(r**2+s**2)
         residual_tol = residual / residual_first
 
         if ( not np.mod(niters,5) ):
@@ -956,8 +989,9 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
 
     # check for filter divergence
     total_error = np.sum(d**2)
-    if   ( varDA.precondition == 0 ): total_variance = np.sum(np.diag(B            +R))
+    if   ( varDA.precondition == 0 ): total_variance = np.sum(np.diag(B+R))
     elif ( varDA.precondition == 1 ): total_variance = np.sum(np.diag(np.dot(B,B.T)+R))
+    elif ( varDA.precondition == 2 ): total_variance = np.sum(np.diag(B+R))
     error_variance_ratio = total_error / total_variance
     if ( 0.5 < error_variance_ratio < 2.0 ):
         print 'total error / total variance = %f' % (error_variance_ratio)
@@ -965,8 +999,9 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
         print "\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" % (error_variance_ratio)
 
     # 3DVAR estimate
-    if   ( varDA.precondition == 0 ): xa = xa + w
+    if   ( varDA.precondition == 0 ): xa = xa + dx
     elif ( varDA.precondition == 1 ): xa = xa + np.dot(B,w)
+    elif ( varDA.precondition == 2 ): xa = xa + dx
 
     return xa, niters
 # }}}
@@ -1088,7 +1123,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
 
         AdJ = AdJb + AdJy
 
-        [w, gJ, dJ] = minimize(varDA, w, gJ, dJ, AdJ)
+        [w, gJ, dJ] = minimize(w, gJ, dJ, AdJ)
 
         residual = np.sum(gJ**2)
         residual_tol = residual / residual_first
@@ -1180,7 +1215,7 @@ def ThreeDvar_adj(gradJ, B, y, R, H, varDA, model):
 
         AdJ = np.dot(Binv,dJ) + np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],dJ)))
 
-        [q, gJ, dJ] = minimize(varDA, q, gJ, dJ, AdJ)
+        [q, gJ, dJ] = minimize(q, gJ, dJ, AdJ)
 
         residual     = np.sum(gJ**2)
         residual_tol = residual / residual_first
@@ -1274,7 +1309,7 @@ def ThreeDvar_pc_adj(gradJ, G, y, R, H, varDA, model):
 
         AdJ = dJ + np.dot(G.T,np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],np.dot(G,dJ)))))
 
-        [q, gJ, dJ] = minimize(varDA, q, gJ, dJ, AdJ)
+        [q, gJ, dJ] = minimize(q, gJ, dJ, AdJ)
 
         residual     = np.sum(gJ**2)
         residual_tol = residual / residual_first
@@ -1444,73 +1479,83 @@ def EnsembleFourDvar_pc(xb, G, y, R, H, varDA, model):
 ###############################################################
 
 ###############################################################
-def minimize(varDA, xo, gJo, dJo, AdJo):
+def minimize(varDA,dxo,wo,ro,so,po,qo,Apo,B):
 # {{{
     '''
-    Perform minimization using [bi-]conjugate gradient methods
+    Call appropriate minimization method
 
-    [x, gJ, dJ] = minimize(varDA, xo, gJo, dJo, AdJo)
+    [dx,w,r,s,p,q] = minimize(dxo,wo,ro,so,po,qo,Apo,B)
 
-       varDA - variational data-assimilation class
-          xo - quantity to minimize
-         gJo - current gradient of the cost function
-         dJo - direction of the gradient of the cost function
-        AdJo - direction of the gradient of the cost function
+  varDA - variational data assimilation class
+ dxo,wo - initial iterates to minimize
+  ro,so - initial residual of the cost function
+  po,qo - initial search direction of the gradient of the cost function
+    Apo - A times search direction
+      B - preconditioning matrix
     '''
 
-    if   ( varDA.precondition in [0, 1] ):
-        x, gJ, dJ = cg(  xo, gJo, dJo, AdJo)
-    elif ( varDA.precondition in [2]    ):
-        x, gJ, dJ = bicg(xo, gJo, dJo, AdJo)
-    return [x, gJ, dJ]
+    if   ( varDA.precondition == 0 ):
+        dx,r,p = cg(dxo,ro,po,Apo)
+        w = wo ; s = so; q = qo
+    elif ( varDA.precondition == 1 ):
+        w,r,p = cg(wo,ro,po,Apo)
+        dx = dxo ; s = so; q = qo
+    elif ( varDA.precondition == 2 ):
+        dx,w,r,s,p,q = doublecg(dxo,wo,ro,so,po,qo,Apo,B)
+
+    return [dx,w,r,s,p,q]
 # }}}
 ###############################################################
 
 ###############################################################
-def cg(xo, gJo, dJo, AdJo):
+def cg(xo, ro, do, Ado):
 # {{{
     '''
     Perform minimization using conjugate gradient method
 
-    [x, gJ, dJ] = cg(minimization, xo, gJo, dJo, AdJo)
+    [x, r, d] = cg(xo, ro, do, Ado)
 
-      xo - quantity to minimize
-     gJo - current gradient of the cost function
-     dJo - direction of the gradient of the cost function
-    AdJo - direction of the gradient of the cost function
+     xo - initial iterate to minimize
+     ro - initial residual of the cost function
+     do - initial search direction of the gradient of the cost function
+    Ado - A times search direction
     '''
 
-    alpha = np.dot(gJo.T,gJo) / np.dot(dJo.T,AdJo)
-    x  = xo  + alpha * dJo
-    gJ = gJo - alpha * AdJo
-    beta = np.dot(gJ.T,gJ) / np.dot(gJo.T,gJo)
-    dJ = gJ + beta * dJo
+    alpha = np.dot(ro.T,ro) / np.dot(do.T,Ado)
+    x = xo + alpha * do
+    r = ro - alpha * Ado
+    beta = np.dot(r.T,r) / np.dot(ro.T,ro)
+    d = r + beta * do
 
-    return [x, gJ, dJ]
+    return [x, r, d]
 # }}}
 ###############################################################
 
 ###############################################################
-def bicg(xo, gJo, dJo, AdJo):
+def doublecg(wo,zo,ro,so,po,qo,Apo,B):
 # {{{
     '''
-    Perform minimization using bi-conjugate gradient method
+    Perform minimization using double conjugate gradient method
 
-    [x, gJ, dJ] = bicg(minimization, xo, gJo, dJo, AdJo)
+    [w,z,r,s,p,q] = doublecg(wo,zo,ro,so,po,qo,Apo,B)
 
-      xo - quantity to minimize
-     gJo - current gradient of the cost function
-     dJo - direction of the gradient of the cost function
-    AdJo - direction of the gradient of the cost function
+   wo,zo - initial iterates to minimize
+  ro, so - initial residuals of the cost function
+  po, qo - initial search directions of the gradient of the cost function
+     Apo - A times search direction
+       B - preconditioning matrix
     '''
 
-    alpha = np.dot(gJo.T,gJo) / np.dot(dJo.T,AdJo)
-    x  = xo  + alpha * dJo
-    gJ = gJo - alpha * AdJo
-    beta = np.dot(gJ.T,gJ) / np.dot(gJo.T,gJo)
-    dJ = gJ + beta * dJo
+    alpha = np.dot(ro.T,so) / np.dot(po.T,Apo)
+    w = wo + alpha * po
+    z = zo + alpha * qo
+    r = ro + alpha * Apo
+    s = np.dot(B,r)
+    beta = np.dot(r.T,s) / np.dot(ro.T,so.T)
+    p = beta * po - s
+    q = beta * qo - r
 
-    return [x, gJ, dJ]
+    return [w,z,r,s,p,q]
 # }}}
 ###############################################################
 

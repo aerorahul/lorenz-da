@@ -1041,7 +1041,6 @@ def FourDvar(xb, B, y, R, H, varDA, model):
     # gJy = \sum M^T H^T R^{-1} dyi
     # gJ  = [ B^{-1} + \sum M^T H^T R^{-1} H M ] dxo - \sum M^T H^T R^{-1} di
 
-
     # PRECONDITION WITH sqrt(B) = G
     # increment  : xo - xbo = dxo                         = Gw
     #                         dxi = Mdxo                  = MGw
@@ -1055,18 +1054,31 @@ def FourDvar(xb, B, y, R, H, varDA, model):
     # gJy = \sum G^T M^T H^T R^{-1} dyi
     # gJ  = [ I + \sum G^T M^T H^T R^{-1} H M G ] w - \sum G^T M^T H^T R^{-1} di
 
+    # PRECONDITION WITH B
+    # increment  : xo - xbo = dxo                         = Bw
+    #                         dxi = Mdxo
+    # innovation :      di = yi - H(xbi) = yi - H(M(xbo))
+    #                  dyi = Hdxi - di   = HMdxo - di
+    # cost function:           J(w) =  Jb +  Jy
+    # cost function gradient: gJ(w) = gJb + gJy
+    #  Jb = 0.5 *      w^T w
+    #  Jy = 0.5 * \sum dyi^T R^{-1} dyi
+    # gJb = w
+    # gJy = \sum M^T H^T R^{-1} dyi
+    # gJ  = w + \sum M^T H^T R^{-1} H M dxo - \sum M^T H^T R^{-1} di
+
     # start with background
     xa   = xb.copy()
     Rinv = np.linalg.inv(R)
-    if ( varDA.precondition == 0 ): Binv = np.linalg.inv(B)
+    Binv = np.linalg.inv(B)
 
     # advance the background through the assimilation window with full non-linear model
     xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
 
-    gJ = np.zeros(xb.shape)
-    d  = np.zeros( y.shape)
+    g = np.zeros(xa.shape)
+    d = np.zeros( y.shape)
 
-    for j in range(0,varDA.fdvar.nobstimes):
+    for j in range(varDA.fdvar.nobstimes):
 
         i = varDA.fdvar.nobstimes - j - 1
 
@@ -1074,20 +1086,38 @@ def FourDvar(xb, B, y, R, H, varDA, model):
 
         d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
 
-        gJ = gJ + np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
+        g = g + np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
 
         tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
         if ( len(tint) != 0 ):
-            sxi = model.advance_tlm(gJ, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
-            gJ = sxi[-1,:].copy()
+            sxi = model.advance_tlm(g, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
+            g = sxi[-1,:].copy()
 
-    if ( varDA.precondition == 1 ): gJ = np.dot(B.T,gJ)
+    if   ( varDA.precondition == 0 ):
+        r  = g.copy()
+        s  = 0.0
+        p  = r.copy()
+        q  = 0.0
+        dx = np.zeros(r.shape)
+        w  = 0.0
+    elif ( varDA.precondition == 1 ):
+        r  = np.dot(B.T,g)
+        s  = 0.0
+        p  = r.copy()
+        q  = 0.0
+        dx = 0.0
+        w  = np.zeros(r.shape)
+    elif ( varDA.precondition == 2 ):
+        r  = -g
+        s  = np.dot(B,r)
+        p  = -s
+        q  = -r
+        dx = np.zeros(xa.shape)
+        w  = np.zeros(B.shape[0])
 
-    dJ     = gJ.copy()
-    w      = np.zeros(gJ.shape)
     niters = 0
 
-    residual_first = np.sum(gJ**2)
+    residual_first = np.sum(r**2+s**2)
     residual_tol   = 1.0
     print 'initial residual = %15.10f' % (residual_first)
 
@@ -1095,37 +1125,35 @@ def FourDvar(xb, B, y, R, H, varDA, model):
 
         niters = niters + 1
 
-        if   ( varDA.precondition == 0 ): BdJ = dJ.copy()
-        elif ( varDA.precondition == 1 ): BdJ = np.dot(B,dJ)
+        if   ( varDA.precondition == 0 ): tmp = p.copy()
+        elif ( varDA.precondition == 1 ): tmp = np.dot(B,p)
+        elif ( varDA.precondition == 2 ): tmp = p.copy()
 
         # advance the direction of the gradient through the assimilation window with TL model
-        BdJtl = model.advance_tlm(BdJ, varDA.fdvar.twind, xnl, varDA.fdvar.twind, adjoint=False, perfect=False)
+        tmptl = model.advance_tlm(tmp, varDA.fdvar.twind, xnl, varDA.fdvar.twind, adjoint=False, perfect=False)
 
-        if   ( varDA.precondition == 0 ): AdJb = np.dot(Binv,dJ)
-        elif ( varDA.precondition == 1 ): AdJb = dJ.copy()
+        Ap = np.zeros(xb.shape)
 
-        AdJy = np.zeros(xb.shape)
-
-        for j in range(0,varDA.fdvar.nobstimes):
+        for j in range(varDA.fdvar.nobstimes):
 
             i = varDA.fdvar.nobstimes - j - 1
 
             valInd = np.isfinite(y[i,])
 
-            AdJy = AdJy + np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],BdJtl[varDA.fdvar.twind_obsIndex[i],:])))
+            Ap = Ap + np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],tmptl[varDA.fdvar.twind_obsIndex[i],:])))
 
             tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
             if ( len(tint) != 0 ):
-                sxi = model.advance_tlm(AdJy, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
-                AdJy = sxi[-1,:].copy()
+                sxi = model.advance_tlm(Ap, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
+                Ap = sxi[-1,:].copy()
 
-        if ( varDA.precondition == 1 ): AdJy = np.dot(B.T,AdJy)
+        if   ( varDA.precondition == 0 ): Ap = np.dot(Binv,p) + Ap
+        elif ( varDA.precondition == 1 ): Ap = p.copy() + np.dot(B.T,Ap)
+        elif ( varDA.precondition == 2 ): Ap = q.copy() + Ap
 
-        AdJ = AdJb + AdJy
+        [dx,w,r,s,p,q] = minimize(varDA,dx,w,r,s,p,q,Ap,B)
 
-        [w, gJ, dJ] = minimize(w, gJ, dJ, AdJ)
-
-        residual = np.sum(gJ**2)
+        residual     = np.sum(r**2+s**2)
         residual_tol = residual / residual_first
 
         if ( not np.mod(niters,5) ):
@@ -1135,8 +1163,9 @@ def FourDvar(xb, B, y, R, H, varDA, model):
     print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
     # 4DVAR estimate
-    if   ( varDA.precondition == 0 ): xa = xa + w
+    if   ( varDA.precondition == 0 ): xa = xa + dx
     elif ( varDA.precondition == 1 ): xa = xa + np.dot(B,w)
+    elif ( varDA.precondition == 2 ): xa = xa + dx
 
     return xa, niters
 # }}}

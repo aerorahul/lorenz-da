@@ -926,7 +926,6 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
 
     xa   = xb.copy()
     Rinv = np.linalg.inv(R)
-    Binv = np.linalg.inv(B)
 
     valInd = np.isfinite(y)
 
@@ -972,7 +971,7 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
 
         Ap = np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],tmp)))
 
-        if   ( varDA.precondition == 0 ): Ap = np.dot(Binv,p) + Ap
+        if   ( varDA.precondition == 0 ): Ap = np.dot(np.linalg.inv(B),p) + Ap
         elif ( varDA.precondition == 1 ): Ap = p + np.dot(B.T,Ap)
         elif ( varDA.precondition == 2 ): Ap = q + Ap
 
@@ -1070,7 +1069,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
     # start with background
     xa   = xb.copy()
     Rinv = np.linalg.inv(R)
-    Binv = np.linalg.inv(B)
+    if ( varDA.precondition == 0 ): Binv = np.linalg.inv(B)
 
     # advance the background through the assimilation window with full non-linear model
     xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
@@ -1147,7 +1146,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
                 sxi = model.advance_tlm(Ap, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
                 Ap = sxi[-1,:].copy()
 
-        if   ( varDA.precondition == 0 ): Ap = np.dot(Binv,p) + Ap
+        if   ( varDA.precondition == 0 ): Ap = np.dot(np.linalg.inv(B),p) + Ap
         elif ( varDA.precondition == 1 ): Ap = p.copy() + np.dot(B.T,Ap)
         elif ( varDA.precondition == 2 ): Ap = q.copy() + Ap
 
@@ -1605,7 +1604,7 @@ def precondition(X, varDA, ensDA, model, L=None):
 
     if   ( varDA.update == 1 ):
 
-        Xp = (X.T - np.mean(X,axis=1)).T
+        Xp = (X[0,:,:].T - np.mean(X[0,:,:],axis=1)).T
         if ( L == None ):
             G = Xp.copy()
         else:
@@ -1620,7 +1619,7 @@ def precondition(X, varDA, ensDA, model, L=None):
         if ( L == None ): G = X.copy()
         else:             G = np.zeros((varDA.fdvar.nobstimes,model.Ndof,varDA.localization.cov_trunc*ensDA.Nens))
 
-        for i in range(0,varDA.fdvar.nobstimes):
+        for i in range(varDA.fdvar.nobstimes):
             Xp = (X[i,:,:].T - np.mean(X[i,:,:],axis=1)).T
             if ( L == None ):
                 G[i,:,:] = Xp.copy()

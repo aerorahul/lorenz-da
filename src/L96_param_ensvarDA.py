@@ -82,7 +82,7 @@ ensDA.init(model,DA,\
 
 # Initialize Variational Data Assimilation class
 update       = 2              # variational-based DA method (1= 3Dvar; 2= 4Dvar)
-precondition = 1              # precondition before minimization [0= None; 1= sqrtB; 2= FullB]
+precondition = 1              # precondition before minimization (1= sqrtB)
 maxiter      = 100            # maximum iterations for minimization
 tol          = 1e-4           # tolerance to end the variational minimization iteration
 inflate      = True           # inflate [ > 1.0 ] / deflate [ < 1.0 ] static covariance

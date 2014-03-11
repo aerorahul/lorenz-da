@@ -37,8 +37,7 @@ def main():
 
     # check for valid ensemble and variational data assimilation options
     check_DA(DA)
-    check_ensDA(ensDA)
-    check_varDA(varDA)
+    check_ensvarDA(ensDA,varDA)
 
     # get IC's
     [xt, Xa] = get_IC(model, restart, Nens=ensDA.Nens)

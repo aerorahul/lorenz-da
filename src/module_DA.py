@@ -1355,10 +1355,49 @@ def ThreeDvar_pc_adj(gradJ, G, y, R, H, varDA, model):
 ###############################################################
 
 ###############################################################
+def check_ensvarDA(ensDA,varDA):
+# {{{
+    '''
+    Check for valid ensemble-variational DA algorithms
+
+    check_ensvarDA(ensDA,varDA)
+
+    ensDA - ensemble data assimilation class
+    varDA - variational data assimilation class
+    '''
+
+    check_ensDA(ensDA)
+    check_varDA(varDA)
+
+    fail = False
+
+    print '==========================================='
+
+    if   ( varDA.precondition == 0 ): pstr = 'nothing'
+    elif ( varDA.precondition == 1 ): pstr = 'square-root B'
+    elif ( varDA.precondition == 2 ): pstr = 'full B'
+
+    if   ( varDA.precondition != 1 ):
+        print 'Preconditioning with %s is not allowed when' % pstr
+        print 'assimilating observations using ensemble-variational algorithm'
+        print 'varDA.precondition must be : 1 = square-root B'
+        fail = True
+
+    print '==========================================='
+
+    if ( fail ): sys.exit(1)
+
+    return
+# }}}
+###############################################################
+
+###############################################################
 def update_ensvarDA(xb, G, y, R, H, varDA, model):
 # {{{
     '''
     Update the prior with a ensemble-variational-based state estimation algorithm to produce a posterior
+    This algorithm is implemented with the sqrt(B) preconditioning method of Buehner 2005.
+    Any other preconditioning method fails to converge without any further modification.
 
     xa, niters = update_ensvarDA(xb, G, y, R, H, varDA, model)
 
@@ -1377,10 +1416,10 @@ def update_ensvarDA(xb, G, y, R, H, varDA, model):
         xa, niters = xb, np.NaN
 
     elif ( varDA.update == 1 ):
-        xa, niters = EnsembleThreeDvar_pc(xb, G, y, R, H, varDA, model)
+        xa, niters = EnsembleThreeDvar(xb, G, y, R, H, varDA, model)
 
     elif ( varDA.update == 2 ):
-        xa, niters = EnsembleFourDvar_pc(xb, G, y, R, H, varDA, model)
+        xa, niters = EnsembleFourDvar(xb, G, y, R, H, varDA, model)
 
     else:
         print 'invalid update algorithm ...'
@@ -1391,17 +1430,17 @@ def update_ensvarDA(xb, G, y, R, H, varDA, model):
 ###############################################################
 
 ###############################################################
-def EnsembleThreeDvar_pc(xb, G, y, R, H, varDA, model):
+def EnsembleThreeDvar(xb, G, y, R, H, varDA, model):
 # {{{
     '''
-    Update the prior with Ensemble-based 3Dvar algorithm (with preconditioning) to produce a posterior.
+    Update the prior with Ensemble-based 3Dvar algorithm to produce a posterior.
     In this implementation, the incremental form is used.
     It is the same as the classical formulation.
-    The Ensemble-Three-D variational with preconditioning is the same as the
-    vanilla Three-D variational with preconditioning.
+    The Ensemble-Three-D variational with sqrt(B) preconditioning is the same as the
+    vanilla Three-D variational with the same preconditioning.
     Thus, this routine simply calls ThreeDvar and is a interface stub.
 
-    xa, niters = EnsembleThreeDvar_pc(xb, G, y, R, H, varDA, model)
+    xa, niters = EnsembleThreeDvar(xb, G, y, R, H, varDA, model)
 
           xb - prior
            G - preconditioning matrix
@@ -1420,12 +1459,14 @@ def EnsembleThreeDvar_pc(xb, G, y, R, H, varDA, model):
 ###############################################################
 
 ###############################################################
-def EnsembleFourDvar_pc(xb, G, y, R, H, varDA, model):
+def EnsembleFourDvar(xb, G, y, R, H, varDA, model):
 # {{{
     '''
-    Update the prior with Ensemble-based 4Dvar algorithm (with preconditioning) to produce a posterior.
+    Update the prior with Ensemble-based 4Dvar algorithm to produce a posterior.
     In this implementation, the incremental form is used.
     It is the same as the classical formulation.
+    This algorithm utilizes the sqrt(B) preconditioning described in Buehner 2005.
+    The sqrt(B) used here is the localized ensemble matrix
 
     xa, niters = EnsembleFourDvar_pc(xb, G, y, R, H, varDA, model)
 

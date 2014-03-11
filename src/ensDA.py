@@ -41,7 +41,7 @@ def main():
 
     # get IC's
     [xt, Xa] = get_IC(model, restart, Nens=ensDA.Nens)
-    Xa = np.transpose( inflate_ensemble(np.transpose(Xa), ensDA.init_ens_infl_fac) )
+    Xa = ( inflate_ensemble(Xa.T, ensDA.init_ens_infl_fac) ).T
     Xb = Xa.copy()
 
     # time between assimilations
@@ -49,7 +49,7 @@ def main():
 
     # create diagnostic file
     create_diag(diag_file, model.Ndof, nens=ensDA.Nens, nouter=1)
-    write_diag(diag_file.filename, 0, 0, xt, np.transpose(Xb), np.transpose(Xa), np.dot(H,xt), np.diag(H), np.diag(R), evratio = np.NaN)
+    write_diag(diag_file.filename, 0, 0, xt, Xb.T, Xa.T, np.dot(H,xt), np.diag(H), np.diag(R), evratio = np.NaN)
 
     print 'Cycling ON the attractor ...'
 
@@ -72,7 +72,7 @@ def main():
         Xa, evratio = update_ensDA(Xb, y, R, H, ensDA, model)
 
         # write diagnostics to disk
-        write_diag(diag_file.filename, k+1, 0, ver, np.transpose(Xb), np.transpose(Xa), y, np.diag(H), np.diag(R), evratio = evratio)
+        write_diag(diag_file.filename, k+1, 0, ver, Xb.T, Xa.T, y, np.diag(H), np.diag(R), evratio = evratio)
 
     print '... all done ...'
     sys.exit(0)

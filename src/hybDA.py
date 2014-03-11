@@ -42,7 +42,7 @@ def main():
 
     # get IC's
     [xt, Xa] = get_IC(model, restart, Nens=ensDA.Nens)
-    Xa = np.transpose( inflate_ensemble(np.transpose(Xa), ensDA.init_ens_infl_fac) )
+    Xa = ( inflate_ensemble(Xa.T, ensDA.init_ens_infl_fac) ).T
     Xb = Xa.copy()
     xac = np.mean(Xa,axis=1)
     xbc = np.mean(Xb,axis=1)
@@ -59,7 +59,7 @@ def main():
     # create diagnostic file
     create_diag(diag_file, model.Ndof, nens=ensDA.Nens, nobs=nobs, nouter=DA.maxouter, hybrid=DA.do_hybrid)
     for outer in range(DA.maxouter):
-        write_diag(diag_file.filename, 0, outer, xt, np.transpose(Xb), np.transpose(Xa), np.reshape(y,[nobs]), np.diag(H), np.diag(R), central_prior=xbc, central_posterior=xac, evratio=np.NaN, niters=np.NaN)
+        write_diag(diag_file.filename, 0, outer, xt, Xb.T, Xa.T, np.reshape(y,[nobs]), np.diag(H), np.diag(R), central_prior=xbc, central_posterior=xac, evratio=np.NaN, niters=np.NaN)
 
     print 'Cycling ON the attractor ...'
 
@@ -96,7 +96,7 @@ def main():
 
             # blend covariance from flow-dependent (ensemble) and static (climatology)
             B = (1.0 - DA.hybrid_wght) * Bs + DA.hybrid_wght * (Be*L)
-            if ( varDA.precondition ):
+            if ( varDA.precondition == 1 ):
                 [U,S2,_] = np.linalg.svd(B, full_matrices=True, compute_uv=True)
                 B = np.dot(U,np.diag(np.sqrt(S2)))
 
@@ -104,7 +104,7 @@ def main():
             xac, niters = update_varDA(xbc, B, np.squeeze(y), R, H, varDA, model)
 
             # write diagnostics to disk for each outer loop (at the beginning of the window)
-            write_diag(diag_file.filename, k+1, outer, ver, np.transpose(Xb), np.transpose(Xa), y, np.diag(H), np.diag(R), central_prior=xbc, central_posterior=xac, evratio=evratio, niters=niters)
+            write_diag(diag_file.filename, k+1, outer, ver, Xb.T, Xa.T, y, np.diag(H), np.diag(R), central_prior=xbc, central_posterior=xac, evratio=evratio, niters=niters)
 
         # if doing 4Dvar, step to the next assimilation time from the beginning of assimilation window
         if ( varDA.update == 2 ):
@@ -114,7 +114,7 @@ def main():
             xac = xs[-1,:].copy()
 
             # update the ensemble through the window
-            for i in range(1,varDA.fdvar.nobstimes):
+            for i in range(varDA.fdvar.nobstimes):
 
                 Xb = advance_ensemble(Xa, varDA.fdvar.twind_obs, model, perfect=False)
                 Xa, evratio = update_ensDA(Xb, y[i,:], R, H, ensDA, model)
@@ -122,7 +122,7 @@ def main():
                 if ( varDA.fdvar.tb + varDA.fdvar.twind_obsIndex[i] > varDA.fdvar.ta ): break
 
         # recenter ensemble about central analysis
-        if ( DA.hybrid_rcnt ): Xa = np.transpose(np.transpose(Xa) - np.mean(Xa,axis=1) + xac)
+        if ( DA.hybrid_rcnt ): Xa = (Xa.T - np.mean(Xa,axis=1) + xac).T
 
     print '... all done ...'
     sys.exit(0)

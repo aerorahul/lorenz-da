@@ -41,7 +41,7 @@ def main():
 
     # get IC's
     [xt, Xa] = get_IC(model, restart, Nens=ensDA.Nens)
-    Xa = np.transpose( inflate_ensemble(np.transpose(Xa), ensDA.init_ens_infl_fac) )
+    Xa = ( inflate_ensemble(Xa.T, ensDA.init_ens_infl_fac) ).T
     Xb = Xa.copy()
     xac = np.mean(Xa,axis=1)
     xbc = np.mean(Xb,axis=1)
@@ -59,7 +59,7 @@ def main():
     # create diagnostic file
     create_diag(diag_file, model.Ndof, nens=ensDA.Nens, nobs=nobs, nouter=DA.maxouter, hybrid=DA.do_hybrid)
     for outer in range(DA.maxouter):
-        write_diag(diag_file.filename, 0, outer, xt, np.transpose(Xb), np.transpose(Xa), np.reshape(y,[nobs]), np.diag(H), np.diag(R), central_prior=xbc, central_posterior=xac, evratio=np.NaN, niters=np.NaN)
+        write_diag(diag_file.filename, 0, outer, xt, Xb.T, Xa.T, np.reshape(y,[nobs]), np.diag(H), np.diag(R), central_prior=xbc, central_posterior=xac, evratio=np.NaN, niters=np.NaN)
 
     for k in range(DA.nassim):
 
@@ -100,13 +100,13 @@ def main():
             Xa = np.squeeze(Xawin[0,:,:])
 
             # write diagnostics to disk for each outer loop (at the beginning of the window)
-            write_diag(diag_file.filename, k+1, outer, ver, np.transpose(Xb), np.transpose(Xa),
+            write_diag(diag_file.filename, k+1, outer, ver, Xb.T, Xa.T,
                     np.reshape(y,[nobs]), np.diag(H), np.diag(R), central_prior=xbc,
                     central_posterior=xac, evratio=np.NaN, niters=niters)
 
-            Xbwin[0,:,:] = np.transpose(np.transpose(Xb) - np.mean(Xb,axis=1) + xac)
+            Xbwin[0,:,:] = (Xb.T - np.mean(Xb,axis=1) + xac).T
 
-        if ( DA.hybrid_rcnt ): Xa = np.transpose(np.transpose(Xa) - np.mean(Xa,axis=1) + xac)
+        if ( DA.hybrid_rcnt ): Xa = (Xa.T - np.mean(Xa,axis=1) + xac).T
 
         # if doing 4Dvar, step to the next assimilation time from the beginning of assimilation window
         if ( varDA.update == 2 ):

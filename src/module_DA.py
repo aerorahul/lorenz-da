@@ -1816,3 +1816,27 @@ def create_obs(model,varDA,xt,H,R,**kwargs):
     raise ValueError('create_obs should never reach here.')
 # }}}
 ###############################################################
+
+###############################################################
+def diagonalize(X,**kwargs):
+# {{{
+    '''
+    D = diagonalize(X,**kwargs)
+
+    Diagonalize a matrix X
+
+    X - input matrix;  size(X) = [N,M]
+    D - output matrix; size(D) = [N,MN]
+
+    X = [x1 x2 ... xi ... xM]
+    xi = column vector of length N
+    [D1 D2 ... Di ... DN] = [diag(x1) diag(x2) ... diag(xi) ... diag(xM)]
+    '''
+
+    [M,N] = X.shape
+    D = np.zeros(N,M*N)
+    for m in range(M): D[:,m*N:(m+1)*N] = np.diag(X[:,i])
+
+    return D
+# }}}
+###############################################################

@@ -969,7 +969,7 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
         elif ( varDA.precondition == 1 ): tmp = np.dot(B,p)
         elif ( varDA.precondition == 2 ): tmp = p.copy()
 
-        Ap = np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],tmp)))
+        Ap = hessian(H[valInd,:], np.diag(Rinv[valInd,valInd]), tmp)
 
         if   ( varDA.precondition == 0 ): Ap = np.dot(np.linalg.inv(B),p) + Ap
         elif ( varDA.precondition == 1 ): Ap = p + np.dot(B.T,Ap)
@@ -1139,7 +1139,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
 
             valInd = np.isfinite(y[i,])
 
-            Ap = Ap + np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],tmptl[varDA.fdvar.twind_obsIndex[i],:])))
+            Ap = Ap + hessian(H[valInd,:], np.diag(Rinv[valInd,valInd]), tmptl[varDA.fdvar.twind_obsIndex[i],:])
 
             tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
             if ( len(tint) != 0 ):
@@ -1241,7 +1241,7 @@ def ThreeDvar_adj(gradJ, B, y, R, H, varDA, model):
 
         niters = niters + 1
 
-        AdJ = np.dot(Binv,dJ) + np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],dJ)))
+        AdJ = np.dot(Binv,dJ) + hessian(H[valInd,:], np.diag(Rinv[valInd,valInd]), dJ)
 
         [q, gJ, dJ] = minimize(q, gJ, dJ, AdJ)
 
@@ -1335,7 +1335,7 @@ def ThreeDvar_pc_adj(gradJ, G, y, R, H, varDA, model):
 
         niters = niters + 1
 
-        AdJ = dJ + np.dot(G.T,np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],np.dot(G,dJ)))))
+        AdJ = dJ + np.dot(G.T, hessian(H[valInd,:], np.diag(Rinv[valInd,valInd]), np.dot(G,dJ)))
 
         [q, gJ, dJ] = minimize(q, gJ, dJ, AdJ)
 
@@ -1501,21 +1501,29 @@ def EnsembleFourDvar(xb, G, y, R, H, varDA, model):
     xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
 
     d  = np.zeros(y.shape)
+    g = np.zeros(G.shape[-1])
     HG = G.copy()
-    gJ = np.zeros(G.shape[-1])
+
     for i in range(varDA.fdvar.nobstimes):
 
         valInd = np.isfinite(y[i,])
+
         d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
 
         HG[i,:,:] = np.dot(H,G[i,:,:])
-        gJ = gJ + np.dot(HG[i,valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
 
-    dJ     = gJ.copy()
-    w      = np.zeros(gJ.shape)
+        g = g + Jgrad(HG[i,valInd,:], np.diag(Rinv[valInd,valInd]), d[i,valInd])
+
+    r  = g.copy()
+    s  = 0.0
+    p  = r.copy()
+    q  = 0.0
+    dx = 0.0
+    w  = np.zeros(r.shape)
+
     niters = 0
 
-    residual_first = np.sum(gJ**2)
+    residual_first = np.sum(r**2+s**2)
     residual_tol   = 1.0
     print 'initial residual = %15.10f' % (residual_first)
 
@@ -1523,16 +1531,17 @@ def EnsembleFourDvar(xb, G, y, R, H, varDA, model):
 
         niters = niters + 1
 
-        AdJ = np.zeros(dJ.shape)
+        Ap = p.copy()
+
         for i in range(varDA.fdvar.nobstimes):
+
             valInd = np.isfinite(y[i,])
-            AdJ = AdJ + np.dot(HG[i,valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),np.dot(HG[i,valInd,:],dJ)))
 
-        AdJ = dJ + AdJ
+            Ap = Ap + hessian(HG[i,valInd,:], np.diag(Rinv[valInd,valInd]), p)
 
-        [w, gJ, dJ] = minimize(varDA, w, gJ, dJ, AdJ)
+        [dx,w,r,s,p,q] = minimize(varDA,dx,w,r,s,p,q,Ap,G)
 
-        residual = np.sum(gJ**2)
+        residual = np.sum(r**2+s**2)
         residual_tol = residual / residual_first
 
         if ( not np.mod(niters,5) ):
@@ -1544,6 +1553,44 @@ def EnsembleFourDvar(xb, G, y, R, H, varDA, model):
     xa = xa + np.dot(G[0,:,:],w)
 
     return xa, niters
+# }}}
+###############################################################
+
+###############################################################
+def Jgrad(H,Rinv,d):
+# {{{
+    '''
+    Compute the initial cost function gradient H^T R^{-1} d
+
+    Jgrad = Jgrad(H,Rinv,d)
+
+       H - forward operator
+    Rinv - observation error covariance inverse
+       d - innovation vector
+    '''
+
+    Jgrad = np.dot(H.T,np.dot(Rinv,d))
+
+    return Jgrad
+# }}}
+###############################################################
+
+###############################################################
+def hessian(H,Rinv,q):
+# {{{
+    '''
+    Compute the Hessian operator H^T R^{-1} H q
+
+    hessian = hessian(H,Rinv,d)
+
+       H - forward operator
+    Rinv - observation error covariance inverse
+       q - input vector
+    '''
+
+    hessian = np.dot(H.T,np.dot(Rinv,np.dot(H,q)))
+
+    return hessian
 # }}}
 ###############################################################
 
@@ -1814,29 +1861,5 @@ def create_obs(model,varDA,xt,H,R,**kwargs):
         return y
 
     raise ValueError('create_obs should never reach here.')
-# }}}
-###############################################################
-
-###############################################################
-def diagonalize(X,**kwargs):
-# {{{
-    '''
-    D = diagonalize(X,**kwargs)
-
-    Diagonalize a matrix X
-
-    X - input matrix;  size(X) = [N,M]
-    D - output matrix; size(D) = [N,MN]
-
-    X = [x1 x2 ... xi ... xM]
-    xi = column vector of length N
-    [D1 D2 ... Di ... DN] = [diag(x1) diag(x2) ... diag(xi) ... diag(xM)]
-    '''
-
-    [M,N] = X.shape
-    D = np.zeros(N,M*N)
-    for m in range(M): D[:,m*N:(m+1)*N] = np.diag(X[:,i])
-
-    return D
 # }}}
 ###############################################################

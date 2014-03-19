@@ -931,7 +931,7 @@ def ThreeDvar(xb, B, y, R, H, varDA, model):
 
     d = y[valInd] - np.dot(H[valInd,:],xa)
 
-    g = np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),d)) # g = H^T R^{-1} d
+    g = Jgrad(H[valInd,:], np.diag(Rinv[valInd,valInd]), d)
 
     if   ( varDA.precondition == 0 ):
         r  = g.copy()
@@ -1069,7 +1069,6 @@ def FourDvar(xb, B, y, R, H, varDA, model):
     # start with background
     xa   = xb.copy()
     Rinv = np.linalg.inv(R)
-    if ( varDA.precondition == 0 ): Binv = np.linalg.inv(B)
 
     # advance the background through the assimilation window with full non-linear model
     xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
@@ -1085,7 +1084,7 @@ def FourDvar(xb, B, y, R, H, varDA, model):
 
         d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
 
-        g = g + np.dot(H[valInd,:].T,np.dot(np.diag(Rinv[valInd,valInd]),d[i,valInd]))
+        g = g + Jgrad(H[valInd,:], np.diag(Rinv[valInd,valInd]), d[i,valInd])
 
         tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
         if ( len(tint) != 0 ):
@@ -1147,8 +1146,8 @@ def FourDvar(xb, B, y, R, H, varDA, model):
                 Ap = sxi[-1,:].copy()
 
         if   ( varDA.precondition == 0 ): Ap = np.dot(np.linalg.inv(B),p) + Ap
-        elif ( varDA.precondition == 1 ): Ap = p.copy() + np.dot(B.T,Ap)
-        elif ( varDA.precondition == 2 ): Ap = q.copy() + Ap
+        elif ( varDA.precondition == 1 ): Ap = p + np.dot(B.T,Ap)
+        elif ( varDA.precondition == 2 ): Ap = q + Ap
 
         [dx,w,r,s,p,q] = minimize(varDA,dx,w,r,s,p,q,Ap,B)
 
@@ -1355,17 +1354,19 @@ def ThreeDvar_pc_adj(gradJ, G, y, R, H, varDA, model):
 ###############################################################
 
 ###############################################################
-def check_ensvarDA(ensDA,varDA):
+def check_ensvarDA(DA,ensDA,varDA):
 # {{{
     '''
     Check for valid ensemble-variational DA algorithms
 
-    check_ensvarDA(ensDA,varDA)
+    check_ensvarDA(DA,ensDA,varDA)
 
+       DA - data assimilation class
     ensDA - ensemble data assimilation class
     varDA - variational data assimilation class
     '''
 
+    check_DA(DA)
     check_ensDA(ensDA)
     check_varDA(varDA)
 

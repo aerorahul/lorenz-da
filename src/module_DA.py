@@ -542,7 +542,7 @@ def update_ensDA(Xb, y, R, H, ensDA, model):
             print 'invalid update algorithm ...'
             sys.exit(2)
 
-        for i in range(0,model.Ndof):
+        for i in range(model.Ndof):
             state_inc = state_increment(obs_inc, temp_ens[i,:], ye)
 
             # localization
@@ -567,7 +567,7 @@ def update_ensDA(Xb, y, R, H, ensDA, model):
     elif ( ensDA.inflation.inflate == 4 ): # posterior spread restoration (Whitaker & Hamill)
         xbs = np.std(Xb,axis=1,ddof=1)
         xas = np.std(Xa,axis=1,ddof=1)
-        for i in range(0,model.Ndof):
+        for i in range(model.Ndof):
             Xap[i,:] =  np.sqrt((ensDA.inflation.infl_fac * (xbs[i] - xas[dof])/xas[i]) + 1.0) * Xap[i,:]
 
     # add inflated perturbations back to analysis mean
@@ -1650,7 +1650,7 @@ def precondition(X, varDA, ensDA, model, L=None):
             G = Xp.copy()
         else:
             G = np.zeros((model.Ndof,varDA.localization.cov_trunc*ensDA.Nens))
-            for m in range(0,ensDA.Nens):
+            for m in range(ensDA.Nens):
                 si = varDA.localization.cov_trunc *  m
                 ei = varDA.localization.cov_trunc * (m+1)
                 G[:,si:ei] = np.dot(np.diag(Xp[:,m]),L) / np.sqrt(ensDA.Nens - 1.0)
@@ -1665,7 +1665,7 @@ def precondition(X, varDA, ensDA, model, L=None):
             if ( L == None ):
                 G[i,:,:] = Xp.copy()
             else:
-                for m in range(0,ensDA.Nens):
+                for m in range(ensDA.Nens):
                     si = varDA.localization.cov_trunc *  m
                     ei = varDA.localization.cov_trunc * (m+1)
                     G[i,:,si:ei] = np.dot(np.diag(Xp[:,m]),L) / np.sqrt(ensDA.Nens - 1.0)
@@ -1689,8 +1689,8 @@ localization - localization class
 
     L = np.ones((model.Ndof,model.Ndof))
 
-    for i in range(0,model.Ndof):
-        for j in range(0,model.Ndof):
+    for i in range(model.Ndof):
+        for j in range(model.Ndof):
             dist = np.float( np.abs( i - j ) ) / model.Ndof
             if ( dist > 0.5 ): dist = 1.0 - dist
             L[i,j] = compute_cov_factor(dist, localization)
@@ -1716,7 +1716,7 @@ def advance_ensemble(Xi, t, model, perfect=True, **kwargs):
     '''
 
     Xf = np.zeros(Xi.shape)
-    for m in range(0, Xi.shape[1]):
+    for m in range(Xi.shape[1]):
         xi = Xi[:,m].copy()
         xs = model.advance(xi, t, perfect=perfect, **kwargs)
         Xf[:,m] = xs[-1,:].copy()

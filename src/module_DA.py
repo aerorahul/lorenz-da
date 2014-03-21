@@ -416,15 +416,18 @@ def check_DA(DA):
 ###############################################################
 
 ###############################################################
-def check_ensDA(ensDA):
+def check_ensDA(DA,ensDA):
 # {{{
     '''
     Check for valid ensemble DA algorithms and methods
 
-    check_ensDA(ensDA)
+    check_ensDA(DA,ensDA)
 
+       DA - data assimilation class
     ensDA - ensemble data assimilation class
     '''
+
+    check_DA(DA)
 
     print '==========================================='
 
@@ -789,15 +792,18 @@ def compute_cov_factor(dist, localization):
 ###############################################################
 
 ###############################################################
-def check_varDA(varDA):
+def check_varDA(DA,varDA):
 # {{{
     '''
     Check for valid variational DA algorithms
 
-    check_varDA(varDA)
+    check_varDA(DA,varDA)
 
+       DA - data assimilation class
     varDA - variational data assimilation class
     '''
+
+    check_DA(DA)
 
     print '==========================================='
 
@@ -1350,6 +1356,27 @@ def ThreeDvar_pc_adj(gradJ, G, y, R, H, varDA, model):
     KTgradJ = np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],np.dot(G,q)))
 
     return KTgradJ, niters
+# }}}
+###############################################################
+
+###############################################################
+def check_hybDA(DA,ensDA,varDA):
+# {{{
+    '''
+    Check for valid hybrid DA algorithms
+
+    check_hybDA(DA,ensDA,varDA)
+
+       DA - data assimilation class
+    ensDA - ensemble data assimilation class
+    varDA - variational data assimilation class
+    '''
+
+    check_DA(DA)
+    check_ensDA(ensDA)
+    check_varDA(varDA)
+
+    return
 # }}}
 ###############################################################
 

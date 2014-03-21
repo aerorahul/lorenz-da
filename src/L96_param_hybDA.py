@@ -90,9 +90,14 @@ infl_adp     = True           # inflate adaptively (cuts inflation as a function
 localize     = 1              # localization (0= None, 1= Gaspari-Cohn, 2= Boxcar, 3= Ramped)
 cov_cutoff   = 0.0625         # normalized covariance cutoff = cutoff / ( 2*normalized_dist )
 cov_trunc    = model.Ndof     # truncate localization matrix (cov_trunc <= model.Ndof)
-window       = 0.75           # length of the assimilation window
-offset       = 0.25           # time offset: forecast from analysis to background time
-nobstimes    = 4              # no. of evenly spaced obs. times in the window
+if   ( update == 1 ):
+    window       = 0.00       # length of the assimilation window
+    offset       = 1.00       # time offset: forecast from analysis to background time
+    nobstimes    = 1          # no. of evenly spaced obs. times in the window
+elif ( update == 2 ):
+    window       = 0.75       # length of the assimilation window
+    offset       = 0.25       # time offset: forecast from analysis to background time
+    nobstimes    = 4          # no. of evenly spaced obs. times in the window
 varDA.init(model,DA,\
            update=update,precondition=precondition,\
            maxiter=maxiter,tol=tol,\

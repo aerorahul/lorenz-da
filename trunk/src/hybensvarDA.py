@@ -56,6 +56,9 @@ def main():
     print L.shape
     A = np.kron(np.eye(ensDA.Nens),L)
     print A.shape
+    if ( varDA.precondition == 1 ):
+        [U,S2,_] = np.linalg.svd(A, full_matrices=True, compute_uv=True)
+        A = np.dot(U,np.diag(np.sqrt(S2)))
 
     nobs = model.Ndof*varDA.fdvar.nobstimes
     y    = np.tile(np.dot(H,xt),[varDA.fdvar.nobstimes,1])
@@ -103,15 +106,11 @@ def main():
             # construct block diagonal from static background error cov. and localization matrices
 #            B = linalg.block_diag( (1.0-DA.hybrid_wght) * Bs, DA.hybrid_wght * A )
 
-            if ( varDA.precondition == 1 ):
-                [U,S2,_] = np.linalg.svd(A, full_matrices=True, compute_uv=True)
-                A = np.dot(U,np.diag(np.sqrt(S2)))
-
             # construct D = [diag(columns of Xbp)]
             print Xb.shape
             Xp = (Xb.T - np.mean(Xb,axis=1)).T
             print Xp.shape
-            D = np.concatenate([np.diag(xi) for xi in Xp.T], axis=1)
+            D = np.concatenate([np.diag(xi) for xi in Xp.T/np.sqrt(ensDA.Nens-1)], axis=1)
             print D.shape
 
             # construct C = [I,D]
@@ -124,7 +123,7 @@ def main():
             # write diagnostics to disk for each outer loop (at the beginning of the window)
             write_diag(diag_file.filename, k+1, outer, ver, Xb.T, Xa.T,
                     np.reshape(y,[nobs]), np.diag(H), np.diag(R), central_prior=xbc,
-                    central_posterior=xac, evratio=np.NaN, niters=niters)
+                    central_posterior=xac, evratio=evratio, niters=niters)
 
             Xbwin[0,:,:] = (Xb.T - np.mean(Xb,axis=1) + xac).T
 

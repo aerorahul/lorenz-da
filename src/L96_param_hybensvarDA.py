@@ -9,14 +9,14 @@
 ###############################################################
 
 ###############################################################
-# L96_param_ensvarDA.py - parameters for Ensemble-Var DA on
-#                         on L96
+# L96_param_hybensvarDA.py - parameters for Hybrid Ensemble-Var
+#                             DA on L96
 ###############################################################
 
 ###############################################################
 __author__    = "Rahul Mahajan"
 __email__     = "rahul.mahajan@nasa.gov"
-__copyright__ = "Copyright 2012, NASA / GSFC / GMAO"
+__copyright__ = "Copyright 2014, NOAA / NCEP / EMC"
 __license__   = "GPL"
 __status__    = "Prototype"
 ###############################################################
@@ -44,8 +44,8 @@ dt   = 1.0e-4             # model time-step
 model.init(Name='L96',Ndof=40,Par=[8.0,8.4],dt=1.e-4)
 
 # Initialize Data Assimilation class
-nassim      = 1000           # no. of assimilation cycles
-ntimes      = 2.0*0.05       # do assimilation every ntimes non-dimensional time units
+nassim      = 100            # no. of assimilation cycles
+ntimes      = 1.0*0.05       # do assimilation every ntimes non-dimensional time units
 maxouter    = 1              # no. of outer loops
 do_hybrid   = True           # True= run hybrid (varDA + ensDA) mode, False= run ensDA mode
 hybrid_rcnt = True           # True= re-center ensemble about varDA, False= free ensDA
@@ -66,7 +66,7 @@ R = numpy.ones(model.Ndof)                   # observation error covariance
 R = numpy.diag(R)
 
 # Initialize Ensemble Data Assimilation class
-update            = 2              # ensemble-based DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
+update            = 1              # ensemble-based DA method (0= No Assim, 1= EnKF; 2= EnSRF; 3= EAKF)
 Nens              = 20             # number of ensemble members
 init_ens_infl_fac = 1.0            # inflate initial ensemble by init_ens_infl_fac
 inflate           = 1              # inflation (0= None, 1= Multiplicative [1.01], 2= Additive [0.01],
@@ -81,8 +81,8 @@ ensDA.init(model,DA,\
            localize=localize,cov_cutoff=cov_cutoff,cov_trunc=cov_trunc)
 
 # Initialize Variational Data Assimilation class
-update       = 2              # variational-based DA method (1= 3Dvar; 2= 4Dvar)
-precondition = 1              # precondition before minimization (1= sqrtB)
+update       = 1              # variational-based DA method (1= 3Dvar; 2= 4Dvar)
+precondition = 2              # precondition before minimization (1= sqrtB)
 maxiter      = 100            # maximum iterations for minimization
 tol          = 1e-4           # tolerance to end the variational minimization iteration
 inflate      = True           # inflate [ > 1.0 ] / deflate [ < 1.0 ] static covariance
@@ -107,7 +107,7 @@ varDA.init(model,DA,\
            window=window,offset=offset,nobstimes=nobstimes)
 
 # Initialize diagnostic file class
-filename   = model.Name + '_ensvarDA_diag.nc4'
+filename   = model.Name + '_hybensvarDA_diag.nc4'
 attributes = {'model'       : model.Name,
               'F'           : model.Par[0],
               'dF'          : model.Par[1]-model.Par[0],
@@ -138,8 +138,8 @@ attributes = {'model'       : model.Name,
 diag_file = Container(filename=filename,attributes=attributes)
 
 # restart conditions
-time     = -1              # None == default | -N...-1 0 1...N
-filename = 'L96_ensDA_diag.nc4'
+time     = None            # None == default | -N...-1 0 1...N
+filename = ''
 restart = Container(time=time,filename=filename)
 
 # ========== Clear unwanted parameters ==========

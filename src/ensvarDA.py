@@ -36,8 +36,7 @@ def main():
     np.random.seed(0)
 
     # check for valid ensemble and variational data assimilation options
-    check_DA(DA)
-    check_ensvarDA(ensDA,varDA)
+    check_ensvarDA(DA,ensDA,varDA)
 
     # get IC's
     [xt, Xa] = get_IC(model, restart, Nens=ensDA.Nens)
@@ -102,7 +101,7 @@ def main():
             # write diagnostics to disk for each outer loop (at the beginning of the window)
             write_diag(diag_file.filename, k+1, outer, ver, Xb.T, Xa.T,
                     np.reshape(y,[nobs]), np.diag(H), np.diag(R), central_prior=xbc,
-                    central_posterior=xac, evratio=np.NaN, niters=niters)
+                    central_posterior=xac, evratio=evratio, niters=niters)
 
             Xbwin[0,:,:] = (Xb.T - np.mean(Xb,axis=1) + xac).T
 

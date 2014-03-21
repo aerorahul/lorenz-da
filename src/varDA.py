@@ -36,8 +36,7 @@ def main():
     np.random.seed(0)
 
     # check for valid variational data assimilation options
-    check_DA(DA)
-    check_varDA(varDA)
+    check_varDA(DA,varDA)
 
     # get IC's
     [xt, xa] = get_IC(model, restart, Nens=None)

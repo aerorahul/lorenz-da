@@ -36,8 +36,7 @@ def main():
     np.random.seed(0)
 
     # check for valid ensemble data assimilation options
-    check_DA(DA)
-    check_ensDA(ensDA)
+    check_ensDA(DA,ensDA)
 
     # get IC's
     [xt, Xa] = get_IC(model, restart, Nens=ensDA.Nens)

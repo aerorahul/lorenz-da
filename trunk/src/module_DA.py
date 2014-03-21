@@ -1393,9 +1393,7 @@ def check_ensvarDA(DA,ensDA,varDA):
     varDA - variational data assimilation class
     '''
 
-    check_DA(DA)
-    check_ensDA(ensDA)
-    check_varDA(varDA)
+    check_hybDA(DA,ensDA,varDA)
 
     fail = False
 
@@ -1579,6 +1577,132 @@ def EnsembleFourDvar(xb, G, y, R, H, varDA, model):
     print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
     xa = xa + np.dot(G[0,:,:],w)
+
+    return xa, niters
+# }}}
+###############################################################
+
+###############################################################
+def check_hybensvarDA(DA,ensDA,varDA):
+# {{{
+    '''
+    Check for valid hybrid ensemble-variational DA algorithms
+
+    check_hybensvarDA(DA,ensDA,varDA)
+
+       DA - data assimilation class
+    ensDA - ensemble data assimilation class
+    varDA - variational data assimilation class
+    '''
+
+    check_hybDA(DA,ensDA,varDA)
+
+    fail = False
+
+    print '==========================================='
+
+    if   ( varDA.precondition == 0 ): pstr = 'nothing'
+    elif ( varDA.precondition == 1 ): pstr = 'square-root B'
+    elif ( varDA.precondition == 2 ): pstr = 'full B'
+
+    if   ( varDA.precondition != 2 ):
+        print 'Preconditioning with %s is not allowed when' % pstr
+        print 'assimilating observations using hybrid ensemble-variational algorithm'
+        print 'varDA.precondition must be : 2 = full B'
+        fail = True
+
+    print '==========================================='
+
+    if ( fail ): sys.exit(1)
+
+    return
+# }}}
+###############################################################
+
+###############################################################
+def update_hybensvarDA(xb, B, C, y, R, H, varDA, model):
+# {{{
+    '''
+    Update the prior with a hybrid ensemble-variational-based state estimation algorithm
+    to produce a posterior.
+    This algorithm is implemented with the extended control vector method of Lorenc 03.
+
+    xa, niters = update_hybensvarDA(xb, B, C, y, R, H, varDA, model)
+
+          xb - prior
+           B - (scaled) static background error cov. and localization corr. matrix [[Bs 0],[0 A]]
+           C - preconditioned identity and ensemble matrix = [I D]
+           y - observations
+           R - observation error covariance
+           H - forward operator
+       varDA - variational data assimilation class
+       model - model class
+          xa - posterior
+      niters - number of iterations required for minimizing the cost function
+    '''
+
+    if   ( varDA.update == 0 ):
+        xa, niters = xb, np.NaN
+
+    elif ( varDA.update == 1 ):
+        xa, niters = HybridEnsembleThreeDvar(xb, B, C, y, R, H, varDA, model)
+
+    elif ( varDA.update == 2 ):
+        xa, niters = HybridEnsembleFourDvar(xb, B, C, y, R, H, varDA, model)
+
+    else:
+        print 'invalid update algorithm ...'
+        sys.exit(2)
+
+    return xa, niters
+# }}}
+###############################################################
+
+###############################################################
+def HybridEnsembleThreeDvar(xb, B, C, y, R, H, varDA, model):
+# {{{
+    '''
+    Update the prior with Hybrid Ensemble-based 3Dvar algorithm to produce a posterior.
+    This algorithm is implemented with the extended control vector method of Lorenc 03.
+
+    xa, niters = HybridEnsembleThreeDvar(xb, B, C, y, R, H, varDA, model)
+
+          xb - prior
+           B - (scaled) static background error cov. and localization corr. matrix [[Bs 0],[0 A]]
+           C - preconditioned identity and ensemble matrix = [I D]
+           y - observations
+           R - observation error covariance
+           H - forward operator
+       varDA - variational data assimilation class
+       model - model class
+          xa - posterior
+      niters - number of iterations required for minimizing the cost function
+    '''
+
+    return xa, niters
+# }}}
+###############################################################
+
+###############################################################
+def HybridEnsembleFourDvar(xb, B, C, y, R, H, varDA, model):
+# {{{
+    '''
+    Update the prior with Hybrid Ensemble-based 4Dvar algorithm to produce a posterior.
+    This algorithm is implemented with the extended control vector method of Lorenc 03.
+
+    xa, niters = HybridEnsembleFourDvar(xb, B, C, y, R, H, varDA, model)
+
+          xb - prior
+           B - (scaled) static background error cov. and localization corr. matrix [[Bs 0],[0 A]]
+           C - preconditioned identity and ensemble matrix = [I D]
+           y - observations
+           R - observation error covariance
+           H - forward operator
+       varDA - variational data assimilation class
+       model - model class
+          xa - posterior
+      niters - number of iterations required for minimizing the cost function
+    '''
 
     return xa, niters
 # }}}

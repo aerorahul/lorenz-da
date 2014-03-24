@@ -92,7 +92,7 @@ class Lorenz(object):
 
     #}}}
 
-    def advance(self, x0, t, perfect=True, **kwargs):
+    def advance(self, x0, t, perfect=True, result=None, **kwargs):
     # {{{
         '''
         advance - function that integrates the model state, given initial conditions 'x0'
@@ -106,6 +106,7 @@ class Lorenz(object):
            x0 - initial state at time t = 0
             t - vector of time from t = [0, T]
       perfect - If perfect model run for L96, use self.Par[0], else use self.Par[1]
+       result - result to be put back into, instead of normal return. To be used when multiprocessing
      **kwargs - any additional arguments that need to go in the model advance call
            xs - final state at time t = T
         '''
@@ -121,10 +122,13 @@ class Lorenz(object):
 
         exec('xs = integrate.odeint(self.%s, x0, t, (par, 0.0), **kwargs)' % (self.Name))
 
-        return xs
+        if ( result == None ):
+            return xs
+        else:
+            result.put(xs)
     # }}}
 
-    def advance_tlm(self, x0, t, xref, tref, adjoint=False, perfect=True, **kwargs):
+    def advance_tlm(self, x0, t, xref, tref, adjoint=False, perfect=True, result=None, **kwargs):
     # {{{
         '''
         advance_tlm - function that integrates the model state, using the TLM (or Adjoint)
@@ -141,6 +145,7 @@ class Lorenz(object):
          tref - vector of time from t = [0, T]
       adjoint - adjoint (True) or forward TLM (False) [DEFAULT: False]
       perfect - If perfect model run for L96, use self.Par[0], else use self.Par[1]
+       result - result to be put back into, instead of normal return. To be used when multiprocessing
      **kwargs - any additional arguments that need to go in the model advance call
            xs - final state at time t = T
         '''
@@ -158,7 +163,10 @@ class Lorenz(object):
 
         exec('xs = integrate.odeint(self.%s_tlm, x0, t, (par,xref,tref,adjoint), **kwargs)' % self.Name)
 
-        return xs
+        if ( result == None ):
+            return xs
+        else:
+            result.put(xs)
     # }}}
 
     def L63(self, x0, t, par, dummy):

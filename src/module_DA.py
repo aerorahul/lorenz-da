@@ -23,6 +23,7 @@ __status__    = "Prototype"
 ###############################################################
 import sys
 import numpy as np
+import multiprocessing as mp
 ###############################################################
 
 ###############################################################
@@ -1957,26 +1958,40 @@ localization - localization class
 ###############################################################
 
 ###############################################################
-def advance_ensemble(Xi, t, model, perfect=True, **kwargs):
+def advance_ensemble(Xi, t, model, perfect=True, parallel=False, **kwargs):
 # {{{
     '''
     Advance an ensemble given initial conditions, length of integration and model information.
 
-    Xf = advance_ensemble(Xi, T, model, perfect=True, **kwargs)
+    Xf = advance_ensemble(Xi, T, model, perfect=True, parallel=False, **kwargs)
 
        Xi - Ensemble of initial conditions; size(Xi) = [N == Ndof, M == Nens]
         t - integrate from t[0] to t[end]
     model - model class
   perfect - If perfect model run for L96, use model.Par[0], else use model.Par[1]
+ parallel - perform model advance in parallel on multiple processors
  **kwargs - any additional arguments that need to go in the model advance call
        Xf - Ensemble of final states; size(Xf) = [N == Ndof, M == Nens]
     '''
 
     Xf = np.zeros(Xi.shape)
-    for m in range(Xi.shape[1]):
-        xi = Xi[:,m].copy()
-        xs = model.advance(xi, t, perfect=perfect, **kwargs)
-        Xf[:,m] = xs[-1,:].copy()
+
+    if ( parallel ):
+
+        result_queue = mp.Queue()
+        madvs = [ model.advance(xi,t,perfect=perfect,result=result_queue) for xi in Xi.T ]
+        jobs = [ mp.Process(madv) for madv in madvs ]
+        for job in jobs: job.start()
+        for job in jobs: job.join()
+        Xs = [ result_queue.get() for madv in madvs ]
+        for m, xs in enumerate(Xs):
+            Xf[:,m] = xs[-1,:].copy()
+
+    else:
+
+        for m, xi in enumerate(Xi.T):
+            xs = model.advance(xi, t, perfect=perfect, **kwargs)
+            Xf[:,m] = xs[-1,:].copy()
 
     return Xf
 # }}}

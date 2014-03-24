@@ -53,9 +53,7 @@ def main():
 
     # construct localization matrix once and for all ...
     L = localization_operator(model,ensDA.localization)
-    print L.shape
     A = np.kron(np.eye(ensDA.Nens),L)
-    print A.shape
     if ( varDA.precondition == 1 ):
         [U,S2,_] = np.linalg.svd(A, full_matrices=True, compute_uv=True)
         A = np.dot(U,np.diag(np.sqrt(S2)))
@@ -101,24 +99,20 @@ def main():
                 Xbwin[i,:,:] = advance_ensemble(Xbwin[i-1,:,:], varDA.fdvar.twind_obs, model, perfect=False)
 
             # compute static background error cov.
-#            Bs = compute_B(varDA,Bc,outer=outer)
+            Bs = compute_B(varDA,Bc,outer=outer)
 
             # construct block diagonal from static background error cov. and localization matrices
-#            B = linalg.block_diag( (1.0-DA.hybrid_wght) * Bs, DA.hybrid_wght * A )
+            B = linalg.block_diag( (1.0-DA.hybrid_wght) * Bs, DA.hybrid_wght * A )
 
             # construct D = [diag(columns of Xbp)]
-            print Xb.shape
-            Xp = (Xb.T - np.mean(Xb,axis=1)).T
-            print Xp.shape
-            D = np.concatenate([np.diag(xi) for xi in Xp.T/np.sqrt(ensDA.Nens-1)], axis=1)
-            print D.shape
+            Xp = (Xb.T - np.mean(Xb,axis=1)).T/np.sqrt(ensDA.Nens-1)
+            D = np.concatenate([np.diag(xi) for xi in Xp.T], axis=1)
 
             # construct C = [I,D]
-#            C = np.concatenate((np.eye(model.Ndof),D),axis=1)
+            C = np.concatenate((np.eye(model.Ndof),D),axis=1)
 
             # update step
-#            xac, niters = update_hybensvarDA(xbc, B, C, np.squeeze(y), R, H, varDA, model)
-            xac, niters = update_hybensvarDA(xbc, A, D, np.squeeze(y), R, H, varDA, model)
+            xac, niters = update_hybensvarDA(xbc, B, C, np.squeeze(y), R, H, varDA, model)
 
             # write diagnostics to disk for each outer loop (at the beginning of the window)
             write_diag(diag_file.filename, k+1, outer, ver, Xb.T, Xa.T,

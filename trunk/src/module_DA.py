@@ -1608,8 +1608,7 @@ def check_hybensvarDA(DA,ensDA,varDA):
     if   ( varDA.precondition == 0 ):
         print '''Preconditioning with %s is not allowed when
 assimilating observations using hybrid ensemble-variational algorithm.
-Convergence is too slow, possibly due to inverting a huge matrix.
-This could be sped-up, needs looking into.
+Inverting B = [[Bs 0], [0 A]] is not possible, as it is singular.
 varDA.precondition must be : 1 | 2 = square-root or full B''' % pstr
         fail = True
 
@@ -1690,14 +1689,7 @@ def HybridEnsembleThreeDvar(xb, B, C, y, R, H, varDA, model):
 
     g = np.dot(C.T, Jgrad(H[valInd,:], np.diag(Rinv[valInd,valInd]), d))
 
-    if   ( varDA.precondition == 0 ):
-        r  = g.copy()
-        s  = 0.0
-        p  = r.copy()
-        q  = 0.0
-        dx = np.zeros(r.shape)
-        w  = 0.0
-    elif ( varDA.precondition == 1 ):
+    if   ( varDA.precondition == 1 ):
         r  = np.dot(B.T,g)
         s  = 0.0
         p  = r.copy()
@@ -1722,14 +1714,12 @@ def HybridEnsembleThreeDvar(xb, B, C, y, R, H, varDA, model):
 
         niters = niters + 1
 
-        if   ( varDA.precondition == 0 ): tmp = p.copy()
-        elif ( varDA.precondition == 1 ): tmp = np.dot(B,p)
+        if   ( varDA.precondition == 1 ): tmp = np.dot(B,p)
         elif ( varDA.precondition == 2 ): tmp = p.copy()
 
         Ap = np.dot(C.T, hessian(H[valInd,:], np.diag(Rinv[valInd,valInd]), np.dot(C,tmp)))
 
-        if   ( varDA.precondition == 0 ): Ap = np.dot(np.linalg.inv(B),p) + Ap
-        elif ( varDA.precondition == 1 ): Ap = p + np.dot(B.T,Ap)
+        if   ( varDA.precondition == 1 ): Ap = p + np.dot(B.T,Ap)
         elif ( varDA.precondition == 2 ): Ap = q + Ap
 
         [dx,w,r,s,p,q] = minimize(varDA,dx,w,r,s,p,q,Ap,B)
@@ -1743,20 +1733,8 @@ def HybridEnsembleThreeDvar(xb, B, C, y, R, H, varDA, model):
     if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
     print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
-    # check for filter divergence
-    total_error = np.sum(d**2)
-#    if   ( varDA.precondition == 0 ): total_variance = np.sum(np.diag(B+R))
-#    elif ( varDA.precondition == 1 ): total_variance = np.sum(np.diag(np.dot(B,B.T)+R))
-#    elif ( varDA.precondition == 2 ): total_variance = np.sum(np.diag(B+R))
-#    error_variance_ratio = total_error / total_variance
-#    if ( 0.5 < error_variance_ratio < 2.0 ):
-#        print 'total error / total variance = %f' % (error_variance_ratio)
-#    else:
-#        print "\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" % (error_variance_ratio)
-
     # 3DVAR estimate
-    if   ( varDA.precondition == 0 ): xa = xa + np.dot(C,dx)
-    elif ( varDA.precondition == 1 ): xa = xa + np.dot(C,np.dot(B,w))
+    if   ( varDA.precondition == 1 ): xa = xa + np.dot(C,np.dot(B,w))
     elif ( varDA.precondition == 2 ): xa = xa + np.dot(C,dx)
 
     return xa, niters

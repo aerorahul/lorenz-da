@@ -100,7 +100,7 @@ class Lorenz(object):
         The nature of the model advance as specified by 'perfect' and is only valid
         for L96 system.
 
-        xs = advance(self, x0, t, perfect=True, **kwargs)
+        xs = advance(self, x0, t, perfect=True, result=None, **kwargs)
 
          self - model class for the model containing model static parameters
            x0 - initial state at time t = 0
@@ -136,7 +136,7 @@ class Lorenz(object):
         The nature of the model advance as specified by 'perfect' and is only valid
         for L96 system.
 
-        xs = advance_tlm(self, x0, t, xref, tref, adjoint, perfect=True, **kwargs)
+        xs = advance_tlm(self, x0, t, xref, tref, adjoint, perfect=True, result=None, **kwargs)
 
          self - model class for the model containing model static parameters
            x0 - initial state at time t = 0

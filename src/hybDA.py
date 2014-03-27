@@ -99,7 +99,7 @@ def main():
                 B = np.dot(U,np.diag(np.sqrt(S2)))
 
             # update step
-            xac, niters = update_varDA(xbc, B, np.squeeze(y), R, H, varDA, model)
+            xac, niters = update_varDA(xbc, B, y, R, H, varDA, model)
 
             # write diagnostics to disk for each outer loop (at the beginning of the window)
             write_diag(diag_file.filename, k+1, outer, ver, Xb.T, Xa.T, y, np.diag(H), np.diag(R), central_prior=xbc, central_posterior=xac, evratio=evratio, niters=niters)

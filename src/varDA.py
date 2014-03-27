@@ -80,7 +80,7 @@ def main():
             Bs = compute_B(varDA,Bc,outer=outer)
 
             # update step
-            xa, niters = update_varDA(xb, Bs, np.squeeze(y), R, H, varDA, model)
+            xa, niters = update_varDA(xb, Bs, y, R, H, varDA, model)
 
             # write diagnostics to disk for each outer loop (at the beginning of the window)
             write_diag(diag_file.filename, k+1, outer, ver, xb, xa, np.reshape(y,[nobs]), np.diag(H), np.diag(R), niters=niters)

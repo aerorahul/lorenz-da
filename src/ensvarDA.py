@@ -49,8 +49,10 @@ def main():
 
     # construct localization matrix once and for all ...
     L = localization_operator(model,ensDA.localization)
-    [U,S2,_] = np.linalg.svd(L, full_matrices=True, compute_uv=True)
-    Lp = np.dot(U[:,:varDA.localization.cov_trunc],np.diag(np.sqrt(S2[:varDA.localization.cov_trunc])))
+    S = np.kron(np.eye(ensDA.Nens),L)
+    if ( varDA.precondition == 1 ):
+        [U,S2,_] = np.linalg.svd(S, full_matrices=True, compute_uv=True)
+        S = np.dot(U,np.diag(np.sqrt(S2)))
 
     nobs = model.Ndof*varDA.fdvar.nobstimes
     y    = np.tile(np.dot(H,xt),[varDA.fdvar.nobstimes,1])
@@ -89,11 +91,14 @@ def main():
             for i in range(1,varDA.fdvar.nobstimes):
                 Xbwin[i,:,:] = advance_ensemble(Xbwin[i-1,:,:], varDA.fdvar.twind_obs, model, perfect=False)
 
-            # precondition before varDA
-            B = precondition(Xbwin, varDA, ensDA, model, L=Lp)
+            # diagonalize ensemble perturbations matrix
+            D = np.zeros((varDA.fdvar.nobstimes,model.Ndof,model.Ndof*ensDA.Nens))
+            for i in range(varDA.fdvar.nobstimes):
+                Xp = ( Xbwin[i,:,:].T - np.mean(Xbwin[i,:,:],axis=1) ).T / np.sqrt(ensDA.Nens-1)
+                D[i,:,:] = np.concatenate([np.diag(xp) for xp in Xp.T], axis=1)
 
             # update step
-            xac, niters = update_ensvarDA(xbc, B, np.squeeze(y), R, H, varDA, model)
+            xac, niters = update_ensvarDA(xbc, D, S, y, R, H, varDA, ensDA, model)
 
             Xb = np.squeeze(Xbwin[0,:,:])
             Xa = np.squeeze(Xawin[0,:,:])

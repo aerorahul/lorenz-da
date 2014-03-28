@@ -893,46 +893,46 @@ def VarSolver(xb, B, y, R, H, varDA, model):
        model - model class
           xa - posterior
       niters - number of iterations required for minimizing the cost function
+
+    NO PRECONDITIONING
+    increment  : xo - xbo = dxo
+                            dxi = Mdxo
+    innovation :      di = yi - H(xbi) = yi - H(M(xbo))
+                     dyi = Hdxi - di   = HMdxo - di
+    cost function:           J(dxo) =  Jb +  Jy
+    cost function gradient: gJ(dxo) = gJb + gJy
+     Jb = 0.5 *      dxo^T B^{-1} dxo
+     Jy = 0.5 * \sum dyi^T R^{-1} dyi
+    gJb =              B^{-1} dxo
+    gJy = \sum M^T H^T R^{-1} dyi
+    gJ  = [ B^{-1} + \sum M^T H^T R^{-1} H M ] dxo - \sum M^T H^T R^{-1} di
+
+    PRECONDITION WITH sqrt(B) = G
+    increment  : xo - xbo = dxo                         = Gw
+                            dxi = Mdxo                  = MGw
+    innovation :      di = yi - H(xbi) = yi - H(M(xbo))
+                     dyi = Hdxi - di   = HMdxo - di     = HMGw - di
+    cost function:           J(w) =  Jb +  Jy
+    cost function gradient: gJ(w) = gJb + gJy
+     Jb = 0.5 *      w^T w
+     Jy = 0.5 * \sum dyi^T R^{-1} dyi
+    gJb = w
+    gJy = \sum G^T M^T H^T R^{-1} dyi
+    gJ  = [ I + \sum G^T M^T H^T R^{-1} H M G ] w - \sum G^T M^T H^T R^{-1} di
+
+    PRECONDITION WITH B
+    increment  : xo - xbo = dxo                         = Bw
+                            dxi = Mdxo
+    innovation :      di = yi - H(xbi) = yi - H(M(xbo))
+                     dyi = Hdxi - di   = HMdxo - di
+    cost function:           J(w) =  Jb +  Jy
+    cost function gradient: gJ(w) = gJb + gJy
+     Jb = 0.5 *      w^T w
+     Jy = 0.5 * \sum dyi^T R^{-1} dyi
+    gJb = w
+    gJy = \sum M^T H^T R^{-1} dyi
+    gJ  = w + \sum M^T H^T R^{-1} H M dxo - \sum M^T H^T R^{-1} di
     '''
-
-    # NO PRECONDITIONING
-    # increment  : xo - xbo = dxo
-    #                         dxi = Mdxo
-    # innovation :      di = yi - H(xbi) = yi - H(M(xbo))
-    #                  dyi = Hdxi - di   = HMdxo - di
-    # cost function:           J(dxo) =  Jb +  Jy
-    # cost function gradient: gJ(dxo) = gJb + gJy
-    #  Jb = 0.5 *      dxo^T B^{-1} dxo
-    #  Jy = 0.5 * \sum dyi^T R^{-1} dyi
-    # gJb =              B^{-1} dxo
-    # gJy = \sum M^T H^T R^{-1} dyi
-    # gJ  = [ B^{-1} + \sum M^T H^T R^{-1} H M ] dxo - \sum M^T H^T R^{-1} di
-
-    # PRECONDITION WITH sqrt(B) = G
-    # increment  : xo - xbo = dxo                         = Gw
-    #                         dxi = Mdxo                  = MGw
-    # innovation :      di = yi - H(xbi) = yi - H(M(xbo))
-    #                  dyi = Hdxi - di   = HMdxo - di     = HMGw - di
-    # cost function:           J(w) =  Jb +  Jy
-    # cost function gradient: gJ(w) = gJb + gJy
-    #  Jb = 0.5 *      w^T w
-    #  Jy = 0.5 * \sum dyi^T R^{-1} dyi
-    # gJb = w
-    # gJy = \sum G^T M^T H^T R^{-1} dyi
-    # gJ  = [ I + \sum G^T M^T H^T R^{-1} H M G ] w - \sum G^T M^T H^T R^{-1} di
-
-    # PRECONDITION WITH B
-    # increment  : xo - xbo = dxo                         = Bw
-    #                         dxi = Mdxo
-    # innovation :      di = yi - H(xbi) = yi - H(M(xbo))
-    #                  dyi = Hdxi - di   = HMdxo - di
-    # cost function:           J(w) =  Jb +  Jy
-    # cost function gradient: gJ(w) = gJb + gJy
-    #  Jb = 0.5 *      w^T w
-    #  Jy = 0.5 * \sum dyi^T R^{-1} dyi
-    # gJb = w
-    # gJy = \sum M^T H^T R^{-1} dyi
-    # gJ  = w + \sum M^T H^T R^{-1} H M dxo - \sum M^T H^T R^{-1} di
 
     # start with background
     xa   = xb.copy()
@@ -978,8 +978,8 @@ def VarSolver(xb, B, y, R, H, varDA, model):
         s = np.dot(B,r)
         p = -s
         q = -r
-        v = np.zeros(xa.shape)
-        w = np.zeros(B.shape[0])
+        v = np.zeros(r.shape)
+        w = np.zeros(s.shape)
 
     niters = 0
 
@@ -1165,24 +1165,25 @@ def ThreeDvar_pc_adj(gradJ, G, y, R, H, varDA, model):
        model - model class
      KTgradJ - K^T gradJ
       niters - number of iterations required for minimizing the Hessian
-    '''
-    # KTgradJ = K^T gradJ
-    #         = R^{-1} H G [ I + G^T H^T R^{-1} H G]^{-1} G^T gradJ
-    #         = R^{-1} H G [ I + G^T H^T R^{-1} H G]^{-1} w
-    #         = R^{-1} H G q
-    # where
-    # w = G^T gradJ
-    # therefore
-    # [ I + G^T H^T R^{-1} H G]^{-1} w = q
-    # i.e.
-    # [ I + G^T H^T R^{-1} H G]      q = w
 
-    # Solving Ax = b
-    # where
-    # A = [ I + G^T H^T R^{-1} H G]
-    # x = q
-    # b = w
-    # KTgradJ = R^{-1} H G q
+    KTgradJ = K^T gradJ
+            = R^{-1} H G [ I + G^T H^T R^{-1} H G]^{-1} G^T gradJ
+            = R^{-1} H G [ I + G^T H^T R^{-1} H G]^{-1} w
+            = R^{-1} H G q
+    where
+    w = G^T gradJ
+    therefore
+    [ I + G^T H^T R^{-1} H G]^{-1} w = q
+    i.e.
+    [ I + G^T H^T R^{-1} H G]      q = w
+
+    Solving Ax = b
+    where
+    A = [ I + G^T H^T R^{-1} H G]
+    x = q
+    b = w
+    KTgradJ = R^{-1} H G q
+    '''
 
     Rinv = np.linalg.inv(R)
 
@@ -1321,7 +1322,7 @@ def EnsembleVarSolver(xb, S, D, y, R, H, varDA, ensDA, model):
     '''
     Update the prior with Ensemble-based Variational algorithm to produce a posterior.
     This implementation uses the alpha-control vector for minimization to find the weights
-    to the ensemble.
+    to the ensemble. The alpha here is denoted by v.
 
     xa, niters = EnsembleVarSolver(xb, S, D, y, R, H, varDA, model)
 
@@ -1336,19 +1337,25 @@ def EnsembleVarSolver(xb, S, D, y, R, H, varDA, ensDA, model):
        model - model class
           xa - posterior
       niters - number of iterations required for minimizing the cost function
-    '''
 
-    # increment  : xo - xbo = dxo                         = Gw
-    #                         dxi = Mdxo                  = MGw
-    # innovation :      di = yi - H(xbi) = yi - H(M(xbo))
-    #                  dyi = Hdxi - di   = HMdxo - di     = HMGw - di
-    # cost function:           J(w) =  Jb +  Jy
-    # cost function gradient: gJ(w) = gJb + gJy
-    #  Jb = 0.5 *      w^T w
-    #  Jy = 0.5 * \sum dyi^T R^{-1} dyi
-    # gJb = w
-    # gJy = \sum [HMG]^T R^{-1} dyi
-    # gJ  = [ I + \sum [HMG]^T R^{-1} [HMG] ] w - \sum [HMG]^T R^{-1} di
+    NO PRECONDITIONING [Solve using Conjugate Gradient]
+    [ S^{-1} + \sum Di^T Hi^T Ri^{-1} Hi Di ] v = \sum Di^T Hi^T Ri^{-1} di
+    solve for v
+
+    PRECONDITION WITH sqrt(S) = G [Solve using Conjugate Gradient]
+    [ I + \sum G^T Di^T Hi^T Ri^{-1} Hi Di G ] G^{-1} v = \sum G^T Di^T Hi^T Ri^{-1} di
+    let w = G^{-1} v
+    [ I + \sum G^T Di^T Hi^T Ri^{-1} Hi Di G ] w        = \sum G^T Di^T Hi^T Ri^{-1} di
+    solve for w
+    v = G w
+
+    PRECONDITION WITH S [Solve using Double Conjugate Gradient]
+    [ S^{-1} + \sum Di^T Hi^T Ri^{-1} Hi Di ] v = \sum Di^T Hi^T Ri^{-1} di
+    let w = S^{-1} v
+    solve for both v and w
+
+    analysis increment : dxi = Di v
+    '''
 
     # start with background
     xa   = xb.copy()
@@ -1429,25 +1436,27 @@ def EnsembleVarSolver(xb, S, D, y, R, H, varDA, ensDA, model):
     if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
     print '  final residual = %15.10f after %4d iterations' % (residual, niters)
 
-    if   ( varDA.precondition == 0 ): xa = xa + np.dot(D[0,:,:],v)
-    elif ( varDA.precondition == 1 ): xa = xa + np.dot(D[0,:,:],np.dot(S,w))
-    elif ( varDA.precondition == 2 ): xa = xa + np.dot(D[0,:,:],v)
+    if   ( varDA.precondition == 0 ): dxo = np.dot(D[0,:,:],v)
+    elif ( varDA.precondition == 1 ): dxo = np.dot(D[0,:,:],np.dot(S,w))
+    elif ( varDA.precondition == 2 ): dxo = np.dot(D[0,:,:],v)
+
+    xa = xa + dxo
 
     return xa, niters
 # }}}
 ###############################################################
 
 ###############################################################
-def EnsembleFourDvar(xb, G, y, R, H, varDA, model):
+def EnsembleVar(xb, G, y, R, H, varDA, model):
 # {{{
     '''
-    Update the prior with Ensemble-based 4Dvar algorithm to produce a posterior.
-    In this implementation, the incremental form is used.
-    It is the same as the classical formulation.
+    Update the prior with Ensemble-based Variational algorithm to produce a posterior.
     This algorithm utilizes the sqrt(B) preconditioning described in Buehner 2005.
     The sqrt(B) used here is the localized ensemble matrix
+    Although no longer used, this piece of code is left for legacy reasons to test
+    any new implementations.
 
-    xa, niters = EnsembleFourDvar(xb, G, y, R, H, varDA, model)
+    xa, niters = EnsembleVar(xb, G, y, R, H, varDA, ensDA, model)
 
           xb - prior
            G - preconditioning matrix
@@ -1455,22 +1464,23 @@ def EnsembleFourDvar(xb, G, y, R, H, varDA, model):
            R - observation error covariance
            H - forward operator
        varDA - variational data assimilation class
+       ensDA - ensemble data assimilation class
        model - model class
           xa - posterior
       niters - number of iterations required for minimizing the cost function
-    '''
 
-    # increment  : xo - xbo = dxo                         = Gw
-    #                         dxi = Mdxo                  = MGw
-    # innovation :      di = yi - H(xbi) = yi - H(M(xbo))
-    #                  dyi = Hdxi - di   = HMdxo - di     = HMGw - di
-    # cost function:           J(w) =  Jb +  Jy
-    # cost function gradient: gJ(w) = gJb + gJy
-    #  Jb = 0.5 *      w^T w
-    #  Jy = 0.5 * \sum dyi^T R^{-1} dyi
-    # gJb = w
-    # gJy = \sum [HMG]^T R^{-1} dyi
-    # gJ  = [ I + \sum [HMG]^T R^{-1} [HMG] ] w - \sum [HMG]^T R^{-1} di
+    increment  : xo - xbo = dxo                         = Gw
+                            dxi = Mdxo                  = MGw
+    innovation :      di = yi - H(xbi) = yi - H(M(xbo))
+                     dyi = Hdxi - di   = HMdxo - di     = HMGw - di
+    cost function:           J(w) =  Jb +  Jy
+    cost function gradient: gJ(w) = gJb + gJy
+     Jb = 0.5 *      w^T w
+     Jy = 0.5 * \sum dyi^T R^{-1} dyi
+    gJb = w
+    gJy = \sum [HMG]^T R^{-1} dyi
+    gJ  = [ I + \sum [HMG]^T R^{-1} [HMG] ] w - \sum [HMG]^T R^{-1} di
+    '''
 
     # start with background
     xa   = xb.copy()
@@ -1480,8 +1490,7 @@ def EnsembleFourDvar(xb, G, y, R, H, varDA, model):
     xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
 
     d  = np.zeros(y.shape)
-    g = np.zeros(G.shape[-1])
-    HG = G.copy()
+    g  = np.zeros(ensDA.Nens*varDA.localization.cov_trunc)
 
     for i in range(varDA.fdvar.nobstimes):
 
@@ -1489,9 +1498,7 @@ def EnsembleFourDvar(xb, G, y, R, H, varDA, model):
 
         d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
 
-        HG[i,:,:] = np.dot(H,G[i,:,:])
-
-        g = g + Jgrad(HG[i,valInd,:], np.diag(Rinv[valInd,valInd]), d[i,valInd])
+        g = g + np.dot(G[i,:,:].T, Jgrad(H[valInd,:], np.diag(Rinv[valInd,valInd]), d[i,valInd]))
 
     r  = g.copy()
     s  = 0.0
@@ -1516,7 +1523,7 @@ def EnsembleFourDvar(xb, G, y, R, H, varDA, model):
 
             valInd = np.isfinite(y[i,])
 
-            Ap = Ap + hessian(HG[i,valInd,:], np.diag(Rinv[valInd,valInd]), p)
+            Ap = Ap + np.dot(G[i,:,:].T, hessian(H[valInd,:], np.diag(Rinv[valInd,valInd]), np.dot(G[i,:,:],p)))
 
         [dx,w,r,s,p,q] = minimize(varDA,dx,w,r,s,p,q,Ap,G)
 

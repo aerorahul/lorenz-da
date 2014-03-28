@@ -45,9 +45,6 @@ def main():
     # Load climatological covariance once and for all ...
     Bc = read_clim_cov(model)
 
-    # construct localization matrix once and for all ...
-    L = localization_operator(model,varDA.localization)
-
     nobs = model.Ndof*varDA.fdvar.nobstimes
     y    = np.tile(np.dot(H,xt),[varDA.fdvar.nobstimes,1])
 

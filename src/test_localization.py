@@ -40,11 +40,10 @@ def main():
     fdiag = '/home/rmahajan/svn-work/lorenz1963/test/localization/L96_hybDA_diag_H1R1.nc4'
 
     [model, DA, ensDA, varDA]       = read_diag_info(fdiag)
-    [_, Xb, _, _, _, _, _, _, _, _] = read_diag(fdiag, 0)
+    if ( DA.do_hybrid ):[_, Xb, _, _, _, _, _, _, _, _] = read_diag(fdiag, 0)
+    else:               [_, Xb, _, _, _, _, _]          = read_diag(fdiag, 0)
     Xbp = np.transpose(Xb - np.mean(Xb,axis=0))
     Xb  = np.transpose(Xb)
-
-    ensDA.localization.cov_cutoff = 0.0125 * 1
 
     Bs = read_clim_cov(model)
     Be = np.cov(Xb,ddof=1)
@@ -55,7 +54,7 @@ def main():
         for j in range(0,model.Ndof):
             dist = np.float( np.abs( i - j ) ) / model.Ndof
             if ( dist > 0.5 ): dist = 1.0 - dist
-            cov_factor = compute_cov_factor(dist, ensDA.localization.cov_cutoff)
+            cov_factor = compute_cov_factor(dist, ensDA.localization)
             L[i,j]  = cov_factor
             L2[i,j] = np.sqrt(cov_factor)
             print 'i = %2d, j = %2d, d = %5.3f, c = %10.8f, c = %10.8f' % (i, j, dist, L[i,j], L2[i,j])

@@ -757,7 +757,7 @@ def read_ObImpact_diag(fname, time, end_time=None):
 ###############################################################
 
 ###############################################################
-def read_clim_cov(model):
+def read_clim_cov(model,fname=None):
 # {{{
     '''
     read the climatological covariance from file
@@ -770,11 +770,10 @@ def read_clim_cov(model):
 
     source = 'read_clim_cov'
 
-    print 'load climatological covariance for %s ...' % (model.Name)
+    if ( fname == None ): fname = '%s_climo_B.nc4' % model.Name
+    print 'load climatological covariance for %s from %s ...' % (model.Name, fname)
 
     try:
-
-        fname = '%s_climo_B.nc4' % model.Name
 
         nc = Dataset(fname,'r')
         Bc = nc.variables['B'][:]

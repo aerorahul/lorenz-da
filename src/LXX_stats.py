@@ -42,20 +42,20 @@ def main():
 
     method = args.covariances # choose method to create B: NMC / Climo / EnKF
 
-    model = Lorenz()
-    if   ( args.model == 'L63' ):
-        Ndof = 3                          # model degrees of freedom
-        Par  = [10.0, 28.0, 8.0/3.0]      # model parameters [sigma, rho, beta]
-        dt   = 1.0e-4                     # model time-step
-        tf   =  0.25                      # time for forecast (6 hours)
-    elif ( args.model == 'L96' ):
-        Ndof = 40                         # model degrees of freedom
-        Par  = [8.0, 8.4]                 # model parameters F, F+dF
-        dt   = 1.0e-4                     # model time-step
-        tf   =  0.05                      # time for forecast (6 hours)
-    model.init(Name=args.model,Ndof=Ndof,Par=Par,dt=dt)
-
     if ( (method == 'NMC') or (method == 'Climo') ):
+
+        model = Lorenz()
+        if   ( args.model == 'L63' ):
+            Ndof = 3                          # model degrees of freedom
+            Par  = [10.0, 28.0, 8.0/3.0]      # model parameters [sigma, rho, beta]
+            dt   = 1.0e-4                     # model time-step
+            tf   =  0.25                      # time for forecast (6 hours)
+        elif ( args.model == 'L96' ):
+            Ndof = 40                         # model degrees of freedom
+            Par  = [8.0, 8.4]                 # model parameters F, F+dF
+            dt   = 1.0e-4                     # model time-step
+            tf   =  0.05                      # time for forecast (6 hours)
+        model.init(Name=args.model,Ndof=Ndof,Par=Par,dt=dt)
 
         ts = 50*4*tf    # time for spin-up  (50 days)
         Ne = 500        # no. of samples to estimate B
@@ -67,13 +67,6 @@ def main():
         [x0,_] = get_IC(model,IC)
 
         if ( method == 'NMC' ): pscale = 1.0e-3   # scale of perturbations to add
-
-    elif ( method == 'EnKF' ):
-
-        # get the name of EnKF output diagnostic file to read
-        fname = args.filename
-
-    if ( (method == 'NMC') or (method == 'Climo') ):
 
         # get a state on the attractor
         print 'spinning-up onto the attractor ...'
@@ -109,35 +102,49 @@ def main():
             xt = xt + pscale * np.random.randn(model.Ndof)
 
         # compute climatological covariance matrix
-        B = np.dot(X,np.transpose(X)) / (Ne - 1)
+        B = np.dot(X,X.T) / (Ne - 1)
 
     elif ( method == 'EnKF'):
 
-        print 'Using the EnKF output to create B'
-        [model_tmp, DA, ensDA, varDA] = read_diag_info(fname)
+        # get the name of EnKF output diagnostic file to read
+        fname = args.filename
 
-        if ( (model.Name != model_tmp.Name) or (model.Ndof != model_tmp.Ndof) ):
+        print 'Using the EnKF output to create B'
+        [model, DA, ensDA, varDA] = read_diag_info(fname)
+
+        if ( args.model != model.Name ):
             print 'mismatch between models, please verify'
+            print 'model name from file = %s' % model.Name
+            print 'desired model name   = %s' % args.model
             sys.exit(1)
 
-        print 'no. of samples ... %d' % DA.nassim
         offset = 501
+        nsamp = DA.nassim - offset
+        print 'no. of samples available... %d' % DA.nassim
         print 'removing first %d samples to account for spin-up ...' % offset
-        Ntim = DA.nassim - offset
+        print 'no. of samples used ... %d' % nsamp
 
         _, Xb, _, _, _, _, _ = read_diag(fname, offset, end_time=DA.nassim)
 
-        Bi = np.zeros((Ntim,model.Ndof,model.Ndof))
-        for i in range(Ntim): Bi[i,] = np.cov(np.transpose(np.squeeze(Xb[i,])),ddof=1)
-
-        B = np.mean(Bi,axis=0)
+        B = np.zeros((model.Ndof,model.Ndof))
+        for i in range(nsamp):
+            B += np.cov(Xb[i,].T,ddof=1) / nsamp
 
     # save B to disk for use with DA experiments
     print 'save B to disk ...'
     print np.diag(B)
     nc       = Dataset('L96_climo_B_' + method +'.nc4',mode='w',clobber=True,format='NETCDF4')
-    Dim      = nc.createDimension('xyz',model.Ndof)
-    Var      = nc.createVariable('B', 'f8', ('xyz','xyz',))
+    Dim      = nc.createDimension('ndof',model.Ndof)
+    Var      = nc.createVariable('B', 'f8', ('ndof','ndof',))
+    nc.model = model.Name
+    if   ( model.Name == 'L63' ):
+        nc.sigma = model.Par[0]
+        nc.rho   = model.Par[1]
+        nc.beta  = model.Par[2]
+    elif ( model.Name == 'L96' ):
+        nc.F     = model.Par[0]
+        nc.dF    = model.Par[1]-model.Par[0]
+    nc.dt = model.dt
     Var[:,:] = B
     nc.close()
     print '... all done ...'

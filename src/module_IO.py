@@ -224,8 +224,8 @@ def read_diag_info(fname):
 
         nassim   = len(nc.dimensions['ntime'])
         ntimes   = nc.ntimes
-        Nobs     = len(nc.dimensions['nobs'])
-        maxouter = len(nc.dimensions['nouter'])
+        Nobs     = len(nc.dimensions['nobs'  ]) if ( 'nobs'   in nc.dimensions ) else model.Ndof
+        maxouter = len(nc.dimensions['nouter']) if ( 'nouter' in nc.dimensions ) else 1
 
         DA = DataAssim()
         DA.init(nassim=nassim,ntimes=ntimes,maxouter=maxouter,Nobs=Nobs)
@@ -616,7 +616,7 @@ def transfer_ga(file_src, file_dst):
 ###############################################################
 
 ###############################################################
-def create_ObImpact_diag(fname, model, DA, ensDA, varDA):
+def create_ObImpact_diag(fname, model, DA, ensDA, varDA, generic=False):
 # {{{
     '''
     create an output file for writing observation impact diagnostics
@@ -628,6 +628,7 @@ def create_ObImpact_diag(fname, model, DA, ensDA, varDA):
        DA - DA Class
     ensDA - ensemble DA Class
     varDA - variational DA Class
+  generic - generic ObImpact diagnostic file [default=False]
     '''
 
     source = 'create_ObImpact_diag'
@@ -636,15 +637,19 @@ def create_ObImpact_diag(fname, model, DA, ensDA, varDA):
 
         nc  = Dataset(fname, mode='w', clobber=True, format='NETCDF4')
 
-        Dim = nc.createDimension('ntime', size=None      )
-        Dim = nc.createDimension('ndof',  size=model.Ndof)
-        Dim = nc.createDimension('nobs',  size=DA.Nobs   )
-        Dim = nc.createDimension('ncopy', size=ensDA.Nens)
+        Dim = nc.createDimension('ntime', size=None       )
+        Dim = nc.createDimension('ndof',  size=model.Ndof )
+        Dim = nc.createDimension('nobs',  size=DA.Nobs    )
+        Dim = nc.createDimension('nouter',size=DA.maxouter)
 
-        Var = nc.createVariable('ens_dJa','f8',('ntime','nobs',))
-        Var = nc.createVariable('ens_dJb','f8',('ntime','nobs',))
-        Var = nc.createVariable('adj_dJa','f8',('ntime','nobs',))
-        Var = nc.createVariable('adj_dJb','f8',('ntime','nobs',))
+        if ( generic ):
+            Var = nc.createVariable('dJa','f8',('ntime','nobs',))
+            Var = nc.createVariable('dJb','f8',('ntime','nobs',))
+        else:
+            Var = nc.createVariable('ens_dJa','f8',('ntime','nobs',))
+            Var = nc.createVariable('ens_dJb','f8',('ntime','nobs',))
+            Var = nc.createVariable('adj_dJa','f8',('ntime','nobs',))
+            Var = nc.createVariable('adj_dJb','f8',('ntime','nobs',))
 
         nc.close()
 
@@ -662,15 +667,17 @@ def create_ObImpact_diag(fname, model, DA, ensDA, varDA):
 ###############################################################
 
 ###############################################################
-def write_ObImpact_diag(fname, time, ens_dJa=None, ens_dJb=None, adj_dJa=None, adj_dJb=None):
+def write_ObImpact_diag(fname, time, dJa=None, dJb=None, ens_dJa=None, ens_dJb=None, adj_dJa=None, adj_dJb=None):
 # {{{
     '''
     write the observation impact diagnostics to an output file
 
-    write_ObImpact_diag(fname, time, ens_dJa=None, ens_dJb=None, adj_dJa=None, adj_dJb=None)
+    write_ObImpact_diag(fname, time, dJa=None, dJb=None, ens_dJa=None, ens_dJb=None, adj_dJa=None, adj_dJb=None)
 
       fname - name of the output file, must already exist
        time - time index to write diagnostics for
+        dJa - 2nd order correction to the estimate of observation impact
+        dJb - 1st order estimate of observation impact
     ens_dJa - 2nd order correction to ensemble estimate of observation impact
     ens_dJb - 1st order ensemble estimate of observation impact
     adj_dJa - 2nd order correction to adjoint estimate of observation impact
@@ -687,10 +694,12 @@ def write_ObImpact_diag(fname, time, ens_dJa=None, ens_dJb=None, adj_dJa=None, a
 
         nc = Dataset(fname, mode='a', clobber=True, format='NETCDF4')
 
-        if ( ens_dJa != None ): nc.variables['ens_dJa'][time,:] = ens_dJa.copy()
-        if ( ens_dJb != None ): nc.variables['ens_dJb'][time,:] = ens_dJb.copy()
-        if ( adj_dJa != None ): nc.variables['adj_dJa'][time,:] = adj_dJa.copy()
-        if ( adj_dJb != None ): nc.variables['adj_dJb'][time,:] = adj_dJb.copy()
+        if (     dJa != None ): nc.variables[    'dJa'][time,:] =     dJa
+        if (     dJb != None ): nc.variables[    'dJb'][time,:] =     dJb
+        if ( ens_dJa != None ): nc.variables['ens_dJa'][time,:] = ens_dJa
+        if ( ens_dJb != None ): nc.variables['ens_dJb'][time,:] = ens_dJb
+        if ( adj_dJa != None ): nc.variables['adj_dJa'][time,:] = adj_dJa
+        if ( adj_dJb != None ): nc.variables['adj_dJb'][time,:] = adj_dJb
 
         nc.close()
 
@@ -708,7 +717,7 @@ def write_ObImpact_diag(fname, time, ens_dJa=None, ens_dJb=None, adj_dJa=None, a
 ###############################################################
 
 ###############################################################
-def read_ObImpact_diag(fname, time, end_time=None):
+def read_ObImpact_diag(fname, time, end_time=None, generic=False):
 # {{{
     '''
     read the observation impact diagnostics from an output file given name and time index
@@ -718,6 +727,9 @@ def read_ObImpact_diag(fname, time, end_time=None):
        fname - name of the file to read from, must already exist
         time - time index to read diagnostics
     end_time - return chunk of data from time to end_time (None)
+     generic - generic ObImpact diagnostic file [default=False]
+         dJa - 2nd order correction to the estimate of observation impact
+         dJb - 1st order estimate of observation impact
      ens_dJa - 2nd order correction to ensemble estimate of observation impact
      ens_dJb - 1st order ensemble estimate of observation impact
      adj_dJa - 2nd order correction to adjoint estimate of observation impact
@@ -736,10 +748,14 @@ def read_ObImpact_diag(fname, time, end_time=None):
 
         nc = Dataset(fname, mode='r', format='NETCDF4')
 
-        ens_dJa = nc.variables['ens_dJa'][time:end_time,]
-        ens_dJb = nc.variables['ens_dJb'][time:end_time,]
-        adj_dJa = nc.variables['adj_dJa'][time:end_time,]
-        adj_dJb = nc.variables['adj_dJb'][time:end_time,]
+        if ( generic ):
+            dJa = nc.variables['dJa'][time:end_time,]
+            dJb = nc.variables['dJb'][time:end_time,]
+        else:
+            ens_dJa = nc.variables['ens_dJa'][time:end_time,]
+            ens_dJb = nc.variables['ens_dJb'][time:end_time,]
+            adj_dJa = nc.variables['adj_dJa'][time:end_time,]
+            adj_dJb = nc.variables['adj_dJb'][time:end_time,]
 
         nc.close()
 
@@ -752,7 +768,10 @@ def read_ObImpact_diag(fname, time, end_time=None):
         print Instance
         sys.exit(1)
 
-    return [ens_dJa, ens_dJb, adj_dJa, adj_dJb]
+    if ( generic ):
+        return [dJa, dJb]
+    else:
+        return [ens_dJa, ens_dJb, adj_dJa, adj_dJb]
 # }}}
 ###############################################################
 

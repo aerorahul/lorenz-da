@@ -45,7 +45,7 @@ def main():
     Xbp = np.transpose(Xb - np.mean(Xb,axis=0))
     Xb  = np.transpose(Xb)
 
-    Bs = read_clim_cov(model)
+    Bs = read_clim_cov(model=model)
     Be = np.cov(Xb,ddof=1)
 
     L  = np.ones((model.Ndof,model.Ndof))

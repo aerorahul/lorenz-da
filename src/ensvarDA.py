@@ -72,7 +72,7 @@ def main():
         ver = xt.copy()
 
         # new observations from noise about truth
-        y = create_obs(model,varDA,xt,H,R)
+        y = create_obs(model,varDA,xt,H,R,yold=y)
 
         # advance the ensemble to the beginning of the window
         Xb = advance_ensemble(Xa, varDA.fdvar.tbkgd, model, perfect=False)

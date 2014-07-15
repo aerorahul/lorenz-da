@@ -43,7 +43,7 @@ def main():
     xb = xa.copy()
 
     # Load climatological covariance once and for all ...
-    Bc = read_clim_cov(model)
+    Bc = read_clim_cov(model=model)
 
     nobs = model.Ndof*varDA.fdvar.nobstimes
     y    = np.tile(np.dot(H,xt),[varDA.fdvar.nobstimes,1])
@@ -65,7 +65,7 @@ def main():
         ver = xt.copy()
 
         # new observations from noise about truth
-        y = create_obs(model,varDA,xt,H,R)
+        y = create_obs(model,varDA,xt,H,R,yold=y)
 
         # advance analysis with the full nonlinear model
         xs = model.advance(xa, varDA.fdvar.tbkgd, perfect=False)

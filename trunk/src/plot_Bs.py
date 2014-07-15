@@ -36,7 +36,7 @@ args = parser.parse_args()
 model = type('',(),{})
 model.Name = args.model
 
-Bs = read_clim_cov(model,fname=args.filename)
+Bs = read_clim_cov(fname=args.filename)
 
 fig = plot_cov(Bs, title="Climatological : $\mathbf{B}_c$")
 

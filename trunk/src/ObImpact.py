@@ -59,7 +59,7 @@ def main():
     tf = np.arange(DA.t0,nf*DA.ntimes+model.dt,model.dt)
 
     # load climatological covariance once and for all:
-    if ( DA.do_hybrid ): Bc = read_clim_cov(model)
+    if ( DA.do_hybrid ): Bc = read_clim_cov(model=model)
 
     fname_ObImpact = fname_diag.replace('diag','ObImpact')
     create_ObImpact_diag(fname_ObImpact, model, DA, ensDA, varDA)

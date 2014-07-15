@@ -82,7 +82,7 @@ def main():
 
     if ( (DA.do_hybrid) or (hasattr(varDA,'update')) ):
         var_evratio = np.zeros(np.shape(xbm)[0])
-        Bs = varDA.inflation.infl_fac * read_clim_cov(model)
+        Bs = varDA.inflation.infl_fac * read_clim_cov(model=model)
         if ( DA.do_hybrid ): L = localization_operator(model,ensDA.localization)
         for i in range(DA.nassim):
             if ( DA.do_hybrid ): xtmp = xbc

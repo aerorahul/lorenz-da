@@ -46,7 +46,7 @@ def main():
     xbc = np.mean(Xb,axis=1)
 
     # load climatological covariance once and for all ...
-    Bc = read_clim_cov(model)
+    Bc = read_clim_cov(model=model)
 
     # construct localization matrix once and for all ...
     L = localization_operator(model,ensDA.localization)
@@ -71,7 +71,7 @@ def main():
         ver = xt.copy()
 
         # new observations from noise about truth
-        y = create_obs(model,varDA,xt,H,R)
+        y = create_obs(model,varDA,xt,H,R,yold=y)
 
         # advance the ensemble first with the full nonlinear model
         Xb = advance_ensemble(Xa, varDA.fdvar.tbkgd, model, perfect=False)

@@ -28,6 +28,7 @@ from   netCDF4       import Dataset
 from   module_Lorenz import *
 from   module_IO     import *
 from   argparse      import ArgumentParser, ArgumentDefaultsHelpFormatter
+from   plot_stats    import plot_cov
 
 ###############################################################
 
@@ -37,10 +38,12 @@ def main():
     parser = ArgumentParser(description = 'Compute climatological covariances for LXX models', formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('-m','--model',help='model name',type=str,choices=['L63','L96'],default='L96',required=False)
     parser.add_argument('-c','--covariances',help='covariance method',type=str,choices=['NMC','Climo','EnKF'],default='EnKF',required=False)
+    parser.add_argument('-n','--normalize',help='normalize the covariances',action='store_true',default=False,required=False)
     parser.add_argument('-f','--filename',help='filename for EnKF method',type=str,required=True)
     args = parser.parse_args()
 
-    method = args.covariances # choose method to create B: NMC / Climo / EnKF
+    method    = args.covariances # choose method to create B: NMC / Climo / EnKF
+    normalize = args.normalize   # normalize the covariances ( ie. write out correlation )
 
     if ( (method == 'NMC') or (method == 'Climo') ):
 
@@ -130,10 +133,16 @@ def main():
         for i in range(nsamp):
             B += np.cov(Xb[i,].T,ddof=1) / nsamp
 
+    fig = plot_cov(B,'full B')
+    maxval = np.max(np.diag(B)) if ( normalize ) else 1.0
+    B = B / maxval
+
     # save B to disk for use with DA experiments
     print 'save B to disk ...'
     print np.diag(B)
-    nc       = Dataset('L96_climo_B_' + method +'.nc4',mode='w',clobber=True,format='NETCDF4')
+
+    fname = 'L96_climo_B_%s.nc4' % method
+    nc       = Dataset(fname,mode='w',clobber=True,format='NETCDF4')
     Dim      = nc.createDimension('ndof',model.Ndof)
     Var      = nc.createVariable('B', 'f8', ('ndof','ndof',))
     nc.model = model.Name
@@ -144,11 +153,13 @@ def main():
     elif ( model.Name == 'L96' ):
         nc.F     = model.Par[0]
         nc.dF    = model.Par[1]-model.Par[0]
+    nc.maxval = maxval
     nc.dt = model.dt
     Var[:,:] = B
     nc.close()
-    print '... all done ...'
 
+    pyplot.show()
+    print '... all done ...'
     sys.exit(0)
 ###############################################################
 

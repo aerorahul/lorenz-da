@@ -776,26 +776,34 @@ def read_ObImpact_diag(fname, time, end_time=None, generic=False):
 ###############################################################
 
 ###############################################################
-def read_clim_cov(model,fname=None):
+def read_clim_cov(model=None,fname=None):
 # {{{
     '''
     read the climatological covariance from file
 
-    Bc = read_clim_cov(model)
+    Bc = read_clim_cov(model=None,fname=None)
 
-    model - model Class
+    model - model Class [None]
+    fname - filename to read climatological covariance from [None]
        Bc - climatological covariance
     '''
 
     source = 'read_clim_cov'
 
+    if ( model == None and fname == None ):
+        print 'Exception occured in %s of %s' % (source, module)
+        print 'must pass either model class or filename'
+        sys.exit(0)
+
     if ( fname == None ): fname = '%s_climo_B.nc4' % model.Name
-    print 'load climatological covariance for %s from %s ...' % (model.Name, fname)
+
+    print 'load climatological covariance for from %s ...' % (fname)
 
     try:
 
         nc = Dataset(fname,'r')
         Bc = nc.variables['B'][:]
+        maxval = nc.maxval
         nc.close()
 
     except Exception as Instance:
@@ -807,7 +815,7 @@ def read_clim_cov(model,fname=None):
         print Instance
         sys.exit(1)
 
-    return Bc
+    return maxval*Bc
 # }}}
 ###############################################################
 

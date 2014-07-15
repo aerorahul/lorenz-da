@@ -379,11 +379,19 @@ class fdvar(object):
         if   ( self.nobstimes == 1 ):
             self.twind_obsInterval = 0
             self.twind_obsTimes    = self.twind.copy()
+
         elif ( self.nobstimes  > 1 ):
             self.twind_obsInterval = self.tw / (self.nobstimes-1)
             self.twind_obsTimes    = self.twind[::self.twind_obsInterval]
+
         self.twind_obsIndex = np.array(np.rint(self.twind_obsTimes / model.dt), dtype=int)
         self.twind_obs      = np.linspace(DA.t0,self.twind_obsInterval,self.twind_obsInterval+1) * model.dt
+
+        overlap = np.int(self.tf - (1.0+self.offset)*self.ta)
+        if ( overlap >= 0.0 ):
+            self.noverlap = np.sum(i <= overlap for i in self.twind_obsIndex)
+        else:
+            self.noverlap = 0
 
         for key, value in kwargs.iteritems(): self.__setattr__(key,value)
     #}}}
@@ -2005,7 +2013,7 @@ def compute_B(varDA,Bc,outer=0):
 ###############################################################
 
 ###############################################################
-def create_obs(model,varDA,xt,H,R,**kwargs):
+def create_obs(model,varDA,xt,H,R,yold=None):
 # {{{
     '''
     y = create_obs(model,varDA,xt,H,R)
@@ -2040,7 +2048,10 @@ def create_obs(model,varDA,xt,H,R,**kwargs):
         y = np.zeros((varDA.fdvar.nobstimes,model.Ndof))
 
         for i in range(varDA.fdvar.nobstimes):
-            y[i,:] = np.dot(H,xs[varDA.fdvar.twind_obsIndex[i],:] + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
+            if ( i < varDA.fdvar.noverlap ):
+                y[i,:] = yold[varDA.fdvar.nobstimes-varDA.fdvar.noverlap+i,:].copy()
+            else:
+                y[i,:] = np.dot(H,xs[varDA.fdvar.twind_obsIndex[i],:] + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
 
         return y
 

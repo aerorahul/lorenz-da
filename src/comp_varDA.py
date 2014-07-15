@@ -64,7 +64,7 @@ def main():
     # read general dimensions and necessary attributes from the diagnostic file
     [model, DA, _, gvarDA] = read_diag_info(fnames[0])
 
-    Bc = read_clim_cov(model)
+    Bc = read_clim_cov(model=model)
 
     if   ( gvarDA.update == 1 ): vstr = '3DVar'
     elif ( gvarDA.update == 2 ): vstr = '4DVar'

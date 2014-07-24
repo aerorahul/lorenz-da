@@ -25,6 +25,7 @@ __status__    = "Prototype"
 import sys
 import numpy      as     np
 from   matplotlib import pyplot
+from   argparse   import ArgumentParser,ArgumentDefaultsHelpFormatter
 from   netCDF4    import Dataset
 from   module_IO  import *
 ###############################################################
@@ -33,7 +34,20 @@ from   module_IO  import *
 def main():
 
     # name of starting ensDA output diagnostic file, starting index and measure
-    [measure, fname, sOI, _] = get_input_arguments()
+
+    parser = ArgumentParser(description='compare the diag files written by varDA.py',formatter_class=ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-f','--filename',help='name of the diag file to read',required=True)
+    parser.add_argument('-m','--measure',help='measure to evaluate performance',required=False,choices=['obs','truth'],default='truth')
+    parser.add_argument('-b','--begin_index',help='starting index to read',type=int,required=False,default=1)
+    parser.add_argument('-e','--end_index',help='ending index to read',type=int,required=False,default=-1)
+    parser.add_argument('-s','--save_figure',help='save figures',action='store_true',required=False)
+    args = parser.parse_args()
+
+    fname    = args.filename
+    measure  = args.measure
+    sOI      = args.begin_index
+    eOI      = args.end_index
+    save_fig = args.save_figure
 
     # Inflation factors to compare
     alpha = [1.0, 2.0, 3.0, 3.1, 3.2, 3.4]
@@ -49,7 +63,7 @@ def main():
 
     nf = len(alpha)
     fnames = []
-    for i in range(0,nf): fnames.append( fname + '%3.1f.nc4' % ((alpha[i])) )
+    for i in range(nf): fnames.append( fname + '%3.2f.nc4' % ((alpha[i])) )
 
     if ( len(fnames) <= 15):
         fcolor = ["#000000", "#C0C0C0", "#808080", "#800000", "#FF0000",\
@@ -93,8 +107,8 @@ def main():
 
         try:
             nc = Dataset(fname, mode='r', format='NETCDF4')
-            flabel.append(r'$\alpha = %3.1f$' % alpha[f])
-            blabel.append('%3.1f' % alpha[f])
+            flabel.append(r'$\alpha = %3.2f$' % alpha[f])
+            blabel.append('%3.2f' % alpha[f])
             nc.close()
         except Exception as Instance:
             print 'Exception occurred during read of ' + fname
@@ -120,7 +134,7 @@ def main():
 
         evratio = niters.copy()
         evratio = np.zeros(len(niters))
-        for i in range(0,DA.nassim):
+        for i in range(DA.nassim):
             innov  = np.sum((y[i,:] - np.dot(np.diag(H[i,:]),xb[  i,:]))**2)
             totvar = np.sum(varDA.inflation.infl_fac*np.diag(Bc) + R[i,:])
             evratio[i] = innov / totvar

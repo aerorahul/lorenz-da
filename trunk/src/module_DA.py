@@ -2016,7 +2016,7 @@ def compute_B(varDA,Bc,outer=0):
 def create_obs(model,varDA,xt,H,R,yold=None):
 # {{{
     '''
-    y = create_obs(model,varDA,xt,H,R)
+    y = create_obs(model,varDA,xt,H,R,yold=None)
 
     Create observations for EnKF / 3DVar / 4DVar within a specified obs. window
 
@@ -2026,6 +2026,7 @@ def create_obs(model,varDA,xt,H,R,yold=None):
      H - forward operator
      R - observation error covariance
      y - observation vector / matrix
+  yold - observation vector / matrix from previous cycle [None]
     '''
     # new observations from noise about truth
 
@@ -2035,23 +2036,18 @@ def create_obs(model,varDA,xt,H,R,yold=None):
         y[0,:] = np.dot(H,xt + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
         return y
 
-    if ( varDA.update == 1 ):
-        y = np.zeros((1,model.Ndof))
-        y[0,:] = np.dot(H,xt + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
-        return y
-
-    if ( varDA.update == 2 ):
-
-        # integrate truth within the obs. window
-        xs = model.advance(xt, varDA.fdvar.twind, perfect=True)
+    if ( varDA.update in [1,2] ):
 
         y = np.zeros((varDA.fdvar.nobstimes,model.Ndof))
+
+        # integrate truth within the obs. window and collect state at obs. times
+        xs = model.advance(xt, varDA.fdvar.twind, perfect=True)[varDA.fdvar.twind_obsIndex,:]
 
         for i in range(varDA.fdvar.nobstimes):
             if ( i < varDA.fdvar.noverlap ):
                 y[i,:] = yold[varDA.fdvar.nobstimes-varDA.fdvar.noverlap+i,:].copy()
             else:
-                y[i,:] = np.dot(H,xs[varDA.fdvar.twind_obsIndex[i],:] + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
+                y[i,:] = np.dot(H,xs[i,:] + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
 
         return y
 

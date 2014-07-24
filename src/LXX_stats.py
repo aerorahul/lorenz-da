@@ -38,12 +38,10 @@ def main():
     parser = ArgumentParser(description = 'Compute climatological covariances for LXX models', formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('-m','--model',help='model name',type=str,choices=['L63','L96'],default='L96',required=False)
     parser.add_argument('-c','--covariances',help='covariance method',type=str,choices=['NMC','Climo','EnKF'],default='EnKF',required=False)
-    parser.add_argument('-n','--normalize',help='normalize the covariances',action='store_true',default=False,required=False)
     parser.add_argument('-f','--filename',help='filename for EnKF method',type=str,required=True)
     args = parser.parse_args()
 
     method    = args.covariances # choose method to create B: NMC / Climo / EnKF
-    normalize = args.normalize   # normalize the covariances ( ie. write out correlation )
 
     if ( (method == 'NMC') or (method == 'Climo') ):
 
@@ -134,8 +132,6 @@ def main():
             B += np.cov(Xb[i,].T,ddof=1) / nsamp
 
     fig = plot_cov(B,'full B')
-    maxval = np.max(np.diag(B)) if ( normalize ) else 1.0
-    B = B / maxval
 
     # save B to disk for use with DA experiments
     print 'save B to disk ...'
@@ -153,7 +149,6 @@ def main():
     elif ( model.Name == 'L96' ):
         nc.F     = model.Par[0]
         nc.dF    = model.Par[1]-model.Par[0]
-    nc.maxval = maxval
     nc.dt = model.dt
     Var[:,:] = B
     nc.close()

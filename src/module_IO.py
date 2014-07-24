@@ -776,15 +776,16 @@ def read_ObImpact_diag(fname, time, end_time=None, generic=False):
 ###############################################################
 
 ###############################################################
-def read_clim_cov(model=None,fname=None):
+def read_clim_cov(model=None,fname=None,norm=False):
 # {{{
     '''
     read the climatological covariance from file
 
-    Bc = read_clim_cov(model=None,fname=None)
+    Bc = read_clim_cov(model=None,fname=None,norm=False)
 
     model - model Class [None]
     fname - filename to read climatological covariance from [None]
+     norm - return normalized covariance [False]
        Bc - climatological covariance
     '''
 
@@ -803,7 +804,6 @@ def read_clim_cov(model=None,fname=None):
 
         nc = Dataset(fname,'r')
         Bc = nc.variables['B'][:]
-        maxval = nc.maxval
         nc.close()
 
     except Exception as Instance:
@@ -815,7 +815,9 @@ def read_clim_cov(model=None,fname=None):
         print Instance
         sys.exit(1)
 
-    return maxval*Bc
+    if ( norm ): Bc = Bc / np.max(np.diag(Bc))
+
+    return Bc
 # }}}
 ###############################################################
 

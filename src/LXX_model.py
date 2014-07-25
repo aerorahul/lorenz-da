@@ -33,7 +33,7 @@ from   argparse      import ArgumentParser, ArgumentDefaultsHelpFormatter
 ###############################################################
 
 parser = ArgumentParser(description = 'Test TLM and Adjoint for LXX models', formatter_class=ArgumentDefaultsHelpFormatter)
-parser.add_argument('-m','--model',help='model name',type=str,required=False,choices=['L63','L96'],default='L96')
+parser.add_argument('-m','--model',help='model name',type=str,required=False,choices=['L63','L96','L96_2scale'],default='L96')
 args = parser.parse_args()
 
 ###############################################################
@@ -42,13 +42,17 @@ np.random.seed(0)
 
 model = Lorenz() # model Class
 if   ( args.model == 'L63' ):
-    Ndof = 3                          # model degrees of freedom
-    Par  = [10.0, 28.0, 8.0/3.0]      # model parameters [sigma, rho, beta]
-    dt   = 1.0e-3                     # model time-step
+    Par  = [10.0, 28.0, 8.0/3.0]               # model parameters [sigma, rho, beta]
+    Ndof = 3                                   # model degrees of freedom
+    dt   = 1.0e-3                              # model time-step
 elif ( args.model == 'L96' ):
-    Ndof = 40                         # model degrees of freedom
-    Par  = [8.0, 8.4]                 # model parameters F, F+dF
-    dt   = 1.0e-4                     # model time-step
+    Par  = [8.0, 8.4]                          # model parameters [F, F+dF]
+    Ndof = 40                                  # model degrees of freedom
+    dt   = 1.0e-4                              # model time-step
+elif ( args.model == 'L96_2scale' ):
+    Par  = [8.0, 8.4, 40, 4, 10.0, 10.0, 1.0]  # model parameters [F, F+dF, m, n, b, c, h]
+    Ndof = 40*(4+1)                            # model degrees of freedom
+    dt   = 1.0e-4                              # model time-step
 model.init(Name=args.model,Ndof=Ndof,Par=Par,dt=dt)
 
 IC          = type('',(),{})
@@ -68,8 +72,12 @@ ts = np.rint(np.linspace(0,1000*tf/model.dt,1000*tf/model.dt+1)) * model.dt
 xs = model.advance(x0, ts, perfect=True)
 x0 = xs[-1,:].copy()
 
-if   ( model.Name == 'L63' ): exec('plot_%s(att=xs)'                         % (model.Name            ))
-elif ( model.Name == 'L96' ): exec('plot_%s(ver=xs[-1,:],obs=xs[-1,:],N=%d)' % (model.Name, model.Ndof))
+if   ( model.Name == 'L63' ):
+    exec('plot_%s(att=xs)'                         % (model.Name            ))
+elif ( model.Name == 'L96' ):
+    exec('plot_%s(ver=xs[-1,:],obs=xs[-1,:],N=%d)' % (model.Name, model.Ndof))
+elif ( model.Name == 'L96_2scale' ):
+    exec('plot_%s(ver=xs[-1,:],obs=xs[-1,:],N=%d)' % (model.Name, model.Ndof))
 
 ts = np.rint(np.linspace(0,tf/model.dt,tf/model.dt+1)) * model.dt
 

@@ -82,11 +82,15 @@ class Lorenz(object):
         self.Name = Name
         self.dt   = dt
         if   ( self.Name == 'L63' ):
-            self.Ndof = 3                if ( Ndof == None ) else Ndof
             self.Par = [10., 28., 8./3.] if ( Par  == None ) else Par
+            self.Ndof = 3                if ( Ndof == None ) else Ndof
         elif ( self.Name == 'L96' ):
-            self.Ndof = 40       if ( Ndof == None ) else Ndof
             self.Par = [8., 8.4] if ( Par  == None ) else Par
+            self.Ndof = 40       if ( Ndof == None ) else Ndof
+        elif ( self.Name == 'L96_2scale' ):
+            self.Par = [8., 8.4, 40, 4, 10.0, 10.0, 1.0] if ( Par  == None ) else Par
+#                       F   F+dF m   n  c     b     h
+            self.Ndof = self.Par[2]*(self.Par[3]+1)      if ( Ndof == None ) else Ndof
         else:
             raise AttributeError('Invalid model option %s' % self.Name)
 
@@ -112,8 +116,11 @@ class Lorenz(object):
         '''
 
         if   ( self.Name == 'L63' ):
-            par = self.Par
+            par = None
         elif ( self.Name == 'L96' ):
+            if ( perfect ): par = self.Par[0]
+            else:           par = self.Par[1]
+        elif ( self.Name == 'L96_2scale' ):
             if ( perfect ): par = self.Par[0]
             else:           par = self.Par[1]
         else:
@@ -151,8 +158,11 @@ class Lorenz(object):
         '''
 
         if   ( self.Name == 'L63' ):
-            par = self.Par
+            par = None
         elif ( self.Name == 'L96' ):
+            if ( perfect ): par = self.Par[0]
+            else:           par = self.Par[1]
+        elif ( self.Name == 'L96_2scale' ):
             if ( perfect ): par = self.Par[0]
             else:           par = self.Par[1]
         else:
@@ -186,7 +196,7 @@ class Lorenz(object):
         '''
 
         x, y, z = x0
-        s, r, b = par
+        s, r, b = self.Par
 
         x_dot = s*(y-x)
         y_dot = r*x -y -x*z
@@ -215,7 +225,7 @@ class Lorenz(object):
          xs - evolved perturbations at time t = T
         '''
 
-        s, r, b = par
+        s, r, b = self.Par
 
         x = numpy.interp(t,tsave,xsave[:,0])
         y = numpy.interp(t,tsave,xsave[:,1])
@@ -249,16 +259,15 @@ class Lorenz(object):
        xs - final state at time t = T
         '''
 
-        Ndof = len(x0)
-        xs = numpy.zeros(Ndof)
+        xs = numpy.zeros(self.Ndof)
 
-        for j in range(0,Ndof):
+        for j in range(self.Ndof):
             jp1 = j + 1
-            if ( jp1 >= Ndof ): jp1 = jp1 - Ndof
+            if ( jp1 >= self.Ndof ): jp1 = jp1 - self.Ndof
             jm2 = j - 2
-            if ( jm2 < 0 ): jm2 = Ndof + jm2
+            if ( jm2 < 0 ):          jm2 = jm2 + self.Ndof
             jm1 = j - 1
-            if ( jm1 < 0 ): jm1 = Ndof + jm1
+            if ( jm1 < 0 ):          jm1 = jm1 + self.Ndof
 
             xs[j] = ( x0[jp1] - x0[jm2] ) * x0[jm1] - x0[j] + F
 
@@ -283,21 +292,20 @@ class Lorenz(object):
          xs - evolved perturbations at time t = T
         '''
 
-        Ndof = len(x0)
-        x = numpy.zeros(Ndof)
+        x = numpy.zeros(self.Ndof)
 
-        for j in range(0,Ndof):
+        for j in range(self.Ndof):
             x[j] = numpy.interp(t,tsave,xsave[:,j])
 
-        M = numpy.zeros((Ndof,Ndof))
+        M = numpy.zeros((self.Ndof,self.Ndof))
 
-        for j in range(0,Ndof):
+        for j in range(self.Ndof):
             jp1 = j + 1
-            if ( jp1 >= Ndof ): jp1 = jp1 - Ndof
+            if ( jp1 >= self.Ndof ): jp1 = jp1 - self.Ndof
             jm2 = j - 2
-            if ( jm2 < 0 ): jm2 = Ndof + jm2
+            if ( jm2 < 0 ):          jm2 = jm2 + self.Ndof
             jm1 = j - 1
-            if ( jm1 < 0 ): jm1 = Ndof + jm1
+            if ( jm1 < 0 ):          jm1 = jm1 + self.Ndof
 
             M[j,jm2] = -x[jm1]
             M[j,jm1] = x[jp1] - x[jm2]
@@ -327,18 +335,147 @@ class Lorenz(object):
             G - additional forcing (eg. IAU tendency)
         '''
 
-        Ndof = len(x0)
-        xs = numpy.zeros(Ndof)
+        xs = numpy.zeros(self.Ndof)
 
-        for j in range(0,Ndof):
+        for j in range(self.Ndof):
             jp1 = j + 1
-            if ( jp1 >= Ndof ): jp1 = jp1 - Ndof
+            if ( jp1 >= self.Ndof ): jp1 = jp1 - self.Ndof
             jm2 = j - 2
-            if ( jm2 < 0 ): jm2 = Ndof + jm2
+            if ( jm2 < 0 ):          jm2 = jm2 + self.Ndof
             jm1 = j - 1
-            if ( jm1 < 0 ): jm1 = Ndof + jm1
+            if ( jm1 < 0 ):          jm1 = jm1 + self.Ndof
 
             xs[j] = ( x0[jp1] - x0[jm2] ) * x0[jm1] - x0[j] + F + G[j]
+
+        return xs
+    # }}}
+
+    def L96_2scale(self, x0, t, F, dummy):
+    # {{{
+        '''
+        L96_2scale - function that integrates the Lorenz 1996 2 scale equations,
+                     given parameters 'par' and initial conditions 'x0'
+
+        xs = L96_2scale(x0, t, (par, dummy))
+
+     self - model class for the model containing model static parameters
+       x0 - initial state at time t = 0
+        t - vector of time from t = [0, T]
+        F - Forcing
+    dummy - Arguments coming in after x0, t MUST be a tuple (,) for scipy.integrate.odeint to work
+       xs - final state at time t = T
+        '''
+
+        m,n   = self.Par[:2]
+        b,c,h = self.Par[4:]
+        xs = numpy.zeros(self.Ndof)
+
+        # first small scale
+        js = m
+        je = m*(n+1)
+        for j in range(js,je):
+            jp1 = j + 1
+            if ( jp1 >= je ): jp1 = jp1 - je + js
+            jp2 = j + 2
+            if ( jp2 >= je ): jp2 = jp2 - je + js
+            jm1 = j - 1
+            if ( jm1 < js ):  jm1 = jm1 + je - js
+
+            k = (j - js) / n
+
+            xs[j] = (c*b) * x0[jp1] * ( x0[jm1] - x0[jp2] ) - c * x0[j] + (h*c/b) * x0[k]
+
+        # second large scale
+        ks = 0
+        ke = m
+        for k in range(ks,ke):
+            kp1 = k + 1
+            if ( kp1 >= ke ): kp1 = kp1 - ke + ks
+            km2 = k - 2
+            if ( km2 < ks ):  km2 = km2 + ke + ks
+            km1 = k - 1
+            if ( km1 < ks ):  km1 = km1 + ke + ks
+
+            js = m + n*k
+            je = m + n*(k+1)
+            fast_sum = numpy.sum(x0[js:je])
+
+            xs[k] = ( x0[kp1] - x0[km2] ) * x0[km1] - x0[k] + F - (h*c/b) * fast_sum
+
+        return xs
+    # }}}
+
+    def L96_2scale_tlm(self, x0, t, F, xsave, tsave, adjoint):
+    # {{{
+        '''
+        L96_2scale_tlm - function that integrates the Lorenz 92 2-scale system forward or backward
+        using a TLM and its adjoint, given parameters 'par' and initial perturbations 'x0'
+
+        xs = L96_2scale_tlm(x0, t, (par, xsave, tsave, adjoint))
+
+       self - model class for the model containing model static parameters
+         x0 - initial perturbations at time t = 0
+          t - vector of time from t = [0, T]
+          F - Forcing
+      xsave - states along the control trajectory for the TLM / Adjoint
+      tsave - time vector along the control trajectory for the TLM / Adjoint
+    adjoint - Forward TLM (False) or Adjoint (True)
+         xs - evolved perturbations at time t = T
+        '''
+
+        m,n   = self.Par[:2]
+        b,c,h = self.Par[4:]
+        x = numpy.zeros(self.Ndof)
+
+        for j in range(self.Ndof):
+            x[j] = numpy.interp(t,tsave,xsave[:,j])
+
+        M = numpy.zeros((self.Ndof,self.Ndof))
+
+        # first large scale
+        ks = 0
+        ke = m
+        for k in range(ks,ke):
+            kp1 = k + 1
+            if ( kp1 >= ke ): kp1 = kp1 - ke + ks
+            km2 = k - 2
+            if ( km2 < ks ):  km2 = km2 + ke + ks
+            km1 = k - 1
+            if ( km1 < ks ):  km1 = km1 + ke + ks
+
+            js = m + n*k
+            je = m + n*(k+1)
+
+            M[k,km2]   = -x[km1]
+            M[k,km1]   = x[kp1] - x[km2]
+            M[k,k]     = -1
+            M[k,kp1]   = x[km1]
+            M[k,js:je] = -(h*c/b)
+
+        # second small scale
+        js = m
+        je = m*(n+1)
+        for j in range(js,je):
+            jp1 = j + 1
+            if ( jp1 >= je ): jp1 = jp1 - je + js
+            jp2 = j + 2
+            if ( jp2 >= je ): jp2 = jp2 - je + js
+            jm1 = j - 1
+            if ( jm1 < js ):  jm1 = jm1 + je - js
+
+            ks = 0
+            ke = m
+
+            M[j,jm1]   = (c*b) * x[jp1]
+            M[j,j]     = -c
+            M[j,jp1]   = (c*b) * (x[jm1] - x[jp2])
+            M[j,jp2]   = -(c*b) * x[jp1]
+            M[j,ks:ke] = h*c/b
+
+        if ( adjoint ):
+            xs = numpy.dot(numpy.transpose(M),x0)
+        else:
+            xs = numpy.dot(M,x0)
 
         return xs
     # }}}
@@ -486,6 +623,89 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwar
 ###############################################################
 
 ###############################################################
+def plot_L96_2scale(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwargs):
+# {{{
+    '''
+    Plot the Lorenz 1996 2 scale attractor in polar coordinates
+
+    plot_L96_2scale(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwargs)
+
+         obs - observations [None]
+         ver - truth [None]
+          xb - prior ensemble or ensemble mean [None]
+          xa - posterior ensemble or ensemble mean [None]
+           t - assimilation time [0]
+           N - degrees of freedom to plot [1]
+      figNum - figure handle [None]
+    '''
+
+    if ( figNum == None ):
+        fig = pyplot.figure()
+    else:
+        fig = pyplot.figure(figNum)
+    pyplot.clf()
+    mean_dist_x = 35.0
+    mean_dist_y = 75.0
+    pyplot.subplot(111, polar=True)
+    theta = numpy.linspace(0.0,2*numpy.pi,N+1)
+    pyplot.hold(True)
+
+    # start by plotting a dummy tiny white dot dot at 0,0
+    pyplot.plot(0, 0, 'w.', markeredgecolor='w', markersize=0.0)
+
+    if ( xb != None ):
+        if ( len(xb.shape) == 1 ):
+            tmp = numpy.zeros(N+1) ; tmp[1:] = xb; tmp[0] = xb[-1]
+        else:
+            xmin, xmax, xmean = numpy.min(xb,axis=1), numpy.max(xb,axis=1), numpy.mean(xb,axis=1)
+            tmpmin  = numpy.zeros(N+1) ; tmpmin[ 1:] = xmin;  tmpmin[ 0] = xmin[ -1]
+            tmpmax  = numpy.zeros(N+1) ; tmpmax[ 1:] = xmax;  tmpmax[ 0] = xmax[ -1]
+            tmp     = numpy.zeros(N+1) ; tmp[    1:] = xmean; tmp[0]     = xmean[-1]
+            pyplot.fill_between(theta, tmpmin+mean_dist, tmpmax+mean_dist, facecolor='blue', edgecolor='blue', alpha=0.75)
+        pyplot.plot(theta, tmp+mean_dist, 'b-', linewidth=2.0)
+    if ( xa != None ):
+        if ( len(xa.shape) == 1 ):
+            tmp = numpy.zeros(N+1) ; tmp[1:] = xa; tmp[0] = xa[-1]
+        else:
+            xmin, xmax, xmean = numpy.min(xa,axis=1), numpy.max(xa,axis=1), numpy.mean(xa,axis=1)
+            tmpmin  = numpy.zeros(N+1) ; tmpmin[ 1:] = xmin;  tmpmin[ 0] = xmin[ -1]
+            tmpmax  = numpy.zeros(N+1) ; tmpmax[ 1:] = xmax;  tmpmax[ 0] = xmax[ -1]
+            tmp     = numpy.zeros(N+1) ; tmp[    1:] = xmean; tmp[0]     = xmean[-1]
+            pyplot.fill_between(theta, tmpmin+mean_dist, tmpmax+mean_dist, facecolor='red', edgecolor='red', alpha=0.5)
+        pyplot.plot(theta, tmp+mean_dist, 'r-', linewidth=2.0)
+    if ( ver != None ):
+        tmp = numpy.zeros(N+1) ; tmp[1:] = ver ; tmp[0]= ver[-1]
+        pyplot.plot(theta, tmp+mean_dist, 'k-', linewidth=2.0)
+    if ( obs != None ):
+        tmp = numpy.zeros(N+1) ; tmp[1:] = obs ; tmp[0] = obs[-1]
+        pyplot.plot(theta, tmp+mean_dist, 'yo', markersize=7.5, markeredgecolor='y', alpha=0.95)
+
+    pyplot.gca().set_rmin(0.0)
+    pyplot.gca().set_rmax(mean_dist_y+25.0)
+    rgrid  = numpy.array(numpy.linspace(10,mean_dist+25,5,endpoint=False),dtype=int)
+    rlabel = []
+    rgrid, rlabel = pyplot.rgrids(rgrid, rlabel)
+
+    tlabel = []
+    tgrid  = numpy.array(numpy.linspace(0,360,20,endpoint=False),dtype=int)
+    tlabel = numpy.array(numpy.linspace(0, 40,20,endpoint=False),dtype=int)
+    tgrid, tlabel = pyplot.thetagrids(tgrid, tlabel)
+
+    pretitle = None
+    for key in kwargs:
+        if ( key == 'pretitle' ): pretitle = kwargs[key]
+
+    if ( numpy.isreal(t) ): title = 'k = %d' % (t)
+    else:                title = str(t)
+    if ( not (pretitle == None) ): title = pretitle + ' - ' + title
+    pyplot.title(title,fontweight='bold',fontsize=14)
+    fig.canvas.set_window_title(title)
+
+    return fig
+# }}}
+###############################################################
+
+###############################################################
 def get_IC(model, restart, Nens=None):
 # {{{
     '''
@@ -506,12 +726,10 @@ def get_IC(model, restart, Nens=None):
         '''
 
         if ( Nens == None ):
-            pert = 0.001 * ( numpy.random.randn(model.Ndof) )
-            xa = xt + pert
+            xa = xt + 0.001 * ( numpy.random.randn(model.Ndof) )
         else:
-            pert = 0.001 * ( numpy.random.randn(model.Ndof,Nens) )
-            xa = numpy.transpose(xt + numpy.transpose(pert))
-            xa = numpy.transpose(numpy.transpose(xa) - numpy.mean(xa,axis=1) + xt)
+            xa = xt.T + 0.001 * ( numpy.random.randn(model.Ndof,Nens) )
+            xa = (xa.T - numpy.mean(xa,axis=1) + xt).T
 
         return xa
 
@@ -596,6 +814,25 @@ def get_IC(model, restart, Nens=None):
         else:
 
             [xt, xa] = read_from_restart(restart, Nens=Nens)
+
+    elif ( model.Name == 'L96_2scale' ):
+
+        if ( restart.time == None ):
+            print '... from Lorenz 1996 2 scale'
+
+            xt = numpy.zeros(model.Ndof)
+            xt[:model.Par[0]] = numpy.ones(model.Par[0]) * model.Par[2]
+            xt[0] = 1.001 * model.Par[2]
+
+            xt[model.Par[0]:] = 0.01 * xt[1]
+            xt[model.Par[0]::model.Par[1]] = 0.011 * xt[1]
+
+            xa = perturb_truth(xt, model, Nens=Nens)
+
+        else:
+
+            [xt, xa] = read_from_restart(restart, Nens=Nens)
+
 
     return [xt, xa]
 # }}}

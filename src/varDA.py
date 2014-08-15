@@ -43,7 +43,7 @@ def main():
     xb = xa.copy()
 
     # Load climatological covariance once and for all ...
-    Bc = read_clim_cov(model=model)
+    Bc = read_clim_cov(model=model,norm=True)
 
     nobs = model.Ndof*varDA.fdvar.nobstimes
     y    = np.tile(np.dot(H,xt),[varDA.fdvar.nobstimes,1])

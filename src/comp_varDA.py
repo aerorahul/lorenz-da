@@ -38,7 +38,7 @@ def main():
     parser = ArgumentParser(description='compare the diag files written by varDA.py',formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('-f','--filename',help='name of the diag file to read',required=True)
     parser.add_argument('-m','--measure',help='measure to evaluate performance',required=False,choices=['obs','truth'],default='truth')
-    parser.add_argument('-b','--begin_index',help='starting index to read',type=int,required=False,default=1)
+    parser.add_argument('-b','--begin_index',help='starting index to read',type=int,required=False,default=101)
     parser.add_argument('-e','--end_index',help='ending index to read',type=int,required=False,default=-1)
     parser.add_argument('-s','--save_figure',help='save figures',action='store_true',required=False)
     args = parser.parse_args()
@@ -50,12 +50,14 @@ def main():
     save_fig = args.save_figure
 
     # Inflation factors to compare
-    alpha = [1.0, 2.0, 3.0, 3.1, 3.2, 3.4]
+    #alpha = [1.0, 2.0, 3.0, 3.1, 3.2, 3.4]
+    alpha = [0.25, 0.3, 0.35, 0.4, 0.5, 0.6, 0.7, 1.0]
+    alpha = [1.0, 2.0, 2.5]
 
     # some more arguments, currently hard-coded
     save_figures = False         # save plots as eps
     yscale       = 'linear'      # y-axis of RMSE plots (linear/semilog)
-    yFix         = None          # fix the y-axis of RMSE plots ( None = automatic )
+    yFix         = 0.18          # fix the y-axis of RMSE plots ( None = automatic )
     fOrient      = 'portrait'    # figure orientation (landscape/portrait)
 
     if ( not measure ): measure = 'truth'
@@ -78,7 +80,7 @@ def main():
     # read general dimensions and necessary attributes from the diagnostic file
     [model, DA, _, gvarDA] = read_diag_info(fnames[0])
 
-    Bc = read_clim_cov(model=model)
+    Bc = read_clim_cov(model=model,norm=True)
 
     if   ( gvarDA.update == 1 ): vstr = '3DVar'
     elif ( gvarDA.update == 2 ): vstr = '4DVar'
@@ -122,6 +124,7 @@ def main():
 
         # read the diagnostic file
         xt, xb, xa, y, H, R, niters = read_diag(fname, 0, end_time=DA.nassim)
+        if ( varDA.update == 2 ): y = y[:,:model.Ndof]
 
         # compute RMSE in prior, posterior and observations
         if ( measure == 'truth' ):

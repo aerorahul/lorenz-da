@@ -53,6 +53,8 @@ elif ( args.model == 'L96_2scale' ):
     Par  = [8.0, 8.4, 40, 4, 10.0, 10.0, 1.0]  # model parameters [F, F+dF, m, n, b, c, h]
     Ndof = 40*(4+1)                            # model degrees of freedom
     dt   = 1.0e-4                              # model time-step
+    print 'L96_2scale is still under development'
+    print 'You may experience dizziness!'
 model.init(Name=args.model,Ndof=Ndof,Par=Par,dt=dt)
 
 IC          = type('',(),{})

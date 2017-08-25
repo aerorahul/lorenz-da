@@ -137,7 +137,7 @@ class VarDataAssim(object):
 
         self.inflation = inflation(infl_fac=infl_fac,infl_adp=infl_adp)
 
-        if ( cov_trunc == None ): cov_trunc = model.Ndof
+        if ( cov_trunc is None ): cov_trunc = model.Ndof
         self.localization = localization(localize=localize,cov_cutoff=cov_cutoff,cov_trunc=cov_trunc)
 
         self.minimization = minimization(maxiter=maxiter,tol=tol)
@@ -211,7 +211,7 @@ class EnsDataAssim(object):
 
         self.inflation = inflation(infl_fac=infl_fac)
 
-        if ( cov_trunc == None ): cov_trunc = model.Ndof
+        if ( cov_trunc is None ): cov_trunc = model.Ndof
         self.localization = localization(localize=localize,cov_cutoff=cov_cutoff,cov_trunc=cov_trunc)
 
         for key, value in kwargs.iteritems(): self.__setattr__(key,value)
@@ -1871,7 +1871,7 @@ def precondition(X, varDA, ensDA, model, L=None):
     if   ( varDA.update == 1 ):
 
         Xp = (X[0,:,:].T - np.mean(X[0,:,:],axis=1)).T
-        if ( L == None ):
+        if ( L is None ):
             G = Xp.copy()
         else:
             G = np.zeros((model.Ndof,varDA.localization.cov_trunc*ensDA.Nens))
@@ -1882,12 +1882,12 @@ def precondition(X, varDA, ensDA, model, L=None):
 
     elif ( varDA.update == 2 ):
 
-        if ( L == None ): G = np.zeros(X.shape)
+        if ( L is None ): G = np.zeros(X.shape)
         else:             G = np.zeros((varDA.fdvar.nobstimes,model.Ndof,varDA.localization.cov_trunc*ensDA.Nens))
 
         for i in range(varDA.fdvar.nobstimes):
             Xp = (X[i,:,:].T - np.mean(X[i,:,:],axis=1)).T
-            if ( L == None ):
+            if ( L is None ):
                 G[i,:,:] = Xp.copy()
             else:
                 for m in range(ensDA.Nens):

@@ -52,10 +52,10 @@ def create_diag(dfile, ndof, nouter=1, nobs=None, nens=None, hybrid=False):
 
     source = 'create_diag'
 
-    if ( nobs == None ):
+    if ( nobs is None ):
         nobs = ndof
 
-    if ( ( hybrid ) and ( nens == None ) ):
+    if ( ( hybrid ) and ( nens is None ) ):
         print 'nens cannot be None if doing hybrid'
         sys.exit(2)
 
@@ -68,12 +68,12 @@ def create_diag(dfile, ndof, nouter=1, nobs=None, nens=None, hybrid=False):
         Dim = nc.createDimension('ndof',  size=ndof)
         Dim = nc.createDimension('nobs',  size=nobs)
 
-        if not ( nens == None ):
+        if not ( nens is None ):
             Dim = nc.createDimension('ncopy',size=nens)
 
         Var = nc.createVariable('truth','f8',('ntime','ndof',))
 
-        if ( nens == None ):
+        if ( nens is None ):
             Var = nc.createVariable('prior',    'f8',('ntime','nouter','ndof',))
             Var = nc.createVariable('posterior','f8',('ntime','nouter','ndof',))
             Var = nc.createVariable('niters',   'f8',('ntime','nouter',))
@@ -152,16 +152,16 @@ def write_diag(fname, time, outer, truth, prior, posterior, obs, obs_operator, o
             nc.variables['obs_operator'][time,:] = obs_operator.copy()
             nc.variables['obs_err_var' ][time,:] = obs_err_var.copy()
 
-        if not ( central_prior == None ):
+        if not ( central_prior is None ):
             nc.variables['central_prior'    ][time,outer,:] = central_prior.copy()
 
-        if not ( central_posterior == None ):
+        if not ( central_posterior is None ):
             nc.variables['central_posterior'][time,outer,:] = central_posterior.copy()
 
-        if not ( niters == None ):
+        if not ( niters is None ):
             nc.variables['niters'][time,outer] = niters
 
-        if not ( evratio == None ):
+        if not ( evratio is None ):
             nc.variables['evratio'][time,outer] = evratio
 
         nc.close()
@@ -316,7 +316,7 @@ def read_diag(fname, time, end_time=None):
         print 'file does not exist ' + fname
         sys.exit(2)
 
-    if ( end_time == None ): end_time = time + 1
+    if ( end_time is None ): end_time = time + 1
 
     [model, DA, ensDA, varDA] = read_diag_info(fname)
 
@@ -433,7 +433,7 @@ def create_truth(tfile, ndof, nobs=None):
 
     source = 'create_truth'
 
-    if ( nobs == None ): nobs = ndof
+    if ( nobs is None ): nobs = ndof
 
     try:
 
@@ -535,7 +535,7 @@ def read_truth(fname, time, end_time=None):
         print 'file does not exist ' + fname
         sys.exit(2)
 
-    if ( end_time == None ): end_time = time + 1
+    if ( end_time is None ): end_time = time + 1
 
     try:
 
@@ -694,12 +694,12 @@ def write_ObImpact_diag(fname, time, dJa=None, dJb=None, ens_dJa=None, ens_dJb=N
 
         nc = Dataset(fname, mode='a', clobber=True, format='NETCDF4')
 
-        if (     dJa != None ): nc.variables[    'dJa'][time,:] =     dJa
-        if (     dJb != None ): nc.variables[    'dJb'][time,:] =     dJb
-        if ( ens_dJa != None ): nc.variables['ens_dJa'][time,:] = ens_dJa
-        if ( ens_dJb != None ): nc.variables['ens_dJb'][time,:] = ens_dJb
-        if ( adj_dJa != None ): nc.variables['adj_dJa'][time,:] = adj_dJa
-        if ( adj_dJb != None ): nc.variables['adj_dJb'][time,:] = adj_dJb
+        if (     dJa is not None ): nc.variables[    'dJa'][time,:] =     dJa
+        if (     dJb is not None ): nc.variables[    'dJb'][time,:] =     dJb
+        if ( ens_dJa is not None ): nc.variables['ens_dJa'][time,:] = ens_dJa
+        if ( ens_dJb is not None ): nc.variables['ens_dJb'][time,:] = ens_dJb
+        if ( adj_dJa is not None ): nc.variables['adj_dJa'][time,:] = adj_dJa
+        if ( adj_dJb is not None ): nc.variables['adj_dJb'][time,:] = adj_dJb
 
         nc.close()
 
@@ -742,7 +742,7 @@ def read_ObImpact_diag(fname, time, end_time=None, generic=False):
         print 'file does not exist ' + fname
         sys.exit(2)
 
-    if ( end_time == None ): end_time = time + 1
+    if ( end_time is None ): end_time = time + 1
 
     try:
 
@@ -791,12 +791,12 @@ def read_clim_cov(model=None,fname=None,norm=False):
 
     source = 'read_clim_cov'
 
-    if ( model == None and fname == None ):
+    if ( model is None and fname is None ):
         print 'Exception occured in %s of %s' % (source, module)
         print 'must pass either model class or filename'
         sys.exit(0)
 
-    if ( fname == None ): fname = '%s_climo_B.nc4' % model.Name
+    if ( fname is None ): fname = '%s_climo_B.nc4' % model.Name
 
     print 'load climatological covariance for from %s ...' % (fname)
 

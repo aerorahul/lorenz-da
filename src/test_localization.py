@@ -37,7 +37,7 @@ from   plot_stats    import plot_cov
 ###############################################################
 def main():
 
-    fdiag = '/home/rmahajan/svn-work/lorenz1963/test/localization/L96_hybDA_diag_H1R1.nc4'
+    fdiag = 'L96_hybDA_diag.nc4'
 
     [model, DA, ensDA, varDA]       = read_diag_info(fdiag)
     if ( DA.do_hybrid ):[_, Xb, _, _, _, _, _, _, _, _] = read_diag(fdiag, 0)

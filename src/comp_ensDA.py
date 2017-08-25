@@ -134,7 +134,7 @@ def main():
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
-    if ( yFix == None ): ymax = yl[1]
+    if ( yFix is None ): ymax = yl[1]
     else:                ymax = yFix
     pyplot.ylim(0.0, ymax)
     pyplot.xlim(0.0, len(q))
@@ -168,7 +168,7 @@ def main():
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
-    if ( yFix == None ): ymax = yl[1]
+    if ( yFix is None ): ymax = yl[1]
     else:                ymax = yFix
     pyplot.ylim(0.0, ymax)
     pyplot.xlim(0.0, len(q))

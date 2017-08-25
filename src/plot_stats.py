@@ -29,16 +29,16 @@ from   module_Lorenz import *
 
 ###############################################################
 def plot_trace(obs=None, ver=None, xb=None, xa=None, N=1, figNum=None):
-    if ( figNum == None ): fig = pyplot.figure()
+    if ( figNum is None ): fig = pyplot.figure()
     else: fig = pyplot.figure(figNum)
     pyplot.clf()
     for k in range(0,N):
         pyplot.subplot(N,1,k+1)
         pyplot.hold(True)
-        if ( obs != None ): pyplot.plot(obs[:,k],'ro',label='observation')
-        if ( ver != None ): pyplot.plot(ver[:,k],'k-',label='truth')
-        if ( xb  != None ): pyplot.plot(xb[:,k], 'c-',label='background')
-        if ( xa  != None ): pyplot.plot(xa[:,k], 'b-',label='analysis')
+        if ( obs is not None ): pyplot.plot(obs[:,k],'ro',label='observation')
+        if ( ver is not None ): pyplot.plot(ver[:,k],'k-',label='truth')
+        if ( xb  is not None ): pyplot.plot(xb[:,k], 'c-',label='background')
+        if ( xa  is not None ): pyplot.plot(xa[:,k], 'b-',label='analysis')
         pyplot.plot(np.zeros(len(ver[k,:])),'k:')
         pyplot.ylabel('x' + str(k+1),fontweight='bold',fontsize=12)
         pyplot.hold(False)
@@ -58,7 +58,7 @@ def plot_abs_error(xbe, xae, label=['x'], N=1, yscale='semilog', figNum=None):
 
     if ( (yscale != 'linear') and (yscale != 'semilog') ): yscale = 'semilog'
 
-    if ( figNum == None ): fig = pyplot.figure()
+    if ( figNum is None ): fig = pyplot.figure()
     else: fig = pyplot.figure(figNum)
     pyplot.clf()
     pyplot.hold(True)
@@ -98,38 +98,38 @@ def plot_rmse(xbrmse=None, xarmse=None, xyrmse=None, yscale='semilog', figNum=No
         sStat=100):
 
     if ( (yscale != 'linear') and (yscale != 'semilog') ): yscale = 'semilog'
-    if ( figNum == None ): fig = pyplot.figure()
+    if ( figNum is None ): fig = pyplot.figure()
     else:                  fig = pyplot.figure(figNum)
 
     pyplot.clf()
     pyplot.hold(True)
     if ( yscale == 'linear' ):
-        if ( xbrmse != None ): pyplot.plot(xbrmse[1:],'b-',label='prior',      linewidth=2, alpha=0.90)
-        if ( xarmse != None ): pyplot.plot(xarmse[:],'r-',label='posterior',  linewidth=2, alpha=0.65)
-        if ( xyrmse != None ): pyplot.plot(xyrmse,     'k-',label='observation',linewidth=2, alpha=0.40)
+        if ( xbrmse is not None ): pyplot.plot(xbrmse[1:],'b-',label='prior',      linewidth=2, alpha=0.90)
+        if ( xarmse is not None ): pyplot.plot(xarmse[:],'r-',label='posterior',  linewidth=2, alpha=0.65)
+        if ( xyrmse is not None ): pyplot.plot(xyrmse,     'k-',label='observation',linewidth=2, alpha=0.40)
     elif ( yscale == 'semilog' ):
-        if ( xbrmse != None ): pyplot.semilogy(xbrmse[1: ],'b-',label='prior',      linewidth=2, alpha=0.90)
-        if ( xarmse != None ): pyplot.semilogy(xarmse[:-1],'r-',label='posterior',  linewidth=2, alpha=0.65)
-        if ( xyrmse != None ): pyplot.semilogy(xyrmse,     'k-',label='observation',linewidth=2, alpha=0.40)
+        if ( xbrmse is not None ): pyplot.semilogy(xbrmse[1: ],'b-',label='prior',      linewidth=2, alpha=0.90)
+        if ( xarmse is not None ): pyplot.semilogy(xarmse[:-1],'r-',label='posterior',  linewidth=2, alpha=0.65)
+        if ( xyrmse is not None ): pyplot.semilogy(xyrmse,     'k-',label='observation',linewidth=2, alpha=0.40)
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     pyplot.ylim(0.0, yl[1])
     dyl = yl[1]
 
-    if ( xbrmse != None ):
+    if ( xbrmse is not None ):
         strb = 'mean prior rmse : %5.4f +/- %5.4f' % (np.mean(xbrmse[sStat+1:]),np.std(xbrmse[sStat+1:],ddof=1))
         pyplot.text(0.05*len(xbrmse),yl[1]-0.1*dyl,strb,fontsize=10)
-    if ( xarmse != None ):
+    if ( xarmse is not None ):
         stra = 'mean posterior rmse : %5.4f +/- %5.4f' % (np.mean(xarmse[sStat:-1]),np.std(xarmse[sStat:-1],ddof=1))
         pyplot.text(0.05*len(xarmse),yl[1]-0.15*dyl,stra,fontsize=10)
-    if ( xyrmse != None ):
+    if ( xyrmse is not None ):
         stro = 'mean observation rmse : %5.4f +/- %5.4f' % (np.mean(xyrmse[sStat:]), np.std(xyrmse[sStat:],ddof=1))
         pyplot.text(0.05*len(xyrmse),yl[1]-0.2*dyl,stro,fontsize=10)
 
     pyplot.xlabel('Assimilation Cycle',fontweight='bold',fontsize=12)
     pyplot.ylabel('RMSE',fontweight='bold',fontsize=12)
     title = 'Root Mean Squared Error'
-    if ( not (pretitle == None) ): title = pretitle + ' - ' + title
+    if ( not (pretitle is None) ): title = pretitle + ' - ' + title
     pyplot.title(title,fontweight='bold',fontsize=14)
     pyplot.legend(loc='lower right',ncol=2)
     pyplot.hold(False)
@@ -142,7 +142,7 @@ def plot_abs_error_var(xbev, xaev, label=['x'], N=1, yscale='semilog', figNum=No
 
     if ( (yscale != 'linear') and (yscale != 'semilog') ): yscale = 'semilog'
 
-    if ( figNum == None ): fig = pyplot.figure()
+    if ( figNum is None ): fig = pyplot.figure()
     else: fig = pyplot.figure(figNum)
     pyplot.clf()
     for k in range(0,N):
@@ -181,7 +181,7 @@ def plot_abs_error_var(xbev, xaev, label=['x'], N=1, yscale='semilog', figNum=No
 ###############################################################
 def plot_iteration_stats(itstats, figNum=None, pretitle=None):
 
-    if ( figNum == None ): fig = pyplot.figure()
+    if ( figNum is None ): fig = pyplot.figure()
     else: fig = pyplot.figure(figNum)
 
     pyplot.clf()
@@ -203,7 +203,7 @@ def plot_iteration_stats(itstats, figNum=None, pretitle=None):
     pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
     pyplot.ylabel('# Iterations',     fontweight='bold',fontsize=12)
     title = '# Iterations for cost function'
-    if ( not (pretitle == None) ): title = pretitle + ' - ' + title
+    if ( not (pretitle is None) ): title = pretitle + ' - ' + title
     pyplot.title(title,fontweight='bold',fontsize=14)
     fig.canvas.set_window_title(title)
     pyplot.hold(False)
@@ -213,7 +213,7 @@ def plot_iteration_stats(itstats, figNum=None, pretitle=None):
 ###############################################################
 def plot_error_variance_stats(evratio, figNum=None, sStat=100, pretitle=None):
 
-    if ( figNum == None ): fig = pyplot.figure()
+    if ( figNum is None ): fig = pyplot.figure()
     else: fig = pyplot.figure(figNum)
 
     pyplot.clf()
@@ -232,7 +232,7 @@ def plot_error_variance_stats(evratio, figNum=None, sStat=100, pretitle=None):
     pyplot.xlabel('Assimilation Step',fontweight='bold',fontsize=12)
     pyplot.ylabel('Innovation Variance / Total Variance',fontweight='bold',fontsize=12)
     title = 'Innovation Variance / Total Variance'
-    if ( not (pretitle == None) ): title = pretitle + ' - ' + title
+    if ( not (pretitle is None) ): title = pretitle + ' - ' + title
     pyplot.title(title,fontweight='bold',fontsize=14)
     fig.canvas.set_window_title(title)
     pyplot.hold(False)
@@ -247,12 +247,12 @@ def plot_ObImpact(dJa, dJe, sOI=None, eOI=None, title=None, xlabel=None, ylabel=
     color_ens = 'm'
     width     = 0.45
 
-    if ( title  == None ): title   = ''
-    if ( xlabel == None ): xlabel  = ''
-    if ( ylabel == None ): ylabel  = ''
+    if ( title  is None ): title   = ''
+    if ( xlabel is None ): xlabel  = ''
+    if ( ylabel is None ): ylabel  = ''
 
-    if ( (sOI == None)                ): sOI = 0
-    if ( (eOI == None) or (eOI == -1) ): eOI = len(dJa)
+    if ( (sOI is None)                ): sOI = 0
+    if ( (eOI is None) or (eOI == -1) ): eOI = len(dJa)
 
     index = np.arange(eOI-sOI)
     if   ( len(index) > 1000 ): inc = 1000

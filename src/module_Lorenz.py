@@ -82,15 +82,15 @@ class Lorenz(object):
         self.Name = Name
         self.dt   = dt
         if   ( self.Name == 'L63' ):
-            self.Par = [10., 28., 8./3.] if ( Par  == None ) else Par
-            self.Ndof = 3                if ( Ndof == None ) else Ndof
+            self.Par = [10., 28., 8./3.] if ( Par  is None ) else Par
+            self.Ndof = 3                if ( Ndof is None ) else Ndof
         elif ( self.Name == 'L96' ):
-            self.Par = [8., 8.4] if ( Par  == None ) else Par
-            self.Ndof = 40       if ( Ndof == None ) else Ndof
+            self.Par = [8., 8.4] if ( Par  is None ) else Par
+            self.Ndof = 40       if ( Ndof is None ) else Ndof
         elif ( self.Name == 'L96_2scale' ):
-            self.Par = [8., 8.4, 40, 4, 10.0, 10.0, 1.0] if ( Par  == None ) else Par
+            self.Par = [8., 8.4, 40, 4, 10.0, 10.0, 1.0] if ( Par  is None ) else Par
 #                       F   F+dF m   n  c     b     h
-            self.Ndof = self.Par[2]*(self.Par[3]+1)      if ( Ndof == None ) else Ndof
+            self.Ndof = self.Par[2]*(self.Par[3]+1)      if ( Ndof is None ) else Ndof
         else:
             raise AttributeError('Invalid model option %s' % self.Name)
 
@@ -129,7 +129,7 @@ class Lorenz(object):
 
         exec('xs = integrate.odeint(self.%s, x0, t, (par, 0.0), **kwargs)' % (self.Name))
 
-        if ( result == None ):
+        if ( result is None ):
             return xs
         else:
             result.put(xs)
@@ -173,7 +173,7 @@ class Lorenz(object):
 
         exec('xs = integrate.odeint(self.%s_tlm, x0, t, (par,xref,tref,adjoint), **kwargs)' % self.Name)
 
-        if ( result == None ):
+        if ( result is None ):
             return xs
         else:
             result.put(xs)
@@ -524,11 +524,11 @@ def plot_L63(obs=None, ver=None, xb=None, xa=None, xdim=0, ydim=2, **kwargs):
         if ( key == 'att' ): att = kwargs[key]
         if ( key == 'pretitle' ): pretitle = kwargs[key]
 
-    if ( att != None ): pyplot.plot(att[:,xdim], att[:,ydim], color='gray', linewidth=1)
-    if ( xb  != None ): pyplot.plot(xb[ :,xdim], xb[ :,ydim], 'b-', linewidth=1)
-    if ( xa  != None ): pyplot.plot(xa[ :,xdim], xa[ :,ydim], 'r-', linewidth=1)
-    if ( ver != None ): pyplot.plot(ver[:,xdim], ver[:,ydim], 'k-', linewidth=1)
-    if ( obs != None ): pyplot.plot(obs[:,xdim], obs[:,ydim], 'yo', markeredgecolor='y')
+    if ( att is not None ): pyplot.plot(att[:,xdim], att[:,ydim], color='gray', linewidth=1)
+    if ( xb  is not None ): pyplot.plot(xb[ :,xdim], xb[ :,ydim], 'b-', linewidth=1)
+    if ( xa  is not None ): pyplot.plot(xa[ :,xdim], xa[ :,ydim], 'r-', linewidth=1)
+    if ( ver is not None ): pyplot.plot(ver[:,xdim], ver[:,ydim], 'k-', linewidth=1)
+    if ( obs is not None ): pyplot.plot(obs[:,xdim], obs[:,ydim], 'yo', markeredgecolor='y')
 
     pyplot.xlabel(xlab,fontweight='bold',fontsize=12)
     pyplot.ylabel(ylab,fontweight='bold',fontsize=12)
@@ -557,7 +557,7 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwar
       figNum - figure handle [None]
     '''
 
-    if ( figNum == None ):
+    if ( figNum is None ):
         fig = pyplot.figure()
     else:
         fig = pyplot.figure(figNum)
@@ -570,7 +570,7 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwar
     # start by plotting a dummy tiny white dot dot at 0,0
     pyplot.plot(0, 0, 'w.', markeredgecolor='w', markersize=0.0)
 
-    if ( xb != None ):
+    if ( xb is not None ):
         if ( len(xb.shape) == 1 ):
             tmp = numpy.zeros(N+1) ; tmp[1:] = xb; tmp[0] = xb[-1]
         else:
@@ -580,7 +580,7 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwar
             tmp     = numpy.zeros(N+1) ; tmp[    1:] = xmean; tmp[0]     = xmean[-1]
             pyplot.fill_between(theta, tmpmin+mean_dist, tmpmax+mean_dist, facecolor='blue', edgecolor='blue', alpha=0.75)
         pyplot.plot(theta, tmp+mean_dist, 'b-', linewidth=2.0)
-    if ( xa != None ):
+    if ( xa is not None ):
         if ( len(xa.shape) == 1 ):
             tmp = numpy.zeros(N+1) ; tmp[1:] = xa; tmp[0] = xa[-1]
         else:
@@ -590,10 +590,10 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwar
             tmp     = numpy.zeros(N+1) ; tmp[    1:] = xmean; tmp[0]     = xmean[-1]
             pyplot.fill_between(theta, tmpmin+mean_dist, tmpmax+mean_dist, facecolor='red', edgecolor='red', alpha=0.5)
         pyplot.plot(theta, tmp+mean_dist, 'r-', linewidth=2.0)
-    if ( ver != None ):
+    if ( ver is not None ):
         tmp = numpy.zeros(N+1) ; tmp[1:] = ver ; tmp[0]= ver[-1]
         pyplot.plot(theta, tmp+mean_dist, 'k-', linewidth=2.0)
-    if ( obs != None ):
+    if ( obs is not None ):
         tmp = numpy.zeros(N+1) ; tmp[1:] = obs ; tmp[0] = obs[-1]
         pyplot.plot(theta, tmp+mean_dist, 'yo', markersize=7.5, markeredgecolor='y', alpha=0.95)
 
@@ -614,7 +614,7 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwar
 
     if ( numpy.isreal(t) ): title = 'k = %d' % (t)
     else:                title = str(t)
-    if ( not (pretitle == None) ): title = pretitle + ' - ' + title
+    if ( not (pretitle is None) ): title = pretitle + ' - ' + title
     pyplot.title(title,fontweight='bold',fontsize=14)
     fig.canvas.set_window_title(title)
 
@@ -639,7 +639,7 @@ def plot_L96_2scale(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None,
       figNum - figure handle [None]
     '''
 
-    if ( figNum == None ):
+    if ( figNum is None ):
         fig = pyplot.figure()
     else:
         fig = pyplot.figure(figNum)
@@ -653,7 +653,7 @@ def plot_L96_2scale(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None,
     # start by plotting a dummy tiny white dot dot at 0,0
     pyplot.plot(0, 0, 'w.', markeredgecolor='w', markersize=0.0)
 
-    if ( xb != None ):
+    if ( xb is not None ):
         if ( len(xb.shape) == 1 ):
             tmp = numpy.zeros(N+1) ; tmp[1:] = xb; tmp[0] = xb[-1]
         else:
@@ -663,7 +663,7 @@ def plot_L96_2scale(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None,
             tmp     = numpy.zeros(N+1) ; tmp[    1:] = xmean; tmp[0]     = xmean[-1]
             pyplot.fill_between(theta, tmpmin+mean_dist, tmpmax+mean_dist, facecolor='blue', edgecolor='blue', alpha=0.75)
         pyplot.plot(theta, tmp+mean_dist, 'b-', linewidth=2.0)
-    if ( xa != None ):
+    if ( xa is not None ):
         if ( len(xa.shape) == 1 ):
             tmp = numpy.zeros(N+1) ; tmp[1:] = xa; tmp[0] = xa[-1]
         else:
@@ -673,10 +673,10 @@ def plot_L96_2scale(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None,
             tmp     = numpy.zeros(N+1) ; tmp[    1:] = xmean; tmp[0]     = xmean[-1]
             pyplot.fill_between(theta, tmpmin+mean_dist, tmpmax+mean_dist, facecolor='red', edgecolor='red', alpha=0.5)
         pyplot.plot(theta, tmp+mean_dist, 'r-', linewidth=2.0)
-    if ( ver != None ):
+    if ( ver is not None ):
         tmp = numpy.zeros(N+1) ; tmp[1:] = ver ; tmp[0]= ver[-1]
         pyplot.plot(theta, tmp+mean_dist, 'k-', linewidth=2.0)
-    if ( obs != None ):
+    if ( obs is not None ):
         tmp = numpy.zeros(N+1) ; tmp[1:] = obs ; tmp[0] = obs[-1]
         pyplot.plot(theta, tmp+mean_dist, 'yo', markersize=7.5, markeredgecolor='y', alpha=0.95)
 
@@ -697,7 +697,7 @@ def plot_L96_2scale(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None,
 
     if ( numpy.isreal(t) ): title = 'k = %d' % (t)
     else:                title = str(t)
-    if ( not (pretitle == None) ): title = pretitle + ' - ' + title
+    if ( not (pretitle is None) ): title = pretitle + ' - ' + title
     pyplot.title(title,fontweight='bold',fontsize=14)
     fig.canvas.set_window_title(title)
 
@@ -725,7 +725,7 @@ def get_IC(model, restart, Nens=None):
         populate initial ensemble analysis by perturbing true state and recentering
         '''
 
-        if ( Nens == None ):
+        if ( Nens is None ):
             xa = xt + 0.001 * ( numpy.random.randn(model.Ndof) )
         else:
             xa = xt.T + 0.001 * ( numpy.random.randn(model.Ndof,Nens) )
@@ -764,19 +764,19 @@ def get_IC(model, restart, Nens=None):
             print Instance
             sys.exit(1)
 
-        if ( (len(numpy.shape(xa)) == 1) and (Nens != None) ):
+        if ( (len(numpy.shape(xa)) == 1) and (Nens is not None) ):
             # populate initial ensemble analysis by perturbing the analysis and re-centering
             pert = 0.001 * ( numpy.random.randn(model.Ndof,Nens) )
             tmp = numpy.transpose(xa + numpy.transpose(pert))
             xa = numpy.transpose(numpy.transpose(tmp) - numpy.mean(tmp,axis=1) + xa)
-        elif ( (len(numpy.shape(xa)) != 1) and (Nens != None) ):
+        elif ( (len(numpy.shape(xa)) != 1) and (Nens is not None) ):
             # populate initial ensemble analysis by picking a subset from the analysis ensemble
             if ( Nens <= numpy.shape(xa)[1] ):
                 xa = numpy.squeeze(xa[:,0:Nens])
             else:
                 print 'size(Xa) = [%d, %d]' % (numpy.shape(xa)[0], numpy.shape(xa)[1])
                 sys.exit(1)
-        elif ( (len(numpy.shape(xa)) != 1) and (Nens == None) ):
+        elif ( (len(numpy.shape(xa)) != 1) and (Nens is None) ):
             xa = numpy.mean(xa, axis=1)
 
         return [xt,xa]
@@ -790,7 +790,7 @@ def get_IC(model, restart, Nens=None):
 
     if (   model.Name == 'L63' ):
 
-        if ( restart.time == None ):
+        if ( restart.time is None ):
             print '... from Miller et al., 1994'
 
             xt = numpy.array([1.508870, -1.531271, 25.46091])
@@ -803,7 +803,7 @@ def get_IC(model, restart, Nens=None):
 
     elif ( model.Name == 'L96' ):
 
-        if ( restart.time == None ):
+        if ( restart.time is None ):
             print '... from Lorenz and Emanuel, 1998'
 
             xt    = numpy.ones(model.Ndof) * model.Par[0]
@@ -817,7 +817,7 @@ def get_IC(model, restart, Nens=None):
 
     elif ( model.Name == 'L96_2scale' ):
 
-        if ( restart.time == None ):
+        if ( restart.time is None ):
             print '... from Lorenz 1996 2 scale'
 
             xt = numpy.zeros(model.Ndof)

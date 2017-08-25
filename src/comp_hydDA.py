@@ -152,7 +152,7 @@ def main():
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
-    if ( yFix == None ): ymax = yl[1]
+    if ( yFix is None ): ymax = yl[1]
     else:                ymax = yFix
     pyplot.ylim(0.0, ymax)
     pyplot.xlim(0.0, len(np.squeeze(xbrmseE[f,sOI:])))
@@ -188,7 +188,7 @@ def main():
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
-    if ( yFix == None ): ymax = yl[1]
+    if ( yFix is None ): ymax = yl[1]
     else:                ymax = yFix
     pyplot.ylim(0.0, ymax)
     pyplot.xlim(0.0, len(np.squeeze(xbrmseC[f,sOI:])))
@@ -220,7 +220,7 @@ def main():
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
-    if ( yFix == None ): ymax = yl[1]
+    if ( yFix is None ): ymax = yl[1]
     else:                ymax = yFix
     pyplot.ylim(0.0, ymax)
     pyplot.xlim(0.0, len(np.squeeze(xarmseE[f,sOI:])))
@@ -254,7 +254,7 @@ def main():
 
     yl = pyplot.get(pyplot.gca(),'ylim')
     xl = pyplot.get(pyplot.gca(),'xlim')
-    if ( yFix == None ): ymax = yl[1]
+    if ( yFix is None ): ymax = yl[1]
     else:                ymax = yFix
     pyplot.ylim(0.0, ymax)
     pyplot.xlim(0.0, len(np.squeeze(xarmseC[f,sOI:])))

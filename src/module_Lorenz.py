@@ -720,16 +720,17 @@ def get_IC(model, restart, Nens=None):
            xa - analysis or analysis ensemble
     '''
 
-    def perturb_truth(xt, model, Nens=None):
+    def perturb_truth(xt, model, Nens=None, pert_scale=1.e-3):
         '''
         populate initial ensemble analysis by perturbing true state and recentering
         '''
 
-        if ( Nens is None ):
-            xa = xt + 0.001 * ( numpy.random.randn(model.Ndof) )
+        if Nens is None:
+            xa = xt + pert_scale * numpy.random.randn(model.Ndof)
         else:
-            xa = xt.T + 0.001 * ( numpy.random.randn(model.Ndof,Nens) )
-            xa = (xa.T - numpy.mean(xa,axis=1) + xt).T
+            perts =  pert_scale * numpy.random.randn(Nens,model.Ndof)
+            xa = xt + perts
+            xa = (xa - numpy.mean(xa, axis=0) + xt).T
 
         return xa
 

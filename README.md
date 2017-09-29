@@ -1,11 +1,11 @@
 lorenz-da
 ========
 
-The purpose of this project is to test different data assimilation (DA) algorithms, ensemble, variational and hybrid, on simple Lorenz models.
-  
-This project is actively being worked on and is hosted on GitHub for educational purposes only. 
+The purpose of this project is to test different data assimilation (DA) algorithms; ensemble, variational and hybrid, on simple Lorenz models.
 
-Please report bugs or suggestions for improvements. 
+This project is hosted on GitHub for educational purposes only.
+
+Please report bugs or suggestions for improvements.
 
 
  <i class="icon-file"></i>**module_Lorenz.py** - contains Lorenz model related functions; e.g. model non-linear integration,  tangent-linear integration and adjoint, plotting model attractor, generating initial conditions, etc.

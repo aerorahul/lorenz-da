@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+
+###############################################################
+# LXX_model.py - driver script for the Lorenz class models
+#                and their respective TLM and adjoint
+###############################################################
+
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+
+import numpy as np
+import yaml
+from matplotlib import pyplot
+
+import Lorenz
+
+# insure the same sequence of random numbers EVERY TIME
+np.random.seed(0)
+
+parser = ArgumentParser(description='Test TLM and Adjoint for Lorenz class of models',
+                        formatter_class=ArgumentDefaultsHelpFormatter)
+parser.add_argument('-i', '--input', help='input yaml file containing the model configuration',
+                    type=str, required=False, default='L96.yaml')
+args = parser.parse_args()
+
+with open(args.input) as fh:
+    conf = yaml.load(fh, Loader=yaml.FullLoader)
+modelConf = conf.get('model', None)
+
+if modelConf is None:
+    raise NotImplementedError("Yaml file is missing model section")
+else:
+    Name = modelConf['Name']
+    dt = modelConf['dt']
+    Ndof = modelConf['Ndof']
+    Par = modelConf['Par']
+
+if Name == 'L63':
+    model = Lorenz.L63(Name, dt, Ndof, Par)
+elif Name == 'L96':
+    model = Lorenz.L96(Name, dt, Ndof, Par)
+
+# Get initial conditions
+#xt, x0 = model.getIC()
+x0 = np.array([1.508870, -1.531271, 25.46091])
+
+# How long to run (ncycles; each cycle is 6 hrs (0.05 time-units))
+tf = 4 * 0.05
+
+print('spinning-up ON the attractor ...')
+print('--------------------------------')
+
+ncycles = 250
+ts = np.rint(np.linspace(0, ncycles * tf / model.dt,
+                         int(ncycles * tf / model.dt) + 1)) * model.dt
+xs = model.advance(x0, ts)
+x0 = xs[-1, :].copy()
+model.plot(ver=x0, obs=x0)
+pyplot.show()
+
+tol = 1.0e-13
+pert = 1.0e-4
+
+ts = np.rint(np.linspace(0, tf / model.dt, int(tf / model.dt) + 1)) * model.dt
+
+xs = model.advance(x0, ts, rtol=tol, atol=tol)
+xsf = xs[-1, :].copy()
+
+xp0 = np.random.randn(model.Ndof) * pert
+
+xsp = model.advance(x0 + xp0, ts, rtol=tol, atol=tol)
+xspf = xsp[-1, :].copy()
+
+xp = model.advance(xp0, ts, xtraj=xs,
+                   ttraj=ts, adjoint=False, rtol=tol, atol=tol)
+xpf = xp[-1, :].copy()
+
+print('check TLM ...')
+for j in range(0, model.Ndof):
+    print('j = %2d | Ratio = %14.13f' % (j + 1, (xspf[j] - xsf[j]) / xpf[j]))
+print('-------------')
+
+xa0 = xpf.copy()
+xa = model.advance(xa0, ts, xtraj=xs,
+                   ttraj=ts, adjoint=True, rtol=tol, atol=tol)
+xaf = xa[-1, :].copy()
+
+q1 = np.dot(np.transpose(xpf), xpf)
+q2 = np.dot(np.transpose(xaf), xp0)
+
+print('check adjoint .. %14.13f' % (q2 - q1))
+print('-------------')
+
+pyplot.show()

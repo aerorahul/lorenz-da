@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ###############################################################
 # LXX_model.py - driver script for the Lorenz class models
@@ -8,10 +8,10 @@
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 import numpy as np
-import yaml
+from ruamel.yaml import YAML
 from matplotlib import pyplot
 
-import Lorenz
+from Lorenz import LorenzBase
 
 # insure the same sequence of random numbers EVERY TIME
 np.random.seed(0)
@@ -22,22 +22,15 @@ parser.add_argument('-i', '--input', help='input yaml file containing the model 
                     type=str, required=False, default='L96.yaml')
 args = parser.parse_args()
 
-with open(args.input) as fh:
-    conf = yaml.load(fh, Loader=yaml.FullLoader)
-modelConf = conf.get('model', None)
+yaml = YAML(typ='safe')
+with open(args.input, 'r') as f:
+    fullConf = yaml.load(f)
 
+modelConf = fullConf.get('model', None)
 if modelConf is None:
     raise NotImplementedError("Yaml file is missing model section")
-else:
-    Name = modelConf['Name']
-    dt = modelConf['dt']
-    Ndof = modelConf['Ndof']
-    Par = modelConf['Par']
 
-if Name == 'L63':
-    model = Lorenz.L63(Name, dt, Ndof, Par)
-elif Name == 'L96':
-    model = Lorenz.L96(Name, dt, Ndof, Par)
+model = LorenzBase.create(modelConf)
 
 # Get initial conditions
 #xt, x0 = model.getIC()

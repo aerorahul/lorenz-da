@@ -23,7 +23,7 @@ __status__    = "Prototype"
 ###############################################################
 import numpy         as     np
 from   matplotlib    import pyplot, cm
-from   commands      import getstatusoutput
+from   subprocess      import getstatusoutput
 from   module_Lorenz import *
 ###############################################################
 
@@ -347,7 +347,7 @@ orientation - orientation of the figure       [ 'landscape' ]
         if ( eps ):
             cmd = 'pdftops -eps %s - | ps2eps > %s' % (fname + '.pdf', fname + '.eps')
             [s,o] = getstatusoutput(cmd)
-            if ( s != 0 ): print 'Error : %s' % o
+            if ( s != 0 ): print('Error : %s' % o)
             eps = False
 
     if ( eps ): fhandle.savefig(fname + '.eps', dpi=epsdpi, orientation=orientation, format='eps', **kwargs)

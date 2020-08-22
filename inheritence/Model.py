@@ -5,12 +5,17 @@ class ModelBase(object):
     This provides a base class for all models.
     '''
 
-    def __init__(self, Name, dt):
+    @classmethod
+    def create(cls, modelConfig):
+        modelName = modelConfig.get('Name')
+        return next(c for c in cls.__subclasses__() if c.__name__ == modelName)(modelConfig)
+
+    def __init__(self, modelConfig):
         '''
         Populates the basics of a model class such as Name and time-step
         '''
-        self.Name = Name
-        self.dt = dt
+        self.Name = modelConfig.get('Name')
+        self.dt = modelConfig.get('dt')
 
     def __repr__(self):
         return {'Name':self.Name, 'dt':self.dt}

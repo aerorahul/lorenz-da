@@ -4,9 +4,9 @@ from scipy import integrate
 from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 
-__all__ = ['LorenzBase', 'L96']
+__all__ = ['LorenzBase', 'L63', 'L96']
 
-from ModelBase import ModelBase
+from Model import ModelBase
 
 
 class LorenzBase(ModelBase):
@@ -15,14 +15,14 @@ class LorenzBase(ModelBase):
     together with its TL and Adjoint models.
     """
 
-    def __init__(self, Name, dt, Ndof, Par):
+    def __init__(self, modelConfig):
         """
         Populates the Lorenz class given the model name,
         time-step, degrees of freedom and other model specific parameters
         """
-        super().__init__(Name, dt)
-        self.Ndof = Ndof
-        self.Par = Par
+        super().__init__(modelConfig)
+        self.Ndof = modelConfig.get('Ndof')
+        self.Par = modelConfig.get('Par')
 
     def advance(self, modelFunc, x0, t, *args, **kwargs):
         """
@@ -109,12 +109,12 @@ class L63(LorenzBase):
     together with its TL and Adjoint models.
     """
 
-    def __init__(self, Name, dt, Ndof, Par):
+    def __init__(self, modelConfig):
         """
-        Populates the L63 class given the model name,
-        time-step, degrees of freedom and other model specific parameters
+        Populates the L63 class given the model configuration containing,
+        name, time-step, degrees of freedom and other model specific parameters
         """
-        super().__init__(Name, dt, Ndof, Par)
+        super().__init__(modelConfig)
 
     def rhs(self, x0, t):
         """
@@ -254,12 +254,12 @@ class L96(LorenzBase):
     together with its TL and Adjoint models.
     """
 
-    def __init__(self, Name, dt, Ndof, Par):
+    def __init__(self, modelConfig):
         """
-        Populates the L96 class given the model name,
-        time-step, degrees of freedom and other model specific parameters
+        Populates the L96 class given the model configuration,
+        name, time-step, degrees of freedom and other model specific parameters
         """
-        super().__init__(Name, dt, Ndof, Par)
+        super().__init__(modelConfig)
 
     def rhs(self, x0, t, F, dummy):
         """

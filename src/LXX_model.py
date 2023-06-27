@@ -70,7 +70,7 @@ pert = 1.0e-4
 print( 'spinning-up ON the attractor ...')
 print( '--------------------------------')
 
-ts = np.rint(np.linspace(0,1000*tf/model.dt,1000*tf/model.dt+1)) * model.dt
+ts = np.linspace(0,1000*tf/model.dt, int(1000*tf/model.dt+1)) * model.dt
 xs = model.advance(x0, ts, perfect=True)
 x0 = xs[-1,:].copy()
 
@@ -81,7 +81,7 @@ elif ( model.Name == 'L96' ):
 elif ( model.Name == 'L96_2scale' ):
     exec('plot_%s(ver=xs[-1,:],obs=xs[-1,:],N=%d)' % (model.Name, model.Ndof))
 
-ts = np.rint(np.linspace(0,tf/model.dt,tf/model.dt+1)) * model.dt
+ts = np.linspace(0,tf/model.dt,int(tf/model.dt+1)) * model.dt
 
 xs = model.advance(x0, ts, perfect=True, rtol=tol, atol=tol)
 xsf = xs[-1,:].copy()

@@ -116,18 +116,22 @@ class Lorenz(object):
         '''
 
         if   ( self.Name == 'L63' ):
+            func = self.L63
             par = None
         elif ( self.Name == 'L96' ):
+            func = self.L96
             if ( perfect ): par = self.Par[0]
             else:           par = self.Par[1]
         elif ( self.Name == 'L96_2scale' ):
+            func = self.L96_2scale
             if ( perfect ): par = self.Par[0]
             else:           par = self.Par[1]
         else:
             print('%s is an invalid model, exiting.' % self.Name)
             sys.exit(1)
 
-        exec('xs = integrate.odeint(self.%s, x0, t, (par, 0.0), **kwargs)' % (self.Name))
+        #exec('xs = integrate.odeint(self.%s, x0, t, (par, 0.0), **kwargs)' % (self.Name))
+        xs = integrate.odeint(func, x0, t, (par, 0.0), **kwargs)
 
         if ( result is None ):
             return xs
@@ -158,11 +162,14 @@ class Lorenz(object):
         '''
 
         if   ( self.Name == 'L63' ):
+            func = self.L63_tlm
             par = None
         elif ( self.Name == 'L96' ):
+            func = self.L96_tlm
             if ( perfect ): par = self.Par[0]
             else:           par = self.Par[1]
         elif ( self.Name == 'L96_2scale' ):
+            func = self.L96_2scale_tlm
             if ( perfect ): par = self.Par[0]
             else:           par = self.Par[1]
         else:
@@ -171,7 +178,7 @@ class Lorenz(object):
 
         if ( adjoint ): xref = numpy.flipud(xref)
 
-        exec('xs = integrate.odeint(self.%s_tlm, x0, t, (par,xref,tref,adjoint), **kwargs)' % self.Name)
+        xs = integrate.odeint(func, x0, t, (par,xref,tref,adjoint), **kwargs)
 
         if ( result is None ):
             return xs
@@ -516,7 +523,6 @@ def plot_L63(obs=None, ver=None, xb=None, xa=None, xdim=0, ydim=2, **kwargs):
 
     fig = pyplot.figure()
     pyplot.clf()
-    pyplot.hold(True)
 
     att = None
     pretitle = None
@@ -534,7 +540,6 @@ def plot_L63(obs=None, ver=None, xb=None, xa=None, xdim=0, ydim=2, **kwargs):
     pyplot.ylabel(ylab,fontweight='bold',fontsize=12)
     title_str = 'Lorenz attractor'
     pyplot.title(title_str,fontweight='bold',fontsize=14)
-    fig.canvas.set_window_title(title_str)
 
     return fig
 # }}}
@@ -565,7 +570,6 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwar
     mean_dist = 35.0
     pyplot.subplot(111, polar=True)
     theta = numpy.linspace(0.0,2*numpy.pi,N+1)
-    pyplot.hold(True)
 
     # start by plotting a dummy tiny white dot dot at 0,0
     pyplot.plot(0, 0, 'w.', markeredgecolor='w', markersize=0.0)
@@ -616,7 +620,6 @@ def plot_L96(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None, **kwar
     else:                title = str(t)
     if ( not (pretitle is None) ): title = pretitle + ' - ' + title
     pyplot.title(title,fontweight='bold',fontsize=14)
-    fig.canvas.set_window_title(title)
 
     return fig
 # }}}
@@ -648,7 +651,6 @@ def plot_L96_2scale(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None,
     mean_dist_y = 75.0
     pyplot.subplot(111, polar=True)
     theta = numpy.linspace(0.0,2*numpy.pi,N+1)
-    pyplot.hold(True)
 
     # start by plotting a dummy tiny white dot dot at 0,0
     pyplot.plot(0, 0, 'w.', markeredgecolor='w', markersize=0.0)
@@ -699,7 +701,6 @@ def plot_L96_2scale(obs=None, ver=None, xb=None, xa=None, t=0, N=1, figNum=None,
     else:                title = str(t)
     if ( not (pretitle is None) ): title = pretitle + ' - ' + title
     pyplot.title(title,fontweight='bold',fontsize=14)
-    fig.canvas.set_window_title(title)
 
     return fig
 # }}}

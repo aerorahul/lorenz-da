@@ -50,11 +50,11 @@ def main():
     create_diag(diag_file, model.Ndof, nens=ensDA.Nens, nouter=1)
     write_diag(diag_file.filename, 0, 0, xt, Xb.T, Xa.T, np.dot(H,xt), np.diag(H), np.diag(R), evratio = np.NaN)
 
-    print 'Cycling ON the attractor ...'
+    print('Cycling ON the attractor ...')
 
     for k in range(DA.nassim):
 
-        print '========== assimilation time = %5d ========== ' % (k+1)
+        print('========== assimilation time = %5d ========== ' % (k+1))
 
         # advance truth with the full nonlinear model; set verification values
         xs = model.advance(xt, DA.tanal, perfect=True)
@@ -73,7 +73,7 @@ def main():
         # write diagnostics to disk
         write_diag(diag_file.filename, k+1, 0, ver, Xb.T, Xa.T, y, np.diag(H), np.diag(R), evratio = evratio)
 
-    print '... all done ...'
+    print('... all done ...')
     sys.exit(0)
 ###############################################################
 

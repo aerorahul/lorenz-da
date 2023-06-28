@@ -59,11 +59,11 @@ def main():
     for outer in range(DA.maxouter):
         write_diag(diag_file.filename, 0, outer, xt, Xb.T, Xa.T, np.reshape(y,[nobs]), np.diag(H), np.diag(R), central_prior=xbc, central_posterior=xac, evratio=np.NaN, niters=np.NaN)
 
-    print 'Cycling ON the attractor ...'
+    print('Cycling ON the attractor ...')
 
     for k in range(DA.nassim):
 
-        print '========== assimilation time = %5d ========== ' % (k+1)
+        print('========== assimilation time = %5d ========== ' % (k+1))
 
         # advance truth with the full nonlinear model; set verification values
         xs = model.advance(xt, varDA.fdvar.tbkgd, perfect=True)
@@ -122,7 +122,7 @@ def main():
         # recenter ensemble about central analysis
         if ( DA.hybrid_rcnt ): Xa = (Xa.T - np.mean(Xa,axis=1) + xac).T
 
-    print '... all done ...'
+    print('... all done ...')
     sys.exit(0)
 ###############################################################
 

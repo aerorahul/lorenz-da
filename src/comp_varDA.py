@@ -86,7 +86,7 @@ def main():
     elif ( gvarDA.update == 2 ): vstr = '4DVar'
 
     # allocate room for variables
-    print 'computing RMSE against %s' % measure
+    print('computing RMSE against %s' % measure)
     xbrmse = np.zeros((len(fnames),DA.nassim))
     xarmse = np.zeros((len(fnames),DA.nassim))
     xyrmse = np.zeros((len(fnames),DA.nassim))
@@ -104,7 +104,7 @@ def main():
 
     for fname in fnames:
 
-        print 'reading ... %s' % fname
+        print('reading ... %s' % fname)
         f = fnames.index(fname)
 
         try:
@@ -113,10 +113,10 @@ def main():
             blabel.append('%3.2f' % alpha[f])
             nc.close()
         except Exception as Instance:
-            print 'Exception occurred during read of ' + fname
-            print type(Instance)
-            print Instance.args
-            print Instance
+            print('Exception occurred during read of ' + fname)
+            print(type(Instance))
+            print(Instance.args)
+            print(Instance)
             sys.exit(1)
 
         # read the varDA for the specific diagnostic file
@@ -281,7 +281,7 @@ def main():
 
 
     if not save_figures: pyplot.show()
-    print '... all done ...'
+    print('... all done ...')
     sys.exit(0)
 ###############################################################
 

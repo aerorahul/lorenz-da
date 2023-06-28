@@ -86,7 +86,7 @@ def main():
         fOrient = 'portrait'
         fig.savefig(fname_fig + '.eps', dpi=300,orientation=fOrient,format='eps')
         fig.savefig(fname_fig + '.png', dpi=100,orientation=fOrient,format='png')
-        print 'all done ...'
+        print('all done ...')
     else:
         pyplot.show()
         sys.exit(0)

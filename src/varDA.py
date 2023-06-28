@@ -53,11 +53,11 @@ def main():
     for outer in range(DA.maxouter):
         write_diag(diag_file.filename, 0, outer, xt, xb, xa, np.reshape(y,[nobs]), np.diag(H), np.diag(R), niters=np.NaN)
 
-    print 'Cycling ON the attractor ...'
+    print('Cycling ON the attractor ...')
 
     for k in range(DA.nassim):
 
-        print '========== assimilation time = %5d ========== ' % (k+1)
+        print('========== assimilation time = %5d ========== ' % (k+1))
 
         # advance truth with the full nonlinear model; set verification values
         xs = model.advance(xt, varDA.fdvar.tbkgd, perfect=True)
@@ -92,7 +92,7 @@ def main():
             xs = model.advance(xa, varDA.fdvar.tanal, perfect=False)
             xa = xs[-1,:].copy()
 
-    print '... all done ...'
+    print('... all done ...')
     sys.exit(0)
 ###############################################################
 

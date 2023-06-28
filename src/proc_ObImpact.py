@@ -24,7 +24,7 @@ __status__    = "Prototype"
 ###############################################################
 import sys
 import numpy         as     np
-from   commands      import getstatusoutput
+from   subprocess      import getstatusoutput
 from   matplotlib    import pyplot
 from   module_IO     import *
 from   plot_stats    import *
@@ -99,16 +99,16 @@ def main():
         fig5.savefig(fname_fig + '-adj_dJm.pdf', dpi=300,orientation=fOrient,format='pdf')
         cmd = 'pdftops -eps %s - | ps2eps > %s' % (fname_fig+'-ens_dJm.pdf',fname_fig+'-ens_dJm.eps')
         [s,o] = getstatusoutput(cmd)
-        if ( s != 0 ): print 'Error : %s' % o
+        if ( s != 0 ): print('Error : %s' % o)
         cmd = 'pdftops -eps %s - | ps2eps > %s' % (fname_fig+'-adj_dJm.pdf',fname_fig+'-adj_dJm.eps')
         [s,o] = getstatusoutput(cmd)
-        if ( s != 0 ): print 'Error : %s' % o
+        if ( s != 0 ): print('Error : %s' % o)
 
         fig4.savefig(fname_fig + '-ens_dJm.png', dpi=100,orientation=fOrient,format='png')
         fig5.savefig(fname_fig + '-adj_dJm.png', dpi=100,orientation=fOrient,format='png')
 
     if ( save_fig ):
-        print 'all done ...'
+        print('all done ...')
     else:
         pyplot.show()
 ###############################################################

@@ -129,3 +129,5 @@ dmypy.json
 .pyre/
 
 *.sw[a-p]
+.idea/
+.vscode/

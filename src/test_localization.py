@@ -57,7 +57,7 @@ def main():
             cov_factor = compute_cov_factor(dist, ensDA.localization)
             L[i,j]  = cov_factor
             L2[i,j] = np.sqrt(cov_factor)
-            print 'i = %2d, j = %2d, d = %5.3f, c = %10.8f, c = %10.8f' % (i, j, dist, L[i,j], L2[i,j])
+            print('i = %2d, j = %2d, d = %5.3f, c = %10.8f, c = %10.8f' % (i, j, dist, L[i,j], L2[i,j]))
 
     XbpLb = np.zeros((model.Ndof,model.Ndof*ensDA.Nens))
     XbpLl = np.zeros((model.Ndof,model.Ndof*ensDA.Nens))

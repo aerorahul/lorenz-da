@@ -50,7 +50,7 @@ def main():
     nf = len(Ne)
     fnames = []
     for i in range(0,nf): fnames.append(fname + '%d.nc4' % Ne[i])
-    for i in range(0,nf): print fnames[i]
+    for i in range(0,nf): print(fnames[i])
 
     if ( len(fnames) <= 15 ):
         fcolor = ["#000000", "#C0C0C0", "#808080", "#800000", "#FF0000",\
@@ -70,7 +70,7 @@ def main():
     elif ( ensDA.update == 3 ): estr = 'EAKF'
 
     # allocate room for variables
-    print 'computing RMSE against %s' % measure
+    print('computing RMSE against %s' % measure)
     xbrmse = np.zeros((len(fnames),DA.nassim))
     xarmse = np.zeros((len(fnames),DA.nassim))
     xyrmse = np.zeros((len(fnames),DA.nassim))
@@ -85,7 +85,7 @@ def main():
 
     for fname in fnames:
 
-        print 'reading ... %s' % fname
+        print('reading ... %s' % fname)
         f = fnames.index(fname)
 
         try:
@@ -94,10 +94,10 @@ def main():
             blabel.append('%d' % len(nc.dimensions['ncopy']))
             nc.close()
         except Exception as Instance:
-            print 'Exception occurred during read of ' + fname
-            print type(Instance)
-            print Instance.args
-            print Instance
+            print('Exception occurred during read of ' + fname)
+            print(type(Instance))
+            print(Instance.args)
+            print(Instance)
             sys.exit(1)
 
         # read the diagnostic file
@@ -232,7 +232,7 @@ def main():
     #-----------------------------------------------------------
 
     if not save_figures: pyplot.show()
-    print '... all done ...'
+    print('... all done ...')
     sys.exit(0)
 ###############################################################
 

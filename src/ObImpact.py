@@ -67,7 +67,7 @@ def main():
 
     for k in range(sOI,eOI):
 
-        print '========== assimilation time = %5d ========== ' % (k)
+        print('========== assimilation time = %5d ========== ' % (k))
 
         # read diagnostics from file
         if ( DA.do_hybrid ):
@@ -152,7 +152,7 @@ def main():
         e_dJb[valInd] = np.dot(np.transpose(Kmb),JbHXb) * dy
         e_dJa[valInd] = np.dot(np.transpose(Kma),JaHXa) * dy
 
-        print 'dJe = %12.5f | dJe_a = %12.5f | dJe_b = %12.5f ' % ( np.nansum(e_dJa + e_dJb), np.nansum(e_dJa), np.nansum(e_dJb) )
+        print('dJe = %12.5f | dJe_a = %12.5f | dJe_b = %12.5f ' % ( np.nansum(e_dJa + e_dJb), np.nansum(e_dJa), np.nansum(e_dJb) ))
 
         # A D J O I N T - based observation impact
 
@@ -172,7 +172,7 @@ def main():
         a_dJb[valInd] = np.dot(np.transpose(K),Jxbi) * dy
         a_dJa[valInd] = np.dot(np.transpose(K),Jxai) * dy
 
-        print 'dJa = %12.5f | dJa_a = %12.5f | dJa_b = %12.5f ' % (np.nansum(a_dJa + a_dJb), np.nansum(a_dJa), np.nansum(a_dJb) )
+        print('dJa = %12.5f | dJa_a = %12.5f | dJa_b = %12.5f ' % (np.nansum(a_dJa + a_dJb), np.nansum(a_dJa), np.nansum(a_dJb) ))
 
         write_ObImpact_diag(fname_ObImpact, k-sOI, ens_dJa=e_dJa, ens_dJb=e_dJb, adj_dJa=a_dJa, adj_dJb=a_dJb)
 

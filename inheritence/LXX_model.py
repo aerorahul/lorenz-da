@@ -11,7 +11,7 @@ import numpy as np
 from ruamel.yaml import YAML
 from matplotlib import pyplot
 
-from Lorenz import LorenzBase
+from .Lorenz import LorenzBase
 
 # insure the same sequence of random numbers EVERY TIME
 np.random.seed(0)
@@ -69,7 +69,7 @@ xpf = xp[-1, :].copy()
 
 print('check TLM ...')
 for j in range(0, model.Ndof):
-    print('j = %2d | Ratio = %14.13f' % (j + 1, (xspf[j] - xsf[j]) / xpf[j]))
+    print(('j = %2d | Ratio = %14.13f' % (j + 1, (xspf[j] - xsf[j]) / xpf[j])))
 print('-------------')
 
 xa0 = xpf.copy()
@@ -80,7 +80,7 @@ xaf = xa[-1, :].copy()
 q1 = np.dot(np.transpose(xpf), xpf)
 q2 = np.dot(np.transpose(xaf), xp0)
 
-print('check adjoint .. %14.13f' % (q2 - q1))
+print(('check adjoint .. %14.13f' % (q2 - q1)))
 print('-------------')
 
 pyplot.show()

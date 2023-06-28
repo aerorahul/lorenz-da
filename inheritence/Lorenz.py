@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 __all__ = ['LorenzBase', 'L63', 'L96']
 
-from Model import ModelBase
+from .Model import ModelBase
 
 
 class LorenzBase(ModelBase):
@@ -81,7 +81,7 @@ class LorenzBase(ModelBase):
             msg += '        valid options are t = +/- [1 ... %d]' % ntime
             raise IndexError(msg)
         else:
-            print('... from t = %d in %s' % (indx+1, filename))
+            print(('... from t = %d in %s' % (indx+1, filename)))
             xt = np.squeeze(nc.variables['truth'][indx, ])
             xa = np.transpose(np.squeeze(nc.variables['posterior'][indx, ]))
         nc.close()
@@ -489,7 +489,7 @@ class L96(LorenzBase):
         # insure the same sequence of random numbers EVERY TIME
         np.random.seed(0)
 
-        print('Generating ICs for %s' % self.Name)
+        print(('Generating ICs for %s' % self.Name))
 
         if restart is None:
             print('... from Lorenz and Emanuel, 1998')

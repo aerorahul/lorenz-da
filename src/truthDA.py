@@ -44,11 +44,11 @@ def main():
     create_truth(truth_file, model.Ndof)
     write_truth(truth_file.filename, 0, xt, np.dot(H,xt), np.diag(H), np.diag(R))
 
-    print 'running ON the attractor ...'
+    print('running ON the attractor ...')
 
     for k in range(0, DA.nassim):
 
-        print '========== assimilation time = %5d ========== ' % (k+1)
+        print('========== assimilation time = %5d ========== ' % (k+1))
 
         # advance truth with the full nonlinear model
         xs = advance_model(model, xt, DA.tanal, perfect=True)
@@ -60,7 +60,7 @@ def main():
         # write diagnostics to disk
         write_truth(truth_file.filename, k+1, xt, y, np.diag(H), np.diag(R))
 
-    print '... all done ...'
+    print('... all done ...')
     sys.exit(0)
 ###############################################################
 

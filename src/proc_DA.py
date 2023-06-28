@@ -48,7 +48,7 @@ def main():
     save_fig = args.save_figure
 
     if ( not os.path.isfile(fname) ):
-        print '%s does not exist' % fname
+        print('%s does not exist' % fname)
         sys.exit(1)
 
     fname_fig = fname.split('diag.nc4')[0]
@@ -59,7 +59,7 @@ def main():
     [model, DA, ensDA, varDA] = read_diag_info(fname)
 
     # print some info so the user knows the script is doing something
-    print 'no. of assimilation cycles = %d' % DA.nassim
+    print('no. of assimilation cycles = %d' % DA.nassim)
 
     # read diagnostics from file
     if ( DA.do_hybrid ):
@@ -109,7 +109,7 @@ def main():
         elif ( hasattr(ensDA,'update') ): fstr, evratio = estr, tmpvar
 
     # compute RMSE in prior, posterior and observations
-    print 'computing RMSE against %s' % measure
+    print('computing RMSE against %s' % measure)
     if ( measure == 'truth' ):
         xbrmse = np.sqrt( np.sum( (xt - xbm)**2, axis = 1) / model.Ndof )
         xarmse = np.sqrt( np.sum( (xt - xam)**2, axis = 1) / model.Ndof )
@@ -122,8 +122,8 @@ def main():
     elif ( ePlot >  0 ): pIndex = ePlot + 1
     elif ( ePlot <  0 ): pIndex = DA.nassim + ePlot
     if ( (pIndex < 0) or (pIndex >= DA.nassim) ):
-        print 'ERROR : t = %d does not exist in %s' % (pIndex+1, fname)
-        print '        valid options are t = +/- [1 ... %d]' % DA.nassim
+        print('ERROR : t = %d does not exist in %s' % (pIndex+1, fname))
+        print('        valid options are t = +/- [1 ... %d]' % DA.nassim)
         sys.exit(2)
 
     # plot the RMSE

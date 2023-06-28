@@ -64,7 +64,7 @@ def main():
 
     for k in range(DA.nassim):
 
-        print '========== assimilation time = %5d ========== ' % (k+1)
+        print('========== assimilation time = %5d ========== ' % (k+1))
 
         # advance truth with the full nonlinear model; set verification values
         xs = model.advance(xt, varDA.fdvar.tbkgd, perfect=True)
@@ -118,7 +118,7 @@ def main():
             xac = model.advance(  xac, varDA.fdvar.tanal,        perfect=False)[-1,:].copy()
             Xa  = advance_ensemble(Xa, varDA.fdvar.tanal, model, perfect=False)
 
-    print '... all done ...'
+    print('... all done ...')
     sys.exit(0)
 ###############################################################
 

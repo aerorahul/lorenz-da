@@ -96,7 +96,7 @@ xpf = xp[-1,:].copy()
 
 print('check TLM ..')
 for j in range(0,model.Ndof):
-    print('j = %2d | Ratio = %14.13f' % (j+1, ( xspf[j] - xsf[j] ) / xpf[j]))
+    print(('j = %2d | Ratio = %14.13f' % (j+1, ( xspf[j] - xsf[j] ) / xpf[j])))
 print('--------------------------------')
 
 xa0 = xpf.copy()
@@ -106,7 +106,7 @@ xaf = xa[-1,:].copy()
 q1 = np.dot(np.transpose(xpf),xpf)
 q2 = np.dot(np.transpose(xaf),xp0)
 
-print('check adjoint .. %14.13f' % (q2-q1))
+print(('check adjoint .. %14.13f' % (q2-q1)))
 print('--------------------------------')
 
 pyplot.show()

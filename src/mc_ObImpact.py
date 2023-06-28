@@ -25,7 +25,7 @@ __status__    = "Prototype"
 import os
 import sys
 import numpy         as     np
-import cPickle       as     cPickle
+import pickle       as     cPickle
 from   matplotlib    import pyplot
 from   module_IO     import *
 from   plot_stats    import *
@@ -37,7 +37,7 @@ def main():
     # get the name of .dat file to read
     [_,fname,nEns,_] = get_input_arguments()
     if ( not os.path.isfile(fname) ):
-        print '%s does not exist' % fname
+        print('%s does not exist' % fname)
         sys.exit(1)
 
     try:
@@ -45,10 +45,10 @@ def main():
         object = cPickle.load(fh)
         fh.close()
     except Exception as Instance:
-        print 'Exception occured during read of %s' % fname
-        print type(Instance)
-        print Instance.args
-        print Instance
+        print('Exception occured during read of %s' % fname)
+        print(type(Instance))
+        print(Instance.args)
+        print(Instance)
         sys.exit(1)
 
     adJ  = object['adj_dJ' ]
@@ -60,13 +60,13 @@ def main():
 
     nSam = len(adJ)
     nSubSam = nSam / nEns
-    if ( not isinstance(nSubSam, (int,long)) ):
-        print 'nSam = %d must be exactly divisible by nEns = %d' % (nSam, nEns)
+    if ( not isinstance(nSubSam, int) ):
+        print('nSam = %d must be exactly divisible by nEns = %d' % (nSam, nEns))
         sys.exit(1)
 
-    print 'total no. of samples ................. = %d' % nSam
-    print 'no. of ensemble members .............. = %d' % nEns
-    print 'no. of samples in each ensemble member = %d' % nSubSam
+    print('total no. of samples ................. = %d' % nSam)
+    print('no. of ensemble members .............. = %d' % nEns)
+    print('no. of samples in each ensemble member = %d' % nSubSam)
 
     adJ_s  = np.zeros((nEns,nSam/nEns)) * np.NaN
     edJ_s  = np.zeros((nEns,nSam/nEns)) * np.NaN

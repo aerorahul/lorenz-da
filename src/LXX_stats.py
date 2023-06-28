@@ -70,19 +70,19 @@ def main():
         if ( method == 'NMC' ): pscale = 1.0e-3   # scale of perturbations to add
 
         # get a state on the attractor
-        print 'spinning-up onto the attractor ...'
+        print('spinning-up onto the attractor ...')
         ts = np.arange(0.0,ts+model.dt,model.dt)       # how long to run onto the attractor
         xs = model.advance(x0, ts, perfect=True)
 
         # use the end state as IC
         xt = xs[-1,:]
 
-        print 'Using the NMC method to create B'
+        print('Using the NMC method to create B')
 
         # allocate space upfront
         X = np.zeros((model.Ndof,Ne))
 
-        print 'running ON the attractor ...'
+        print('running ON the attractor ...')
 
         tf0 = np.arange(0.0,1*tf+model.dt,model.dt)
         tf1 = np.arange(0.0,3*tf+model.dt,model.dt)
@@ -110,20 +110,20 @@ def main():
         # get the name of EnKF output diagnostic file to read
         fname = args.filename
 
-        print 'Using the EnKF output to create B'
+        print('Using the EnKF output to create B')
         [model, DA, ensDA, varDA] = read_diag_info(fname)
 
         if ( args.model != model.Name ):
-            print 'mismatch between models, please verify'
-            print 'model name from file = %s' % model.Name
-            print 'desired model name   = %s' % args.model
+            print('mismatch between models, please verify')
+            print('model name from file = %s' % model.Name)
+            print('desired model name   = %s' % args.model)
             sys.exit(1)
 
         offset = 501
         nsamp = DA.nassim - offset
-        print 'no. of samples available... %d' % DA.nassim
-        print 'removing first %d samples to account for spin-up ...' % offset
-        print 'no. of samples used ... %d' % nsamp
+        print('no. of samples available... %d' % DA.nassim)
+        print('removing first %d samples to account for spin-up ...' % offset)
+        print('no. of samples used ... %d' % nsamp)
 
         _, Xb, _, _, _, _, _ = read_diag(fname, offset, end_time=DA.nassim)
 
@@ -134,8 +134,8 @@ def main():
     fig = plot_cov(B,'full B')
 
     # save B to disk for use with DA experiments
-    print 'save B to disk ...'
-    print np.diag(B)
+    print('save B to disk ...')
+    print(np.diag(B))
 
     fname = 'L96_climo_B_%s.nc4' % method
     nc       = Dataset(fname,mode='w',clobber=True,format='NETCDF4')
@@ -154,7 +154,7 @@ def main():
     nc.close()
 
     pyplot.show()
-    print '... all done ...'
+    print('... all done ...')
     sys.exit(0)
 ###############################################################
 

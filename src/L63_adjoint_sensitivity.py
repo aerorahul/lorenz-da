@@ -52,7 +52,7 @@ par = np.array([10.0, 28.0, 8.0/3.0])
 x0 = np.array([10.0, 20.0, 30.0])
 
 # get a state on the attractor
-print 'running onto the attractor ...'
+print('running onto the attractor ...')
 ts = np.arange(0.0,ts+dt,dt)             # how long to run (spin-up) on the attractor
 xs = integrate.odeint(L63, x0, ts, (par,0.0))
 
@@ -96,9 +96,9 @@ sxi = np.dot(np.transpose(M),sxf)
 axs = integrate.odeint(L63_tlm, sxf, tint, (par,np.flipud(xsave),tsave,True))
 
 # present a check on the two methods
-print
-print 'initial sensitivity gradient from M^T                 : %7.4f %7.4f %7.4f' %(sxi[0],sxi[1],sxi[2] )
-print 'initial sensitivity gradient from adjoint integration : %7.4f %7.4f %7.4f' %(axs[-1,0],axs[-1,1],axs[-1,2])
+print()
+print('initial sensitivity gradient from M^T                 : %7.4f %7.4f %7.4f' %(sxi[0],sxi[1],sxi[2] ))
+print('initial sensitivity gradient from adjoint integration : %7.4f %7.4f %7.4f' %(axs[-1,0],axs[-1,1],axs[-1,2]))
 
 # Gradient check for the TLM and its adjoint:
 tol = 1.0e-13  # convergence tolerance for scipy.integrate.odeint
@@ -110,8 +110,8 @@ axs = integrate.odeint(L63_tlm, z, tint, (par,np.flipud(xsave),tsave,True),rtol=
 z0 = axs[-1,:].copy()
 z0Tsxi = np.dot(np.transpose(z0),sxi)
 
-print
-print 'Gradient check result : ' + str(zTz - z0Tsxi)
+print()
+print('Gradient check result : ' + str(zTz - z0Tsxi))
 
 # plot the attractor,  control trajectory, and sensitivity gradient vector
 fig = pyplot.figure(1)
@@ -149,9 +149,9 @@ for k in range(0,np.shape(px)[0],4):
 # check TLM against the non-linear integration
 perttlm = np.dot(M,xp)
 
-print
-print 'TLM perturbation solution      : %7.4f %7.4f %7.4f' %(perttlm[0],perttlm[1],perttlm[2] )
-print 'non-linear difference solution : %7.4f %7.4f %7.4f' %(px[-1,0],px[-1,1],px[-1,2])
+print()
+print('TLM perturbation solution      : %7.4f %7.4f %7.4f' %(perttlm[0],perttlm[1],perttlm[2] ))
+print('non-linear difference solution : %7.4f %7.4f %7.4f' %(px[-1,0],px[-1,1],px[-1,2]))
 
 # predicted and modeled (actual) change in the forecast metric
 Jc = xf[0].copy()              # single variable metric - Control
@@ -161,9 +161,9 @@ Jp = pxsave[-1,0].copy()       # single variable metric - Perturbation
 dJp = np.dot(np.transpose(sxi), xp)    # predicted change
 dJm = Jp - Jc                          # modeled (actual) change
 
-print
-print 'predicted change in metric : %7.4f' % (dJp)
-print '  modeled change in metric : %7.4f' % (dJm)
+print()
+print('predicted change in metric : %7.4f' % (dJp))
+print('  modeled change in metric : %7.4f' % (dJm))
 
 xl = pyplot.get(pyplot.gca(),'xlim')
 yl = pyplot.get(pyplot.gca(),'ylim')

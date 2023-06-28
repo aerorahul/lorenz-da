@@ -71,7 +71,7 @@ class DataAssim(object):
 
         self.t0       = 0.0
 
-        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+        for key, value in kwargs.items(): self.__setattr__(key,value)
     #}}}
 
 class VarDataAssim(object):
@@ -144,7 +144,7 @@ class VarDataAssim(object):
 
         self.fdvar = fdvar(model,DA,window=window,offset=offset,nobstimes=nobstimes)
 
-        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+        for key, value in kwargs.items(): self.__setattr__(key,value)
     #}}}
 
 class EnsDataAssim(object):
@@ -214,7 +214,7 @@ class EnsDataAssim(object):
         if ( cov_trunc is None ): cov_trunc = model.Ndof
         self.localization = localization(localize=localize,cov_cutoff=cov_cutoff,cov_trunc=cov_trunc)
 
-        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+        for key, value in kwargs.items(): self.__setattr__(key,value)
     #}}}
 
 class minimization(object):
@@ -242,7 +242,7 @@ class minimization(object):
         self.maxiter = maxiter
         self.tol     = tol
 
-        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+        for key, value in kwargs.items(): self.__setattr__(key,value)
     #}}}
 
 class inflation(object):
@@ -278,7 +278,7 @@ class inflation(object):
         self.infl_fac = infl_fac
         self.infl_adp = infl_adp
 
-        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+        for key, value in kwargs.items(): self.__setattr__(key,value)
     #}}}
 
 class localization(object):
@@ -312,7 +312,7 @@ class localization(object):
         self.cov_cutoff = cov_cutoff
         self.cov_trunc  = cov_trunc
 
-        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+        for key, value in kwargs.items(): self.__setattr__(key,value)
     #}}}
 
 class fdvar(object):
@@ -393,7 +393,7 @@ class fdvar(object):
         else:
             self.noverlap = 0
 
-        for key, value in kwargs.iteritems(): self.__setattr__(key,value)
+        for key, value in kwargs.items(): self.__setattr__(key,value)
     #}}}
 
 def check_DA(DA):
@@ -406,20 +406,20 @@ def check_DA(DA):
     DA - data assimilation class
     '''
 
-    print '==========================================='
+    print('===========================================')
 
     fail = False
 
-    print 'Cycle DA for %d cycles' % DA.nassim
-    print 'Interval between each DA cycle is %f' % DA.ntimes
+    print('Cycle DA for %d cycles' % DA.nassim)
+    print('Interval between each DA cycle is %f' % DA.ntimes)
     if ( hasattr(DA,'do_hybrid') ):
         if ( DA.do_hybrid ):
-            print 'Doing hybrid data assimilation'
-            print 'Using %d%% of the flow-dependent covariance' % (np.int(DA.hybrid_wght * 100))
-            if ( DA.hybrid_rcnt ): print 'Re-centering the ensemble about the central analysis'
-            else:                  print 'No re-centering of the ensemble about the central analysis'
+            print('Doing hybrid data assimilation')
+            print('Using %d%% of the flow-dependent covariance' % (np.int(DA.hybrid_wght * 100)))
+            if ( DA.hybrid_rcnt ): print('Re-centering the ensemble about the central analysis')
+            else:                  print('No re-centering of the ensemble about the central analysis')
 
-    print '==========================================='
+    print('===========================================')
 
     if ( fail ): sys.exit(1)
 
@@ -441,38 +441,38 @@ def check_ensDA(DA,ensDA):
 
     check_DA(DA)
 
-    print '==========================================='
+    print('===========================================')
 
     fail = False
 
     if   ( ensDA.update == 0 ):
-        print 'Running "No Assimilation"'
+        print('Running "No Assimilation"')
     elif ( ensDA.update == 1 ):
-        print 'Assimilate observations using the EnKF'
+        print('Assimilate observations using the EnKF')
     elif ( ensDA.update == 2 ):
-        print 'Assimilate observations using the EnSRF'
+        print('Assimilate observations using the EnSRF')
     elif ( ensDA.update == 3 ):
-        print 'Assimilate observations using the EAKF'
+        print('Assimilate observations using the EAKF')
     else:
-        print 'Invalid assimilation algorithm'
-        print 'ensDA.update must be one of : 0 | 1 | 2 | 3'
-        print 'No Assimilation | EnKF | EnSRF | EAKF'
+        print('Invalid assimilation algorithm')
+        print('ensDA.update must be one of : 0 | 1 | 2 | 3')
+        print('No Assimilation | EnKF | EnSRF | EAKF')
         fail = True
 
     if   ( ensDA.inflation.inflate == 0 ):
-        print 'Doing no inflation at all'
+        print('Doing no inflation at all')
     elif ( ensDA.inflation.inflate == 1 ):
-        print 'Inflating the Prior using multiplicative inflation with a factor of %f' % ensDA.inflation.infl_fac
+        print('Inflating the Prior using multiplicative inflation with a factor of %f' % ensDA.inflation.infl_fac)
     elif ( ensDA.inflation.inflate == 2 ):
-        print 'Inflating the Prior by adding white-noise with zero-mean and %f spread' % ensDA.inflation.infl_fac
+        print('Inflating the Prior by adding white-noise with zero-mean and %f spread' % ensDA.inflation.infl_fac)
     elif ( ensDA.inflation.inflate == 3 ):
-        print 'Inflating the Posterior by covariance relaxation method with weight %f to the prior' % ensDA.inflation.infl_fac
+        print('Inflating the Posterior by covariance relaxation method with weight %f to the prior' % ensDA.inflation.infl_fac)
     elif ( ensDA.inflation.inflate == 4 ):
-        print 'Inflating the Posterior by spread restoration method with a factor of %f' % ensDA.inflation.infl_fac
+        print('Inflating the Posterior by spread restoration method with a factor of %f' % ensDA.inflation.infl_fac)
     else:
-        print 'Invalid inflation method'
-        print 'ensDA.inflation.inflate must be one of : 0 | 1 | 2 | 3 | 4'
-        print 'Multiplicative | Additive | Covariance Relaxation | Spread Restoration'
+        print('Invalid inflation method')
+        print('ensDA.inflation.inflate must be one of : 0 | 1 | 2 | 3 | 4')
+        print('Multiplicative | Additive | Covariance Relaxation | Spread Restoration')
         fail = True
 
     if   ( ensDA.localization.localize == 0 ): loc_type = 'No localization'
@@ -480,15 +480,15 @@ def check_ensDA(DA,ensDA):
     elif ( ensDA.localization.localize == 2 ): loc_type = 'Boxcar function'
     elif ( ensDA.localization.localize == 3 ): loc_type = 'Ramped boxcar function'
     else:
-        print 'Invalid localization method'
-        print 'ensDA.localization.localize must be one of : 0 | 1 | 2 | 3 '
-        print 'None | Gaspari & Cohn | Boxcar | Ramped Boxcar'
+        print('Invalid localization method')
+        print('ensDA.localization.localize must be one of : 0 | 1 | 2 | 3 ')
+        print('None | Gaspari & Cohn | Boxcar | Ramped Boxcar')
         loc_type = 'None'
         fail = True
     if ( loc_type != 'None' ):
-        print 'Localizing using an %s with a covariance cutoff of %f' % (loc_type, ensDA.localization.cov_cutoff)
+        print('Localizing using an %s with a covariance cutoff of %f' % (loc_type, ensDA.localization.cov_cutoff))
 
-    print '==========================================='
+    print('===========================================')
 
     if ( fail ): sys.exit(1)
 
@@ -554,7 +554,7 @@ def update_ensDA(Xb, y, R, H, ensDA, model):
             obs_inc, innov[ob], totvar[ob] = obs_increment_EAKF(y[ob], R[ob,ob], ye)
 
         else:
-            print 'invalid update algorithm ...'
+            print('invalid update algorithm ...')
             sys.exit(2)
 
         for i in range(model.Ndof):
@@ -591,9 +591,9 @@ def update_ensDA(Xb, y, R, H, ensDA, model):
     # check for filter divergence
     error_variance_ratio = np.nansum(innov**2) / np.nansum(totvar)
     if ( 0.5 < error_variance_ratio < 2.0 ):
-        print 'total error / total variance = %f' % (error_variance_ratio)
+        print('total error / total variance = %f' % (error_variance_ratio))
     else:
-        print "\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" % (error_variance_ratio)
+        print("\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" % (error_variance_ratio))
         #break
 
     return Xa, error_variance_ratio
@@ -796,7 +796,7 @@ def compute_cov_factor(dist, localization):
 
     else:
 
-        print '%d is an invalid localization method' % localization.localize
+        print('%d is an invalid localization method' % localization.localize)
         sys.exit(1)
 
     return cov_factor
@@ -817,7 +817,7 @@ def check_varDA(DA,varDA):
 
     check_DA(DA)
 
-    print '==========================================='
+    print('===========================================')
 
     fail = False
 
@@ -826,22 +826,22 @@ def check_varDA(DA,varDA):
     elif ( varDA.precondition == 2 ): pstr = 'full B'
 
     if   ( varDA.update == 0 ):
-        print 'Running "No Assimilation"'
+        print('Running "No Assimilation"')
     elif ( varDA.update == 1 ):
-        print 'Assimilate observations using 3DVar [using incremental formulation] with %s preconditioning'% (pstr)
+        print('Assimilate observations using 3DVar [using incremental formulation] with %s preconditioning'% (pstr))
     elif ( varDA.update == 2 ):
-        print 'Assimilate observations using 4DVar [using incremental formulation] with %s preconditioning'% (pstr)
+        print('Assimilate observations using 4DVar [using incremental formulation] with %s preconditioning'% (pstr))
     else:
-        print 'Invalid assimilation algorithm'
-        print 'varDA.update must be one of : 0 | 1 | 2'
-        print 'No Assimilation | 3DVar | 4DVar'
+        print('Invalid assimilation algorithm')
+        print('varDA.update must be one of : 0 | 1 | 2')
+        print('No Assimilation | 3DVar | 4DVar')
         fail = True
 
     if   ( varDA.inflation.inflate ):
-        print 'Inflating the static background error covariance with a factor of %f' % varDA.inflation.infl_fac
+        print('Inflating the static background error covariance with a factor of %f' % varDA.inflation.infl_fac)
     else:
-        print 'Doing no inflation of the static background error covariance at all'
-    print '==========================================='
+        print('Doing no inflation of the static background error covariance at all')
+    print('===========================================')
 
     if ( fail ): sys.exit(1)
 
@@ -875,7 +875,7 @@ def update_varDA(xb, B, y, R, H, varDA, model):
         xa, niters = VarSolver(xb, B, y, R, H, varDA, model)
 
     else:
-        print 'invalid update algorithm ...'
+        print('invalid update algorithm ...')
         sys.exit(2)
 
     return xa, niters
@@ -993,7 +993,7 @@ def VarSolver(xb, B, y, R, H, varDA, model):
 
     residual_first = np.sum(r**2+s**2)
     residual_tol   = 1.0
-    print 'initial residual = %15.10f' % (residual_first)
+    print('initial residual = %15.10f' % (residual_first))
 
     while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
 
@@ -1031,10 +1031,10 @@ def VarSolver(xb, B, y, R, H, varDA, model):
         residual_tol = residual / residual_first
 
         if ( not np.mod(niters,5) ):
-            print '        residual = %15.10f after %4d iterations' % (residual, niters)
+            print('        residual = %15.10f after %4d iterations' % (residual, niters))
 
-    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
-    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
+    if ( niters > varDA.minimization.maxiter ): print('\033[0;31mexceeded maximum iterations allowed\033[0m')
+    print('  final residual = %15.10f after %4d iterations' % (residual, niters))
 
     # Variational estimate
     if   ( varDA.precondition == 0 ): xa = xa + v
@@ -1110,7 +1110,7 @@ def ThreeDvar_adj(gradJ, B, y, R, H, varDA, model):
 
     residual_first = np.sum(gJ**2)
     residual_tol   = 1.0
-    print 'initial residual = %15.10f' % (residual_first)
+    print('initial residual = %15.10f' % (residual_first))
 
     while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
 
@@ -1124,10 +1124,10 @@ def ThreeDvar_adj(gradJ, B, y, R, H, varDA, model):
         residual_tol = residual / residual_first
 
         if ( not np.mod(niters,5) ):
-            print '        residual = %15.10f after %4d iterations' % (residual, niters)
+            print('        residual = %15.10f after %4d iterations' % (residual, niters))
 
-    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
-    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
+    if ( niters > varDA.minimization.maxiter ): print('\033[0;31mexceeded maximum iterations allowed\033[0m')
+    print('  final residual = %15.10f after %4d iterations' % (residual, niters))
 
     KTgradJ = np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],q))
 
@@ -1205,7 +1205,7 @@ def ThreeDvar_pc_adj(gradJ, G, y, R, H, varDA, model):
 
     residual_first = np.sum(gJ**2)
     residual_tol   = 1.0
-    print 'initial residual = %15.10f' % (residual_first)
+    print('initial residual = %15.10f' % (residual_first))
 
     while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
 
@@ -1219,10 +1219,10 @@ def ThreeDvar_pc_adj(gradJ, G, y, R, H, varDA, model):
         residual_tol = residual / residual_first
 
         if ( not np.mod(niters,5) ):
-            print '        residual = %15.10f after %4d iterations' % (residual, niters)
+            print('        residual = %15.10f after %4d iterations' % (residual, niters))
 
-    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
-    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
+    if ( niters > varDA.minimization.maxiter ): print('\033[0;31mexceeded maximum iterations allowed\033[0m')
+    print('  final residual = %15.10f after %4d iterations' % (residual, niters))
 
     KTgradJ = np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],np.dot(G,q)))
 
@@ -1268,19 +1268,19 @@ def check_ensvarDA(DA,ensDA,varDA):
 
     fail = False
 
-    print '==========================================='
+    print('===========================================')
 
     if   ( varDA.precondition == 0 ): pstr = 'nothing'
     elif ( varDA.precondition == 1 ): pstr = 'square-root B'
     elif ( varDA.precondition == 2 ): pstr = 'full B'
 
     if   ( varDA.precondition != 1 ):
-        print '''Preconditioning with %s is not allowed when
+        print('''Preconditioning with %s is not allowed when
 assimilating observations using ensemble-variational algorithm.
-varDA.precondition must be : 1 = square-root B''' % pstr
+varDA.precondition must be : 1 = square-root B''' % pstr)
         fail = True
 
-    print '==========================================='
+    print('===========================================')
 
     if ( fail ): sys.exit(1)
 
@@ -1317,7 +1317,7 @@ def update_ensvarDA(xb, D, S, y, R, H, varDA, ensDA, model):
         xa, niters = EnsembleVarSolver(xb, S, D, y, R, H, varDA, ensDA, model)
 
     else:
-        print 'invalid update algorithm ...'
+        print('invalid update algorithm ...')
         sys.exit(2)
 
     return xa, niters
@@ -1409,7 +1409,7 @@ def EnsembleVarSolver(xb, S, D, y, R, H, varDA, ensDA, model):
 
     residual_first = np.sum(r**2+s**2)
     residual_tol   = 1.0
-    print 'initial residual = %15.10f' % (residual_first)
+    print('initial residual = %15.10f' % (residual_first))
 
     while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
 
@@ -1439,10 +1439,10 @@ def EnsembleVarSolver(xb, S, D, y, R, H, varDA, ensDA, model):
         residual_tol = residual / residual_first
 
         if ( not np.mod(niters,5) ):
-            print '        residual = %15.10f after %4d iterations' % (residual, niters)
+            print('        residual = %15.10f after %4d iterations' % (residual, niters))
 
-    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
-    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
+    if ( niters > varDA.minimization.maxiter ): print('\033[0;31mexceeded maximum iterations allowed\033[0m')
+    print('  final residual = %15.10f after %4d iterations' % (residual, niters))
 
     if   ( varDA.precondition == 0 ): dxo = np.dot(D[0,:,:],v)
     elif ( varDA.precondition == 1 ): dxo = np.dot(D[0,:,:],np.dot(S,w))
@@ -1519,7 +1519,7 @@ def EnsembleVar(xb, G, y, R, H, varDA, model):
 
     residual_first = np.sum(r**2+s**2)
     residual_tol   = 1.0
-    print 'initial residual = %15.10f' % (residual_first)
+    print('initial residual = %15.10f' % (residual_first))
 
     while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
 
@@ -1539,10 +1539,10 @@ def EnsembleVar(xb, G, y, R, H, varDA, model):
         residual_tol = residual / residual_first
 
         if ( not np.mod(niters,5) ):
-            print '        residual = %15.10f after %4d iterations' % (residual, niters)
+            print('        residual = %15.10f after %4d iterations' % (residual, niters))
 
-    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
-    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
+    if ( niters > varDA.minimization.maxiter ): print('\033[0;31mexceeded maximum iterations allowed\033[0m')
+    print('  final residual = %15.10f after %4d iterations' % (residual, niters))
 
     xa = xa + np.dot(G[0,:,:],w)
 
@@ -1567,20 +1567,20 @@ def check_hybensvarDA(DA,ensDA,varDA):
 
     fail = False
 
-    print '==========================================='
+    print('===========================================')
 
     if   ( varDA.precondition == 0 ): pstr = 'nothing'
     elif ( varDA.precondition == 1 ): pstr = 'square-root B'
     elif ( varDA.precondition == 2 ): pstr = 'full B'
 
     if   ( varDA.precondition == 0 ):
-        print '''Preconditioning with %s is not allowed when
+        print('''Preconditioning with %s is not allowed when
 assimilating observations using hybrid ensemble-variational algorithm.
 Inverting B = [[Bs 0], [0 A]] is not possible, as it is singular.
-varDA.precondition must be : 1 | 2 = square-root or full B''' % pstr
+varDA.precondition must be : 1 | 2 = square-root or full B''' % pstr)
         fail = True
 
-    print '==========================================='
+    print('===========================================')
 
     if ( fail ): sys.exit(1)
 
@@ -1620,7 +1620,7 @@ def update_hybensvarDA(xb, B, C, y, R, H, varDA, model):
         xa, niters = HybridEnsembleFourDvar(xb, B, C, y, R, H, varDA, model)
 
     else:
-        print 'invalid update algorithm ...'
+        print('invalid update algorithm ...')
         sys.exit(2)
 
     return xa, niters
@@ -1676,7 +1676,7 @@ def HybridEnsembleThreeDvar(xb, B, C, y, R, H, varDA, model):
 
     residual_first = np.sum(r**2+s**2)
     residual_tol   = 1.0
-    print 'initial residual = %15.10f' % (residual_first)
+    print('initial residual = %15.10f' % (residual_first))
 
     while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
 
@@ -1696,10 +1696,10 @@ def HybridEnsembleThreeDvar(xb, B, C, y, R, H, varDA, model):
         residual_tol = residual / residual_first
 
         if ( not np.mod(niters,5) ):
-            print '        residual = %15.10f after %4d iterations' % (residual, niters)
+            print('        residual = %15.10f after %4d iterations' % (residual, niters))
 
-    if ( niters > varDA.minimization.maxiter ): print '\033[0;31mexceeded maximum iterations allowed\033[0m'
-    print '  final residual = %15.10f after %4d iterations' % (residual, niters)
+    if ( niters > varDA.minimization.maxiter ): print('\033[0;31mexceeded maximum iterations allowed\033[0m')
+    print('  final residual = %15.10f after %4d iterations' % (residual, niters))
 
     # 3DVAR estimate
     if   ( varDA.precondition == 1 ): xa = xa + np.dot(C,np.dot(B,w))

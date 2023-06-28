@@ -13,44 +13,50 @@
 ###############################################################
 
 ###############################################################
-__author__    = "Rahul Mahajan"
-__email__     = "rahul.mahajan@nasa.gov"
-__copyright__ = "Copyright 2011, NASA / GSFC / GMAO"
-__license__   = "GPL"
-__status__    = "Prototype"
-###############################################################
-
-###############################################################
-import sys
-import numpy as np
 import multiprocessing as mp
+import numpy as np
+import sys
+__author__ = "Rahul Mahajan"
+__email__ = "rahul.mahajan@nasa.gov"
+__copyright__ = "Copyright 2011, NASA / GSFC / GMAO"
+__license__ = "GPL"
+__status__ = "Prototype"
 ###############################################################
 
 ###############################################################
+###############################################################
+
+###############################################################
+
+
 class DataAssim(object):
 
-    def __setattr__(self,key,val):
+    def __setattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to rebind read-only instance variable %s' %
+                key)
         else:
             self.__dict__[key] = val
 
-    def __delattr__(self,key,val):
+    def __delattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to unbind read-only instance variable %s' %
+                key)
         else:
             del self.__dict__[key]
 
     def __init__(self):
-    #{{{
+        # {{{
         '''
         Initializes an empty Data Assimilation class
         '''
         pass
-    #}}}
+    # }}}
 
-    def init(self,nassim=100,ntimes=0.05,maxouter=1,**kwargs):
-    #{{{
+    def init(self, nassim=100, ntimes=0.05, maxouter=1, **kwargs):
+        # {{{
         '''
         Populates the Data Assimilation class
           nassim - number of assimilation cycles [100]
@@ -65,45 +71,51 @@ class DataAssim(object):
         tanal - time vector between two assimilation cycles
         '''
 
-        self.nassim   = nassim
-        self.ntimes   = ntimes
+        self.nassim = nassim
+        self.ntimes = ntimes
         self.maxouter = maxouter
 
-        self.t0       = 0.0
+        self.t0 = 0.0
 
-        for key, value in kwargs.items(): self.__setattr__(key,value)
-    #}}}
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
+    # }}}
+
 
 class VarDataAssim(object):
 
-    def __setattr__(self,key,val):
+    def __setattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to rebind read-only instance variable %s' %
+                key)
         else:
             self.__dict__[key] = val
 
-    def __delattr__(self,key,val):
+    def __delattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to unbind read-only instance variable %s' %
+                key)
         else:
             del self.__dict__[key]
 
     def __init__(self):
-    #{{{
+        # {{{
         '''
         Initializes an empty Variational Data Assimilation class
         '''
         pass
-    #}}}
+    # }}}
 
-    def init(self,model,DA, \
-            update=1,precondition=1, \
-            inflate=1,infl_fac=1.0,infl_adp=False, \
-            localize=1,cov_cutoff=0.0625,cov_trunc=None, \
-            maxiter=100, tol=1.0e-4, \
-            window=0.0,offset=1.0,nobstimes=1, \
-            **kwargs):
-    #{{{
+    def init(self, model, DA,
+             update=1, precondition=1,
+             inflate=1, infl_fac=1.0, infl_adp=False,
+             localize=1, cov_cutoff=0.0625, cov_trunc=None,
+             maxiter=100, tol=1.0e-4,
+             window=0.0, offset=1.0, nobstimes=1,
+             **kwargs):
+        # {{{
         '''
         Populates the Variational Data Assimilation class
                model - model class instance
@@ -132,49 +144,64 @@ class VarDataAssim(object):
            nobstimes - divide the window in equal obs. bins [1]
         '''
 
-        self.update       = update
+        self.update = update
         self.precondition = precondition
 
-        self.inflation = inflation(infl_fac=infl_fac,infl_adp=infl_adp)
+        self.inflation = inflation(infl_fac=infl_fac, infl_adp=infl_adp)
 
-        if ( cov_trunc is None ): cov_trunc = model.Ndof
-        self.localization = localization(localize=localize,cov_cutoff=cov_cutoff,cov_trunc=cov_trunc)
+        if (cov_trunc is None):
+            cov_trunc = model.Ndof
+        self.localization = localization(
+            localize=localize,
+            cov_cutoff=cov_cutoff,
+            cov_trunc=cov_trunc)
 
-        self.minimization = minimization(maxiter=maxiter,tol=tol)
+        self.minimization = minimization(maxiter=maxiter, tol=tol)
 
-        self.fdvar = fdvar(model,DA,window=window,offset=offset,nobstimes=nobstimes)
+        self.fdvar = fdvar(
+            model,
+            DA,
+            window=window,
+            offset=offset,
+            nobstimes=nobstimes)
 
-        for key, value in kwargs.items(): self.__setattr__(key,value)
-    #}}}
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
+    # }}}
+
 
 class EnsDataAssim(object):
 
-    def __setattr__(self,key,val):
+    def __setattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to rebind read-only instance variable %s' %
+                key)
         else:
             self.__dict__[key] = val
 
-    def __delattr__(self,key,val):
+    def __delattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to unbind read-only instance variable %s' %
+                key)
         else:
             del self.__dict__[key]
 
     def __init__(self):
-    #{{{
+        # {{{
         '''
         Initializes an empty Ensemble Data Assimilation class
         '''
         pass
-    #}}}
+    # }}}
 
-    def init(self,model,DA, \
-            update=1,Nens=15, init_ens_infl_fac=1.0, \
-            inflate=1,infl_fac=1.0, \
-            localize=1,cov_cutoff=0.0625,cov_trunc=None, \
-            **kwargs):
-    #{{{
+    def init(self, model, DA,
+             update=1, Nens=15, init_ens_infl_fac=1.0,
+             inflate=1, infl_fac=1.0,
+             localize=1, cov_cutoff=0.0625, cov_trunc=None,
+             **kwargs):
+        # {{{
         '''
         Populates the Ensemble Data Assimilation class
                model - model class instance
@@ -205,34 +232,44 @@ class EnsDataAssim(object):
         '''
 
         self.update = update
-        self.Nens   = Nens
+        self.Nens = Nens
 
         self.init_ens_infl_fac = init_ens_infl_fac
 
         self.inflation = inflation(infl_fac=infl_fac)
 
-        if ( cov_trunc is None ): cov_trunc = model.Ndof
-        self.localization = localization(localize=localize,cov_cutoff=cov_cutoff,cov_trunc=cov_trunc)
+        if (cov_trunc is None):
+            cov_trunc = model.Ndof
+        self.localization = localization(
+            localize=localize,
+            cov_cutoff=cov_cutoff,
+            cov_trunc=cov_trunc)
 
-        for key, value in kwargs.items(): self.__setattr__(key,value)
-    #}}}
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
+    # }}}
+
 
 class minimization(object):
 
-    def __setattr__(self,key,val):
+    def __setattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to rebind read-only instance variable %s' %
+                key)
         else:
             self.__dict__[key] = val
 
-    def __delattr__(self,key,val):
+    def __delattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to unbind read-only instance variable %s' %
+                key)
         else:
             del self.__dict__[key]
 
-    def __init__(self,maxiter=100,tol=1.0e-4,**kwargs):
-    # {{{
+    def __init__(self, maxiter=100, tol=1.0e-4, **kwargs):
+        # {{{
         '''
         Initializes the minimization class
         maxiter - maximum iterations allowed for minimization [100]
@@ -240,27 +277,33 @@ class minimization(object):
         '''
 
         self.maxiter = maxiter
-        self.tol     = tol
+        self.tol = tol
 
-        for key, value in kwargs.items(): self.__setattr__(key,value)
-    #}}}
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
+    # }}}
+
 
 class inflation(object):
 
-    def __setattr__(self,key,val):
+    def __setattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to rebind read-only instance variable %s' %
+                key)
         else:
             self.__dict__[key] = val
 
-    def __delattr__(self,key,val):
+    def __delattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to unbind read-only instance variable %s' %
+                key)
         else:
             del self.__dict__[key]
 
-    def __init__(self,inflate=1,infl_fac=1.0,infl_adp=False,**kwargs):
-    #{{{
+    def __init__(self, inflate=1, infl_fac=1.0, infl_adp=False, **kwargs):
+        # {{{
         '''
         Initializes the inflation class
          inflate - inflation method for inflating Bs / sampling error [1]
@@ -274,29 +317,35 @@ class inflation(object):
         infl_adp - adaptive inflation factor for Bs for multiple outer loops [False]
         '''
 
-        self.inflate  = inflate
+        self.inflate = inflate
         self.infl_fac = infl_fac
         self.infl_adp = infl_adp
 
-        for key, value in kwargs.items(): self.__setattr__(key,value)
-    #}}}
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
+    # }}}
+
 
 class localization(object):
 
-    def __setattr__(self,key,val):
+    def __setattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to rebind read-only instance variable %s' %
+                key)
         else:
             self.__dict__[key] = val
 
-    def __delattr__(self,key,val):
+    def __delattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to unbind read-only instance variable %s' %
+                key)
         else:
             del self.__dict__[key]
 
-    def __init__(self,localize=1,cov_cutoff=0.0625,cov_trunc=40,**kwargs):
-    #{{{
+    def __init__(self, localize=1, cov_cutoff=0.0625, cov_trunc=40, **kwargs):
+        # {{{
         '''
         Initializes the localization class
           localize - flavour for localizing Be [1]
@@ -308,29 +357,42 @@ class localization(object):
          cov_trunc - truncation for localization [None]
         '''
 
-        self.localize   = localize
+        self.localize = localize
         self.cov_cutoff = cov_cutoff
-        self.cov_trunc  = cov_trunc
+        self.cov_trunc = cov_trunc
 
-        for key, value in kwargs.items(): self.__setattr__(key,value)
-    #}}}
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
+    # }}}
+
 
 class fdvar(object):
 
-    def __setattr__(self,key,val):
+    def __setattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to rebind read-only instance variable %s' %
+                key)
         else:
             self.__dict__[key] = val
 
-    def __delattr__(self,key,val):
+    def __delattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to unbind read-only instance variable %s' %
+                key)
         else:
             del self.__dict__[key]
 
-    def __init__(self,model,DA,window=0.0,offset=1.0,nobstimes=1,**kwargs):
-    #{{{
+    def __init__(
+            self,
+            model,
+            DA,
+            window=0.0,
+            offset=1.0,
+            nobstimes=1,
+            **kwargs):
+        # {{{
         '''
         Initializes the 4DVar class
             model - model class instance
@@ -355,49 +417,68 @@ class fdvar(object):
            twind_obsIndex - interval between obs. in terms of time-steps in terms of time-steps
         '''
 
-        self.window    = window
-        self.offset    = offset
+        self.window = window
+        self.offset = offset
         self.nobstimes = nobstimes
 
         # check length of assimilation window
-        if ( self.offset + self.window < 1.0 ):
+        if (self.offset + self.window < 1.0):
             raise ValueError('Assimilation window is too short')
 
-        # time index from analysis to ... background, next analysis, end of window, window
-        self.tb = np.int(np.rint(self.offset * DA.ntimes/model.dt))
-        self.ta = np.int(np.rint(DA.ntimes/model.dt))
-        self.tf = np.int(np.rint((self.offset + self.window) * DA.ntimes/model.dt))
+        # time index from analysis to ... background, next analysis, end of
+        # window, window
+        self.tb = np.int(np.rint(self.offset * DA.ntimes / model.dt))
+        self.ta = np.int(np.rint(DA.ntimes / model.dt))
+        self.tf = np.int(
+            np.rint(
+                (self.offset +
+                 self.window) *
+                DA.ntimes /
+                model.dt))
         self.tw = self.tf - self.tb
 
-        # time vector from analysis to ... background, next analysis, end of window, window
-        self.tbkgd = np.linspace(DA.t0,self.tb,                self.tb+1) * model.dt
-        self.tanal = np.linspace(DA.t0,self.ta-self.tb,self.ta-self.tb+1) * model.dt
-        self.tfore = np.linspace(DA.t0,self.tf,                self.tf+1) * model.dt
-        self.twind = np.linspace(DA.t0,self.tw,                self.tw+1) * model.dt
+        # time vector from analysis to ... background, next analysis, end of
+        # window, window
+        self.tbkgd = np.linspace(DA.t0, self.tb, self.tb + 1) * model.dt
+        self.tanal = np.linspace(
+            DA.t0,
+            self.ta - self.tb,
+            self.ta - self.tb + 1) * model.dt
+        self.tfore = np.linspace(DA.t0, self.tf, self.tf + 1) * model.dt
+        self.twind = np.linspace(DA.t0, self.tw, self.tw + 1) * model.dt
 
         # time vector, interval, indices of observations
-        if   ( self.nobstimes == 1 ):
+        if (self.nobstimes == 1):
             self.twind_obsInterval = 0
-            self.twind_obsTimes    = self.twind.copy()
+            self.twind_obsTimes = self.twind.copy()
 
-        elif ( self.nobstimes  > 1 ):
-            self.twind_obsInterval = self.tw / (self.nobstimes-1)
-            self.twind_obsTimes    = self.twind[::self.twind_obsInterval]
+        elif (self.nobstimes > 1):
+            self.twind_obsInterval = self.tw / (self.nobstimes - 1)
+            self.twind_obsTimes = self.twind[::self.twind_obsInterval]
 
-        self.twind_obsIndex = np.array(np.rint(self.twind_obsTimes / model.dt), dtype=int)
-        self.twind_obs      = np.linspace(DA.t0,self.twind_obsInterval,self.twind_obsInterval+1) * model.dt
+        self.twind_obsIndex = np.array(
+            np.rint(
+                self.twind_obsTimes /
+                model.dt),
+            dtype=int)
+        self.twind_obs = np.linspace(
+            DA.t0,
+            self.twind_obsInterval,
+            self.twind_obsInterval + 1) * model.dt
 
-        overlap = np.int(self.tf - (1.0+self.offset)*self.ta)
-        if ( overlap >= 0.0 ):
+        overlap = np.int(self.tf - (1.0 + self.offset) * self.ta)
+        if (overlap >= 0.0):
             self.noverlap = np.sum(i <= overlap for i in self.twind_obsIndex)
         else:
             self.noverlap = 0
 
-        for key, value in kwargs.items(): self.__setattr__(key,value)
-    #}}}
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
+    # }}}
+
 
 def check_DA(DA):
-# {{{
+    # {{{
     '''
     Check for valid DA options
 
@@ -412,24 +493,30 @@ def check_DA(DA):
 
     print('Cycle DA for %d cycles' % DA.nassim)
     print('Interval between each DA cycle is %f' % DA.ntimes)
-    if ( hasattr(DA,'do_hybrid') ):
-        if ( DA.do_hybrid ):
+    if (hasattr(DA, 'do_hybrid')):
+        if (DA.do_hybrid):
             print('Doing hybrid data assimilation')
-            print('Using %d%% of the flow-dependent covariance' % (np.int(DA.hybrid_wght * 100)))
-            if ( DA.hybrid_rcnt ): print('Re-centering the ensemble about the central analysis')
-            else:                  print('No re-centering of the ensemble about the central analysis')
+            print('Using %d%% of the flow-dependent covariance' %
+                  (np.int(DA.hybrid_wght * 100)))
+            if (DA.hybrid_rcnt):
+                print('Re-centering the ensemble about the central analysis')
+            else:
+                print('No re-centering of the ensemble about the central analysis')
 
     print('===========================================')
 
-    if ( fail ): sys.exit(1)
+    if (fail):
+        sys.exit(1)
 
     return
 # }}}
 ###############################################################
 
 ###############################################################
-def check_ensDA(DA,ensDA):
-# {{{
+
+
+def check_ensDA(DA, ensDA):
+    # {{{
     '''
     Check for valid ensemble DA algorithms and methods
 
@@ -445,13 +532,13 @@ def check_ensDA(DA,ensDA):
 
     fail = False
 
-    if   ( ensDA.update == 0 ):
+    if (ensDA.update == 0):
         print('Running "No Assimilation"')
-    elif ( ensDA.update == 1 ):
+    elif (ensDA.update == 1):
         print('Assimilate observations using the EnKF')
-    elif ( ensDA.update == 2 ):
+    elif (ensDA.update == 2):
         print('Assimilate observations using the EnSRF')
-    elif ( ensDA.update == 3 ):
+    elif (ensDA.update == 3):
         print('Assimilate observations using the EAKF')
     else:
         print('Invalid assimilation algorithm')
@@ -459,46 +546,62 @@ def check_ensDA(DA,ensDA):
         print('No Assimilation | EnKF | EnSRF | EAKF')
         fail = True
 
-    if   ( ensDA.inflation.inflate == 0 ):
+    if (ensDA.inflation.inflate == 0):
         print('Doing no inflation at all')
-    elif ( ensDA.inflation.inflate == 1 ):
-        print('Inflating the Prior using multiplicative inflation with a factor of %f' % ensDA.inflation.infl_fac)
-    elif ( ensDA.inflation.inflate == 2 ):
-        print('Inflating the Prior by adding white-noise with zero-mean and %f spread' % ensDA.inflation.infl_fac)
-    elif ( ensDA.inflation.inflate == 3 ):
-        print('Inflating the Posterior by covariance relaxation method with weight %f to the prior' % ensDA.inflation.infl_fac)
-    elif ( ensDA.inflation.inflate == 4 ):
-        print('Inflating the Posterior by spread restoration method with a factor of %f' % ensDA.inflation.infl_fac)
+    elif (ensDA.inflation.inflate == 1):
+        print(
+            'Inflating the Prior using multiplicative inflation with a factor of %f' %
+            ensDA.inflation.infl_fac)
+    elif (ensDA.inflation.inflate == 2):
+        print(
+            'Inflating the Prior by adding white-noise with zero-mean and %f spread' %
+            ensDA.inflation.infl_fac)
+    elif (ensDA.inflation.inflate == 3):
+        print(
+            'Inflating the Posterior by covariance relaxation method with weight %f to the prior' %
+            ensDA.inflation.infl_fac)
+    elif (ensDA.inflation.inflate == 4):
+        print(
+            'Inflating the Posterior by spread restoration method with a factor of %f' %
+            ensDA.inflation.infl_fac)
     else:
         print('Invalid inflation method')
         print('ensDA.inflation.inflate must be one of : 0 | 1 | 2 | 3 | 4')
         print('Multiplicative | Additive | Covariance Relaxation | Spread Restoration')
         fail = True
 
-    if   ( ensDA.localization.localize == 0 ): loc_type = 'No localization'
-    elif ( ensDA.localization.localize == 1 ): loc_type = 'Gaspari & Cohn polynomial function'
-    elif ( ensDA.localization.localize == 2 ): loc_type = 'Boxcar function'
-    elif ( ensDA.localization.localize == 3 ): loc_type = 'Ramped boxcar function'
+    if (ensDA.localization.localize == 0):
+        loc_type = 'No localization'
+    elif (ensDA.localization.localize == 1):
+        loc_type = 'Gaspari & Cohn polynomial function'
+    elif (ensDA.localization.localize == 2):
+        loc_type = 'Boxcar function'
+    elif (ensDA.localization.localize == 3):
+        loc_type = 'Ramped boxcar function'
     else:
         print('Invalid localization method')
         print('ensDA.localization.localize must be one of : 0 | 1 | 2 | 3 ')
         print('None | Gaspari & Cohn | Boxcar | Ramped Boxcar')
         loc_type = 'None'
         fail = True
-    if ( loc_type != 'None' ):
-        print('Localizing using an %s with a covariance cutoff of %f' % (loc_type, ensDA.localization.cov_cutoff))
+    if (loc_type != 'None'):
+        print('Localizing using an %s with a covariance cutoff of %f' %
+              (loc_type, ensDA.localization.cov_cutoff))
 
     print('===========================================')
 
-    if ( fail ): sys.exit(1)
+    if (fail):
+        sys.exit(1)
 
     return
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 def update_ensDA(Xb, y, R, H, ensDA, model):
-# {{{
+    # {{{
     '''
     Update the prior with an ensemble-based state estimation algorithm to produce a posterior
 
@@ -515,94 +618,109 @@ def update_ensDA(Xb, y, R, H, ensDA, model):
     '''
 
     # prior inflation
-    if ( (ensDA.inflation.inflate == 1) or (ensDA.inflation.inflate == 2) ):
+    if ((ensDA.inflation.inflate == 1) or (ensDA.inflation.inflate == 2)):
 
-        xbm = np.mean(Xb,axis=1)
+        xbm = np.mean(Xb, axis=1)
         Xbp = (Xb.T - xbm).T
 
-        if   ( ensDA.inflation.inflate == 1 ): # multiplicative inflation
+        if (ensDA.inflation.inflate == 1):  # multiplicative inflation
             Xbp = ensDA.inflation.infl_fac * Xbp
 
-        elif ( ensDA.inflation.inflate == 2 ): # additive white model error (mean:zero, spread:ensDA.inflation.infl_fac)
-            Xbp = Xbp + inflation.infl_fac * np.random.randn(model.Ndof,ensDA.Nens)
+        # additive white model error (mean:zero,
+        # spread:ensDA.inflation.infl_fac)
+        elif (ensDA.inflation.inflate == 2):
+            Xbp = Xbp + inflation.infl_fac * \
+                np.random.randn(model.Ndof, ensDA.Nens)
 
         Xb = (Xbp.T + xbm).T
 
     temp_ens = Xb.copy()
 
     # initialize innovation and total variance
-    innov  = np.zeros(y.shape[0]) * np.NaN
+    innov = np.zeros(y.shape[0]) * np.NaN
     totvar = np.zeros(y.shape[0]) * np.NaN
 
     # assimilate all obs., one-by-one
     for ob in range(y.shape[0]):
 
-        if ( np.isnan(y[ob]) ): continue
+        if (np.isnan(y[ob])):
+            continue
 
-        ye = np.dot(H[ob,:],temp_ens)
+        ye = np.dot(H[ob, :], temp_ens)
 
-        if   ( ensDA.update == 0 ): # no assimilation
-            obs_inc, innov[ob], totvar[ob] = np.zeros(model.Ndof), np.NaN, np.NaN
+        if (ensDA.update == 0):  # no assimilation
+            obs_inc, innov[ob], totvar[ob] = np.zeros(
+                model.Ndof), np.NaN, np.NaN
 
-        elif ( ensDA.update == 1 ): # update using the EnKF
-            obs_inc, innov[ob], totvar[ob] = obs_increment_EnKF(y[ob], R[ob,ob], ye)
+        elif (ensDA.update == 1):  # update using the EnKF
+            obs_inc, innov[ob], totvar[ob] = obs_increment_EnKF(
+                y[ob], R[ob, ob], ye)
 
-        elif ( ensDA.update == 2 ): # update using the EnSRF
-            obs_inc, innov[ob], totvar[ob] = obs_increment_EnSRF(y[ob], R[ob,ob], ye)
+        elif (ensDA.update == 2):  # update using the EnSRF
+            obs_inc, innov[ob], totvar[ob] = obs_increment_EnSRF(
+                y[ob], R[ob, ob], ye)
 
-        elif ( ensDA.update == 3 ): # update using the EAKF
-            obs_inc, innov[ob], totvar[ob] = obs_increment_EAKF(y[ob], R[ob,ob], ye)
+        elif (ensDA.update == 3):  # update using the EAKF
+            obs_inc, innov[ob], totvar[ob] = obs_increment_EAKF(
+                y[ob], R[ob, ob], ye)
 
         else:
             print('invalid update algorithm ...')
             sys.exit(2)
 
         for i in range(model.Ndof):
-            state_inc = state_increment(obs_inc, temp_ens[i,:], ye)
+            state_inc = state_increment(obs_inc, temp_ens[i, :], ye)
 
             # localization
-            dist = np.float( np.abs( ob - i ) ) / model.Ndof
-            if ( dist > 0.5 ): dist = 1.0 - dist
+            dist = np.float(np.abs(ob - i)) / model.Ndof
+            if (dist > 0.5):
+                dist = 1.0 - dist
             cov_factor = compute_cov_factor(dist, ensDA.localization)
 
-            temp_ens[i,:] = temp_ens[i,:] + state_inc * cov_factor
+            temp_ens[i, :] = temp_ens[i, :] + state_inc * cov_factor
 
     Xa = temp_ens.copy()
 
     # compute analysis mean and perturbations
-    xam = np.mean(Xa,axis=1)
+    xam = np.mean(Xa, axis=1)
     Xap = (Xa.T - xam).T
 
     # posterior inflation
-    if   ( ensDA.inflation.inflate == 3 ): # covariance relaxation (Zhang & Snyder)
-        xbm = np.mean(Xb,axis=1)
+    if (ensDA.inflation.inflate == 3):  # covariance relaxation (Zhang & Snyder)
+        xbm = np.mean(Xb, axis=1)
         Xbp = (Xb.T - xbm).T
-        Xap = Xbp * ensDA.inflation.infl_fac + Xap * (1.0 - ensDA.inflation.infl_fac)
+        Xap = Xbp * ensDA.inflation.infl_fac + \
+            Xap * (1.0 - ensDA.inflation.infl_fac)
 
-    elif ( ensDA.inflation.inflate == 4 ): # posterior spread restoration (Whitaker & Hamill)
-        xbs = np.std(Xb,axis=1,ddof=1)
-        xas = np.std(Xa,axis=1,ddof=1)
+    elif (ensDA.inflation.inflate == 4):  # posterior spread restoration (Whitaker & Hamill)
+        xbs = np.std(Xb, axis=1, ddof=1)
+        xas = np.std(Xa, axis=1, ddof=1)
         for i in range(model.Ndof):
-            Xap[i,:] =  np.sqrt((ensDA.inflation.infl_fac * (xbs[i] - xas[dof])/xas[i]) + 1.0) * Xap[i,:]
+            Xap[i, :] = np.sqrt(
+                (ensDA.inflation.infl_fac * (xbs[i] - xas[dof]) / xas[i]) + 1.0) * Xap[i, :]
 
     # add inflated perturbations back to analysis mean
     Xa = (Xap.T + xam).T
 
     # check for filter divergence
     error_variance_ratio = np.nansum(innov**2) / np.nansum(totvar)
-    if ( 0.5 < error_variance_ratio < 2.0 ):
+    if (0.5 < error_variance_ratio < 2.0):
         print('total error / total variance = %f' % (error_variance_ratio))
     else:
-        print("\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" % (error_variance_ratio))
-        #break
+        print(
+            "\033[0;31mtotal error / total variance = %f | WARNING : filter divergence\033[0m" %
+            (error_variance_ratio))
+        # break
 
     return Xa, error_variance_ratio
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 def obs_increment_EnKF(obs, obs_err_var, pr_obs_est):
-# {{{
+    # {{{
     '''
     compute observation increment due to a single observation using traditional EnKF
 
@@ -618,22 +736,24 @@ def obs_increment_EnKF(obs, obs_err_var, pr_obs_est):
 
     # compute mean and variance of the PRIOR model estimate of the observation
     pr_mean = np.mean(pr_obs_est)
-    pr_var  = np.var( pr_obs_est, ddof=1)
+    pr_var = np.var(pr_obs_est, ddof=1)
 
     # compute innovation and total variance
-    innov  = obs - pr_mean
+    innov = obs - pr_mean
     totvar = pr_var + obs_err_var
 
-    # update mean and variance of the POSTERIOR model estimate of the observation
-    po_var  = 1.0 / ( 1.0 / pr_var + 1.0 / obs_err_var )
-    po_mean = po_var * ( pr_mean / pr_var + obs / obs_err_var )
+    # update mean and variance of the POSTERIOR model estimate of the
+    # observation
+    po_var = 1.0 / (1.0 / pr_var + 1.0 / obs_err_var)
+    po_mean = po_var * (pr_mean / pr_var + obs / obs_err_var)
 
-    # generate perturbed observations, adjust so that mean(pert_obs) = observation
+    # generate perturbed observations, adjust so that mean(pert_obs) =
+    # observation
     pert_obs = obs + np.sqrt(obs_err_var) * np.random.randn(len(pr_obs_est))
     pert_obs = pert_obs - np.mean(pert_obs) + obs
 
     # update POSTERIOR model estimate of the observation
-    po_obs_est = po_var * ( pr_obs_est / pr_var + pert_obs / obs_err_var )
+    po_obs_est = po_var * (pr_obs_est / pr_var + pert_obs / obs_err_var)
 
     # compute observation increment
     obs_inc = po_obs_est - pr_obs_est
@@ -643,8 +763,10 @@ def obs_increment_EnKF(obs, obs_err_var, pr_obs_est):
 ###############################################################
 
 ###############################################################
+
+
 def obs_increment_EnSRF(obs, obs_err_var, pr_obs_est):
-# {{{
+    # {{{
     '''
     compute observation increment due to a single observation using EnSRF
 
@@ -660,19 +782,21 @@ def obs_increment_EnSRF(obs, obs_err_var, pr_obs_est):
 
     # compute mean and variance of the PRIOR model estimate of the observation
     pr_mean = np.mean(pr_obs_est)
-    pr_var  = np.var( pr_obs_est, ddof=1)
+    pr_var = np.var(pr_obs_est, ddof=1)
 
     # compute innovation and total variance
-    innov  = obs - pr_mean
+    innov = obs - pr_mean
     totvar = pr_var + obs_err_var
 
-    # update mean and variance of the POSTERIOR model estimate of the observation
-    po_var  = 1.0 / ( 1.0 / pr_var + 1.0 / obs_err_var )
-    po_mean = pr_mean + ( po_var / obs_err_var ) * ( obs - pr_mean )
-    beta    = 1.0 / ( 1.0 + np.sqrt(po_var / pr_var) )
+    # update mean and variance of the POSTERIOR model estimate of the
+    # observation
+    po_var = 1.0 / (1.0 / pr_var + 1.0 / obs_err_var)
+    po_mean = pr_mean + (po_var / obs_err_var) * (obs - pr_mean)
+    beta = 1.0 / (1.0 + np.sqrt(po_var / pr_var))
 
     # update POSTERIOR model estimate of the observation
-    po_obs_est = po_mean + (1.0 - beta * po_var / obs_err_var) * (pr_obs_est - pr_mean)
+    po_obs_est = po_mean + (1.0 - beta * po_var /
+                            obs_err_var) * (pr_obs_est - pr_mean)
 
     # compute observation increment
     obs_inc = po_obs_est - pr_obs_est
@@ -682,8 +806,10 @@ def obs_increment_EnSRF(obs, obs_err_var, pr_obs_est):
 ###############################################################
 
 ###############################################################
+
+
 def obs_increment_EAKF(obs, obs_err_var, pr_obs_est):
-# {{{
+    # {{{
     '''
     compute observation increment due to a single observation using EAKF
 
@@ -699,18 +825,19 @@ def obs_increment_EAKF(obs, obs_err_var, pr_obs_est):
 
     # compute mean and variance of the PRIOR model estimate of the observation
     pr_mean = np.mean(pr_obs_est)
-    pr_var  = np.var( pr_obs_est, ddof=1)
+    pr_var = np.var(pr_obs_est, ddof=1)
 
     # compute innovation and total variance
-    innov  = obs - pr_mean
+    innov = obs - pr_mean
     totvar = pr_var + obs_err_var
 
-    # update mean and variance of the POSTERIOR model estimate of the observation
-    po_var  = 1.0 / ( 1.0 / pr_var + 1.0 / obs_err_var )
-    po_mean = po_var * ( pr_mean / pr_var + obs / obs_err_var )
+    # update mean and variance of the POSTERIOR model estimate of the
+    # observation
+    po_var = 1.0 / (1.0 / pr_var + 1.0 / obs_err_var)
+    po_mean = po_var * (pr_mean / pr_var + obs / obs_err_var)
 
     # update POSTERIOR model estimate of the observation
-    po_obs_est = np.sqrt( po_var / pr_var ) * ( pr_obs_est - pr_mean ) + po_mean
+    po_obs_est = np.sqrt(po_var / pr_var) * (pr_obs_est - pr_mean) + po_mean
 
     # compute observation increment
     obs_inc = po_obs_est - pr_obs_est
@@ -720,8 +847,10 @@ def obs_increment_EAKF(obs, obs_err_var, pr_obs_est):
 ###############################################################
 
 ###############################################################
+
+
 def state_increment(obs_inc, pr, pr_obs_est):
-# {{{
+    # {{{
     '''
     compute state increment by regressing an observation increment on the state
 
@@ -734,15 +863,17 @@ def state_increment(obs_inc, pr, pr_obs_est):
     '''
 
     covariance = np.cov(pr, pr_obs_est, ddof=1)
-    state_inc = obs_inc * covariance[0,1] / covariance[1,1]
+    state_inc = obs_inc * covariance[0, 1] / covariance[1, 1]
 
     return state_inc
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 def compute_cov_factor(dist, localization):
-# {{{
+    # {{{
     '''
     compute the covariance factor given distance and localization information
 
@@ -763,36 +894,39 @@ def compute_cov_factor(dist, localization):
         localize at 1 point in the 40-variable LE96 model
     '''
 
-    if   ( localization.localize == 0 ): # No localization
+    if (localization.localize == 0):  # No localization
 
         cov_factor = 1.0
 
-    elif ( localization.localize == 1 ): # Gaspari & Cohn localization
+    elif (localization.localize == 1):  # Gaspari & Cohn localization
 
-        if   ( np.abs(dist) >= 2.0*localization.cov_cutoff ):
+        if (np.abs(dist) >= 2.0 * localization.cov_cutoff):
             cov_factor = 0.0
-        elif ( np.abs(dist) <= localization.cov_cutoff ):
+        elif (np.abs(dist) <= localization.cov_cutoff):
             r = np.abs(dist) / localization.cov_cutoff
-            cov_factor = ( ( ( -0.25*r + 0.5 )*r + 0.625 )*r - 5.0/3.0 )*(r**2) + 1.0
+            cov_factor = (((-0.25 * r + 0.5) * r + 0.625)
+                          * r - 5.0 / 3.0) * (r**2) + 1.0
         else:
             r = np.abs(dist) / localization.cov_cutoff
-            cov_factor = ( ( ( ( r/12 - 0.5 )*r +0.625 )*r + 5.0/3.0 )*r -5.0 )*r + 4.0 - 2.0 / (3.0 * r)
+            cov_factor = ((((r / 12 - 0.5) * r + 0.625) * r +
+                          5.0 / 3.0) * r - 5.0) * r + 4.0 - 2.0 / (3.0 * r)
 
-    elif ( localization.localize == 2 ): # Boxcar localization
+    elif (localization.localize == 2):  # Boxcar localization
 
-        if ( np.abs(dist) >= 2.0*localization.cov_cutoff ):
+        if (np.abs(dist) >= 2.0 * localization.cov_cutoff):
             cov_factor = 0.0
         else:
             cov_factor = 1.0
 
-    elif ( localization.localize == 3 ): # Ramped localization
+    elif (localization.localize == 3):  # Ramped localization
 
-        if   ( np.abs(dist) >= 2.0*localization.cov_cutoff ):
+        if (np.abs(dist) >= 2.0 * localization.cov_cutoff):
             cov_factor = 0.0
-        elif ( np.abs(dist) <= localization.cov_cutoff ):
+        elif (np.abs(dist) <= localization.cov_cutoff):
             cov_factor = 1.0
         else:
-            cov_factor = (2.0 * localization.cov_cutoff - np.abs(dist)) / localization.cov_cutoff
+            cov_factor = (2.0 * localization.cov_cutoff -
+                          np.abs(dist)) / localization.cov_cutoff
 
     else:
 
@@ -804,8 +938,10 @@ def compute_cov_factor(dist, localization):
 ###############################################################
 
 ###############################################################
-def check_varDA(DA,varDA):
-# {{{
+
+
+def check_varDA(DA, varDA):
+    # {{{
     '''
     Check for valid variational DA algorithms
 
@@ -821,37 +957,49 @@ def check_varDA(DA,varDA):
 
     fail = False
 
-    if   ( varDA.precondition == 0 ): pstr = 'no'
-    elif ( varDA.precondition == 1 ): pstr = 'square-root B'
-    elif ( varDA.precondition == 2 ): pstr = 'full B'
+    if (varDA.precondition == 0):
+        pstr = 'no'
+    elif (varDA.precondition == 1):
+        pstr = 'square-root B'
+    elif (varDA.precondition == 2):
+        pstr = 'full B'
 
-    if   ( varDA.update == 0 ):
+    if (varDA.update == 0):
         print('Running "No Assimilation"')
-    elif ( varDA.update == 1 ):
-        print('Assimilate observations using 3DVar [using incremental formulation] with %s preconditioning'% (pstr))
-    elif ( varDA.update == 2 ):
-        print('Assimilate observations using 4DVar [using incremental formulation] with %s preconditioning'% (pstr))
+    elif (varDA.update == 1):
+        print(
+            'Assimilate observations using 3DVar [using incremental formulation] with %s preconditioning' %
+            (pstr))
+    elif (varDA.update == 2):
+        print(
+            'Assimilate observations using 4DVar [using incremental formulation] with %s preconditioning' %
+            (pstr))
     else:
         print('Invalid assimilation algorithm')
         print('varDA.update must be one of : 0 | 1 | 2')
         print('No Assimilation | 3DVar | 4DVar')
         fail = True
 
-    if   ( varDA.inflation.inflate ):
-        print('Inflating the static background error covariance with a factor of %f' % varDA.inflation.infl_fac)
+    if (varDA.inflation.inflate):
+        print(
+            'Inflating the static background error covariance with a factor of %f' %
+            varDA.inflation.infl_fac)
     else:
         print('Doing no inflation of the static background error covariance at all')
     print('===========================================')
 
-    if ( fail ): sys.exit(1)
+    if (fail):
+        sys.exit(1)
 
     return
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 def update_varDA(xb, B, y, R, H, varDA, model):
-# {{{
+    # {{{
     '''
     Update the prior with a variational-based state estimation algorithm to produce a posterior
 
@@ -868,10 +1016,10 @@ def update_varDA(xb, B, y, R, H, varDA, model):
       niters - number of iterations required for minimizing the cost function
     '''
 
-    if   ( varDA.update == 0 ):
+    if (varDA.update == 0):
         xa, niters = xb, np.NaN
 
-    elif ( varDA.update in [1,2] ):
+    elif (varDA.update in [1, 2]):
         xa, niters = VarSolver(xb, B, y, R, H, varDA, model)
 
     else:
@@ -883,8 +1031,10 @@ def update_varDA(xb, B, y, R, H, varDA, model):
 ###############################################################
 
 ###############################################################
+
+
 def VarSolver(xb, B, y, R, H, varDA, model):
-# {{{
+    # {{{
     '''
     Update the prior with Variational algorithm to produce a posterior.
     In this implementation, the incremental form is used.
@@ -910,10 +1060,10 @@ def VarSolver(xb, B, y, R, H, varDA, model):
     cost function:           J(dxo) =  Jb +  Jy
     cost function gradient: gJ(dxo) = gJb + gJy
      Jb = 0.5 *      dxo^T B^{-1} dxo
-     Jy = 0.5 * \sum dyi^T R^{-1} dyi
+     Jy = 0.5 * \\sum dyi^T R^{-1} dyi
     gJb =              B^{-1} dxo
-    gJy = \sum M^T H^T R^{-1} dyi
-    gJ  = [ B^{-1} + \sum M^T H^T R^{-1} H M ] dxo - \sum M^T H^T R^{-1} di
+    gJy = \\sum M^T H^T R^{-1} dyi
+    gJ  = [ B^{-1} + \\sum M^T H^T R^{-1} H M ] dxo - \\sum M^T H^T R^{-1} di
 
     PRECONDITION WITH sqrt(B) = G
     increment  : xo - xbo = dxo                         = Gw
@@ -923,10 +1073,10 @@ def VarSolver(xb, B, y, R, H, varDA, model):
     cost function:           J(w) =  Jb +  Jy
     cost function gradient: gJ(w) = gJb + gJy
      Jb = 0.5 *      w^T w
-     Jy = 0.5 * \sum dyi^T R^{-1} dyi
+     Jy = 0.5 * \\sum dyi^T R^{-1} dyi
     gJb = w
-    gJy = \sum G^T M^T H^T R^{-1} dyi
-    gJ  = [ I + \sum G^T M^T H^T R^{-1} H M G ] w - \sum G^T M^T H^T R^{-1} di
+    gJy = \\sum G^T M^T H^T R^{-1} dyi
+    gJ  = [ I + \\sum G^T M^T H^T R^{-1} H M G ] w - \\sum G^T M^T H^T R^{-1} di
 
     PRECONDITION WITH B
     increment  : xo - xbo = dxo                         = Bw
@@ -936,21 +1086,22 @@ def VarSolver(xb, B, y, R, H, varDA, model):
     cost function:           J(w) =  Jb +  Jy
     cost function gradient: gJ(w) = gJb + gJy
      Jb = 0.5 *      w^T w
-     Jy = 0.5 * \sum dyi^T R^{-1} dyi
+     Jy = 0.5 * \\sum dyi^T R^{-1} dyi
     gJb = w
-    gJy = \sum M^T H^T R^{-1} dyi
-    gJ  = w + \sum M^T H^T R^{-1} H M dxo - \sum M^T H^T R^{-1} di
+    gJy = \\sum M^T H^T R^{-1} dyi
+    gJ  = w + \\sum M^T H^T R^{-1} H M dxo - \\sum M^T H^T R^{-1} di
     '''
 
     # start with background
-    xa   = xb.copy()
+    xa = xb.copy()
     Rinv = np.linalg.inv(R)
 
-    # advance the background through the assimilation window with full non-linear model
+    # advance the background through the assimilation window with full
+    # non-linear model
     xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
 
     g = np.zeros(xa.shape)
-    d = np.zeros( y.shape)
+    d = np.zeros(y.shape)
 
     for j in range(varDA.fdvar.nobstimes):
 
@@ -958,32 +1109,39 @@ def VarSolver(xb, B, y, R, H, varDA, model):
 
         valInd = np.isfinite(y[i,])
 
-        d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
+        d[i, :] = y[i, :] - np.dot(H, xnl[varDA.fdvar.twind_obsIndex[i], :])
 
-        g = g + Jgrad(H[valInd,:], np.diag(Rinv[valInd,valInd]), d[i,valInd])
+        g = g + Jgrad(H[valInd, :],
+                      np.diag(Rinv[valInd, valInd]), d[i, valInd])
 
-        tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
-        if ( len(tint) != 0 ):
-            sxi = model.advance_tlm(g, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
-            g = sxi[-1,:].copy()
+        tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i - 1]                                 :varDA.fdvar.twind_obsIndex[i] + 1]
+        if (len(tint) != 0):
+            sxi = model.advance_tlm(
+                g,
+                tint,
+                xnl,
+                varDA.fdvar.twind,
+                adjoint=True,
+                perfect=False)
+            g = sxi[-1, :].copy()
 
-    if   ( varDA.precondition == 0 ):
+    if (varDA.precondition == 0):
         r = g.copy()
         s = 0.0
         p = r.copy()
         q = 0.0
         v = np.zeros(r.shape)
         w = 0.0
-    elif ( varDA.precondition == 1 ):
-        r = np.dot(B.T,g)
+    elif (varDA.precondition == 1):
+        r = np.dot(B.T, g)
         s = 0.0
         p = r.copy()
         q = 0.0
         v = 0.0
         w = np.zeros(r.shape)
-    elif ( varDA.precondition == 2 ):
+    elif (varDA.precondition == 2):
         r = -g
-        s = np.dot(B,r)
+        s = np.dot(B, r)
         p = -s
         q = -r
         v = np.zeros(r.shape)
@@ -991,20 +1149,31 @@ def VarSolver(xb, B, y, R, H, varDA, model):
 
     niters = 0
 
-    residual_first = np.sum(r**2+s**2)
-    residual_tol   = 1.0
+    residual_first = np.sum(r**2 + s**2)
+    residual_tol = 1.0
     print('initial residual = %15.10f' % (residual_first))
 
-    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
+    while ((np.sqrt(residual_tol) >= varDA.minimization.tol**2)
+           and (niters <= varDA.minimization.maxiter)):
 
         niters = niters + 1
 
-        if   ( varDA.precondition == 0 ): tmp = p.copy()
-        elif ( varDA.precondition == 1 ): tmp = np.dot(B,p)
-        elif ( varDA.precondition == 2 ): tmp = p.copy()
+        if (varDA.precondition == 0):
+            tmp = p.copy()
+        elif (varDA.precondition == 1):
+            tmp = np.dot(B, p)
+        elif (varDA.precondition == 2):
+            tmp = p.copy()
 
-        # advance the direction of the gradient through the assimilation window with TL model
-        tmptl = model.advance_tlm(tmp, varDA.fdvar.twind, xnl, varDA.fdvar.twind, adjoint=False, perfect=False)
+        # advance the direction of the gradient through the assimilation window
+        # with TL model
+        tmptl = model.advance_tlm(
+            tmp,
+            varDA.fdvar.twind,
+            xnl,
+            varDA.fdvar.twind,
+            adjoint=False,
+            perfect=False)
 
         Ap = np.zeros(xb.shape)
 
@@ -1014,40 +1183,60 @@ def VarSolver(xb, B, y, R, H, varDA, model):
 
             valInd = np.isfinite(y[i,])
 
-            Ap = Ap + hessian(H[valInd,:], np.diag(Rinv[valInd,valInd]), tmptl[varDA.fdvar.twind_obsIndex[i],:])
+            Ap = Ap + hessian(H[valInd, :], np.diag(Rinv[valInd, valInd]),
+                              tmptl[varDA.fdvar.twind_obsIndex[i], :])
 
-            tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i-1]:varDA.fdvar.twind_obsIndex[i]+1]
-            if ( len(tint) != 0 ):
-                sxi = model.advance_tlm(Ap, tint, xnl, varDA.fdvar.twind, adjoint=True, perfect=False)
-                Ap = sxi[-1,:].copy()
+            tint = varDA.fdvar.twind[varDA.fdvar.twind_obsIndex[i - 1]                                     :varDA.fdvar.twind_obsIndex[i] + 1]
+            if (len(tint) != 0):
+                sxi = model.advance_tlm(
+                    Ap,
+                    tint,
+                    xnl,
+                    varDA.fdvar.twind,
+                    adjoint=True,
+                    perfect=False)
+                Ap = sxi[-1, :].copy()
 
-        if   ( varDA.precondition == 0 ): Ap = np.dot(np.linalg.inv(B),p) + Ap
-        elif ( varDA.precondition == 1 ): Ap = p + np.dot(B.T,Ap)
-        elif ( varDA.precondition == 2 ): Ap = q + Ap
+        if (varDA.precondition == 0):
+            Ap = np.dot(np.linalg.inv(B), p) + Ap
+        elif (varDA.precondition == 1):
+            Ap = p + np.dot(B.T, Ap)
+        elif (varDA.precondition == 2):
+            Ap = q + Ap
 
-        [v,w,r,s,p,q] = minimize(varDA,v,w,r,s,p,q,Ap,B)
+        [v, w, r, s, p, q] = minimize(varDA, v, w, r, s, p, q, Ap, B)
 
-        residual     = np.sum(r**2+s**2)
+        residual = np.sum(r**2 + s**2)
         residual_tol = residual / residual_first
 
-        if ( not np.mod(niters,5) ):
-            print('        residual = %15.10f after %4d iterations' % (residual, niters))
+        if (not np.mod(niters, 5)):
+            print(
+                '        residual = %15.10f after %4d iterations' %
+                (residual, niters))
 
-    if ( niters > varDA.minimization.maxiter ): print('\033[0;31mexceeded maximum iterations allowed\033[0m')
-    print('  final residual = %15.10f after %4d iterations' % (residual, niters))
+    if (niters > varDA.minimization.maxiter):
+        print('\033[0;31mexceeded maximum iterations allowed\033[0m')
+    print(
+        '  final residual = %15.10f after %4d iterations' %
+        (residual, niters))
 
     # Variational estimate
-    if   ( varDA.precondition == 0 ): xa = xa + v
-    elif ( varDA.precondition == 1 ): xa = xa + np.dot(B,w)
-    elif ( varDA.precondition == 2 ): xa = xa + v
+    if (varDA.precondition == 0):
+        xa = xa + v
+    elif (varDA.precondition == 1):
+        xa = xa + np.dot(B, w)
+    elif (varDA.precondition == 2):
+        xa = xa + v
 
     return xa, niters
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 def ThreeDvar_adj(gradJ, B, y, R, H, varDA, model):
-# {{{
+    # {{{
     '''
     This attempts to mimic the adjoint for the ThreeDvar to
     compute the observation impact.
@@ -1103,41 +1292,50 @@ def ThreeDvar_adj(gradJ, B, y, R, H, varDA, model):
 
     valInd = np.isfinite(y)
 
-    gJ     = gradJ.copy()
-    dJ     = gJ.copy()
-    q      = np.zeros(gJ.shape)
+    gJ = gradJ.copy()
+    dJ = gJ.copy()
+    q = np.zeros(gJ.shape)
     niters = 0
 
     residual_first = np.sum(gJ**2)
-    residual_tol   = 1.0
+    residual_tol = 1.0
     print('initial residual = %15.10f' % (residual_first))
 
-    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
+    while ((np.sqrt(residual_tol) >= varDA.minimization.tol**2)
+           and (niters <= varDA.minimization.maxiter)):
 
         niters = niters + 1
 
-        AdJ = np.dot(Binv,dJ) + hessian(H[valInd,:], np.diag(Rinv[valInd,valInd]), dJ)
+        AdJ = np.dot(Binv, dJ) + \
+            hessian(H[valInd, :], np.diag(Rinv[valInd, valInd]), dJ)
 
         [q, gJ, dJ] = minimize(q, gJ, dJ, AdJ)
 
-        residual     = np.sum(gJ**2)
+        residual = np.sum(gJ**2)
         residual_tol = residual / residual_first
 
-        if ( not np.mod(niters,5) ):
-            print('        residual = %15.10f after %4d iterations' % (residual, niters))
+        if (not np.mod(niters, 5)):
+            print(
+                '        residual = %15.10f after %4d iterations' %
+                (residual, niters))
 
-    if ( niters > varDA.minimization.maxiter ): print('\033[0;31mexceeded maximum iterations allowed\033[0m')
-    print('  final residual = %15.10f after %4d iterations' % (residual, niters))
+    if (niters > varDA.minimization.maxiter):
+        print('\033[0;31mexceeded maximum iterations allowed\033[0m')
+    print(
+        '  final residual = %15.10f after %4d iterations' %
+        (residual, niters))
 
-    KTgradJ = np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],q))
+    KTgradJ = np.dot(np.diag(Rinv[valInd, valInd]), np.dot(H[valInd, :], q))
 
     return KTgradJ, niters
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 def ThreeDvar_pc_adj(gradJ, G, y, R, H, varDA, model):
-# {{{
+    # {{{
     '''
     This attempts to mimic the adjoint for the ThreeDvar_pc to
     compute the observation impact.
@@ -1195,44 +1393,54 @@ def ThreeDvar_pc_adj(gradJ, G, y, R, H, varDA, model):
 
     Rinv = np.linalg.inv(R)
 
-    valInd  = np.isfinite(y)
+    valInd = np.isfinite(y)
 
-    w      = np.dot(G.T,gradJ)
-    gJ     = w.copy()
-    dJ     = gJ.copy()
-    q      = np.zeros(gJ.shape)
+    w = np.dot(G.T, gradJ)
+    gJ = w.copy()
+    dJ = gJ.copy()
+    q = np.zeros(gJ.shape)
     niters = 0
 
     residual_first = np.sum(gJ**2)
-    residual_tol   = 1.0
+    residual_tol = 1.0
     print('initial residual = %15.10f' % (residual_first))
 
-    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
+    while ((np.sqrt(residual_tol) >= varDA.minimization.tol**2)
+           and (niters <= varDA.minimization.maxiter)):
 
         niters = niters + 1
 
-        AdJ = dJ + np.dot(G.T, hessian(H[valInd,:], np.diag(Rinv[valInd,valInd]), np.dot(G,dJ)))
+        AdJ = dJ + \
+            np.dot(G.T, hessian(H[valInd, :], np.diag(Rinv[valInd, valInd]), np.dot(G, dJ)))
 
         [q, gJ, dJ] = minimize(q, gJ, dJ, AdJ)
 
-        residual     = np.sum(gJ**2)
+        residual = np.sum(gJ**2)
         residual_tol = residual / residual_first
 
-        if ( not np.mod(niters,5) ):
-            print('        residual = %15.10f after %4d iterations' % (residual, niters))
+        if (not np.mod(niters, 5)):
+            print(
+                '        residual = %15.10f after %4d iterations' %
+                (residual, niters))
 
-    if ( niters > varDA.minimization.maxiter ): print('\033[0;31mexceeded maximum iterations allowed\033[0m')
-    print('  final residual = %15.10f after %4d iterations' % (residual, niters))
+    if (niters > varDA.minimization.maxiter):
+        print('\033[0;31mexceeded maximum iterations allowed\033[0m')
+    print(
+        '  final residual = %15.10f after %4d iterations' %
+        (residual, niters))
 
-    KTgradJ = np.dot(np.diag(Rinv[valInd,valInd]),np.dot(H[valInd,:],np.dot(G,q)))
+    KTgradJ = np.dot(np.diag(Rinv[valInd, valInd]),
+                     np.dot(H[valInd, :], np.dot(G, q)))
 
     return KTgradJ, niters
 # }}}
 ###############################################################
 
 ###############################################################
-def check_hybDA(DA,ensDA,varDA):
-# {{{
+
+
+def check_hybDA(DA, ensDA, varDA):
+    # {{{
     '''
     Check for valid hybrid DA algorithms
 
@@ -1244,16 +1452,18 @@ def check_hybDA(DA,ensDA,varDA):
     '''
 
     check_DA(DA)
-    check_ensDA(DA,ensDA)
-    check_varDA(DA,varDA)
+    check_ensDA(DA, ensDA)
+    check_varDA(DA, varDA)
 
     return
 # }}}
 ###############################################################
 
 ###############################################################
-def check_ensvarDA(DA,ensDA,varDA):
-# {{{
+
+
+def check_ensvarDA(DA, ensDA, varDA):
+    # {{{
     '''
     Check for valid ensemble-variational DA algorithms
 
@@ -1264,17 +1474,20 @@ def check_ensvarDA(DA,ensDA,varDA):
     varDA - variational data assimilation class
     '''
 
-    check_hybDA(DA,ensDA,varDA)
+    check_hybDA(DA, ensDA, varDA)
 
     fail = False
 
     print('===========================================')
 
-    if   ( varDA.precondition == 0 ): pstr = 'nothing'
-    elif ( varDA.precondition == 1 ): pstr = 'square-root B'
-    elif ( varDA.precondition == 2 ): pstr = 'full B'
+    if (varDA.precondition == 0):
+        pstr = 'nothing'
+    elif (varDA.precondition == 1):
+        pstr = 'square-root B'
+    elif (varDA.precondition == 2):
+        pstr = 'full B'
 
-    if   ( varDA.precondition != 1 ):
+    if (varDA.precondition != 1):
         print('''Preconditioning with %s is not allowed when
 assimilating observations using ensemble-variational algorithm.
 varDA.precondition must be : 1 = square-root B''' % pstr)
@@ -1282,15 +1495,18 @@ varDA.precondition must be : 1 = square-root B''' % pstr)
 
     print('===========================================')
 
-    if ( fail ): sys.exit(1)
+    if (fail):
+        sys.exit(1)
 
     return
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 def update_ensvarDA(xb, D, S, y, R, H, varDA, ensDA, model):
-# {{{
+    # {{{
     '''
     Update the prior with a ensemble-variational-based state estimation algorithm to produce a posterior
     This algorithm is implemented with the control-vector formulation
@@ -1310,10 +1526,10 @@ def update_ensvarDA(xb, D, S, y, R, H, varDA, ensDA, model):
       niters - number of iterations required for minimizing the cost function
     '''
 
-    if   ( varDA.update == 0 ):
+    if (varDA.update == 0):
         xa, niters = xb, np.NaN
 
-    elif ( varDA.update in [1,2] ):
+    elif (varDA.update in [1, 2]):
         xa, niters = EnsembleVarSolver(xb, S, D, y, R, H, varDA, ensDA, model)
 
     else:
@@ -1325,8 +1541,10 @@ def update_ensvarDA(xb, D, S, y, R, H, varDA, ensDA, model):
 ###############################################################
 
 ###############################################################
+
+
 def EnsembleVarSolver(xb, S, D, y, R, H, varDA, ensDA, model):
-# {{{
+    # {{{
     '''
     Update the prior with Ensemble-based Variational algorithm to produce a posterior.
     This implementation uses the alpha-control vector for minimization to find the weights
@@ -1347,18 +1565,18 @@ def EnsembleVarSolver(xb, S, D, y, R, H, varDA, ensDA, model):
       niters - number of iterations required for minimizing the cost function
 
     NO PRECONDITIONING [Solve using Conjugate Gradient]
-    [ S^{-1} + \sum Di^T Hi^T Ri^{-1} Hi Di ] v = \sum Di^T Hi^T Ri^{-1} di
+    [ S^{-1} + \\sum Di^T Hi^T Ri^{-1} Hi Di ] v = \\sum Di^T Hi^T Ri^{-1} di
     solve for v
 
     PRECONDITION WITH sqrt(S) = G [Solve using Conjugate Gradient]
-    [ I + \sum G^T Di^T Hi^T Ri^{-1} Hi Di G ] G^{-1} v = \sum G^T Di^T Hi^T Ri^{-1} di
+    [ I + \\sum G^T Di^T Hi^T Ri^{-1} Hi Di G ] G^{-1} v = \\sum G^T Di^T Hi^T Ri^{-1} di
     let w = G^{-1} v
-    [ I + \sum G^T Di^T Hi^T Ri^{-1} Hi Di G ] w        = \sum G^T Di^T Hi^T Ri^{-1} di
+    [ I + \\sum G^T Di^T Hi^T Ri^{-1} Hi Di G ] w        = \\sum G^T Di^T Hi^T Ri^{-1} di
     solve for w
     v = G w
 
     PRECONDITION WITH S [Solve using Double Conjugate Gradient]
-    [ S^{-1} + \sum Di^T Hi^T Ri^{-1} Hi Di ] v = \sum Di^T Hi^T Ri^{-1} di
+    [ S^{-1} + \\sum Di^T Hi^T Ri^{-1} Hi Di ] v = \\sum Di^T Hi^T Ri^{-1} di
     let w = S^{-1} v
     solve for both v and w
 
@@ -1366,40 +1584,42 @@ def EnsembleVarSolver(xb, S, D, y, R, H, varDA, ensDA, model):
     '''
 
     # start with background
-    xa   = xb.copy()
+    xa = xb.copy()
     Rinv = np.linalg.inv(R)
 
-    # advance the background through the assimilation window with full non-linear model
+    # advance the background through the assimilation window with full
+    # non-linear model
     xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
 
     d = np.zeros(y.shape)
-    g = np.zeros(ensDA.Nens*model.Ndof)
+    g = np.zeros(ensDA.Nens * model.Ndof)
 
     for i in range(varDA.fdvar.nobstimes):
 
         valInd = np.isfinite(y[i,])
 
-        d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
+        d[i, :] = y[i, :] - np.dot(H, xnl[varDA.fdvar.twind_obsIndex[i], :])
 
-        g = g + np.dot(D[i,:,:].T, Jgrad(H[valInd,:], np.diag(Rinv[valInd,valInd]), d[i,valInd]))
+        g = g + np.dot(D[i, :, :].T, Jgrad(H[valInd, :],
+                       np.diag(Rinv[valInd, valInd]), d[i, valInd]))
 
-    if   ( varDA.precondition == 0 ):
+    if (varDA.precondition == 0):
         r = g.copy()
         s = 0.0
         p = r.copy()
         q = 0.0
         v = np.zeros(r.shape)
         w = 0.0
-    elif ( varDA.precondition == 1 ):
-        r = np.dot(S.T,g)
+    elif (varDA.precondition == 1):
+        r = np.dot(S.T, g)
         s = 0.0
         p = r.copy()
         q = 0.0
         v = 0.0
         w = np.zeros(r.shape)
-    elif ( varDA.precondition == 2 ):
+    elif (varDA.precondition == 2):
         r = -g
-        s = np.dot(S,r)
+        s = np.dot(S, r)
         p = -s
         q = -r
         v = np.zeros(r.shape)
@@ -1407,17 +1627,21 @@ def EnsembleVarSolver(xb, S, D, y, R, H, varDA, ensDA, model):
 
     niters = 0
 
-    residual_first = np.sum(r**2+s**2)
-    residual_tol   = 1.0
+    residual_first = np.sum(r**2 + s**2)
+    residual_tol = 1.0
     print('initial residual = %15.10f' % (residual_first))
 
-    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
+    while ((np.sqrt(residual_tol) >= varDA.minimization.tol**2)
+           and (niters <= varDA.minimization.maxiter)):
 
         niters = niters + 1
 
-        if   ( varDA.precondition == 0 ): tmp = p.copy()
-        elif ( varDA.precondition == 1 ): tmp = np.dot(S,p)
-        elif ( varDA.precondition == 2 ): tmp = p.copy()
+        if (varDA.precondition == 0):
+            tmp = p.copy()
+        elif (varDA.precondition == 1):
+            tmp = np.dot(S, p)
+        elif (varDA.precondition == 2):
+            tmp = p.copy()
 
         Ap = np.zeros(tmp.shape)
 
@@ -1427,26 +1651,38 @@ def EnsembleVarSolver(xb, S, D, y, R, H, varDA, ensDA, model):
 
             valInd = np.isfinite(y[i,])
 
-            Ap = Ap + np.dot(D[i,:,:].T, hessian(H[valInd,:], np.diag(Rinv[valInd,valInd]), np.dot(D[i,:,:],tmp)))
+            Ap = Ap + np.dot(D[i, :, :].T, hessian(H[valInd, :],
+                             np.diag(Rinv[valInd, valInd]), np.dot(D[i, :, :], tmp)))
 
-        if   ( varDA.precondition == 0 ): Ap = np.dot(np.linalg.inv(S),p) + Ap
-        elif ( varDA.precondition == 1 ): Ap = p + np.dot(S.T,Ap)
-        elif ( varDA.precondition == 2 ): Ap = q + Ap
+        if (varDA.precondition == 0):
+            Ap = np.dot(np.linalg.inv(S), p) + Ap
+        elif (varDA.precondition == 1):
+            Ap = p + np.dot(S.T, Ap)
+        elif (varDA.precondition == 2):
+            Ap = q + Ap
 
-        [v,w,r,s,p,q] = minimize(varDA,v,w,r,s,p,q,Ap,S)
+        [v, w, r, s, p, q] = minimize(varDA, v, w, r, s, p, q, Ap, S)
 
-        residual     = np.sum(r**2+s**2)
+        residual = np.sum(r**2 + s**2)
         residual_tol = residual / residual_first
 
-        if ( not np.mod(niters,5) ):
-            print('        residual = %15.10f after %4d iterations' % (residual, niters))
+        if (not np.mod(niters, 5)):
+            print(
+                '        residual = %15.10f after %4d iterations' %
+                (residual, niters))
 
-    if ( niters > varDA.minimization.maxiter ): print('\033[0;31mexceeded maximum iterations allowed\033[0m')
-    print('  final residual = %15.10f after %4d iterations' % (residual, niters))
+    if (niters > varDA.minimization.maxiter):
+        print('\033[0;31mexceeded maximum iterations allowed\033[0m')
+    print(
+        '  final residual = %15.10f after %4d iterations' %
+        (residual, niters))
 
-    if   ( varDA.precondition == 0 ): dxo = np.dot(D[0,:,:],v)
-    elif ( varDA.precondition == 1 ): dxo = np.dot(D[0,:,:],np.dot(S,w))
-    elif ( varDA.precondition == 2 ): dxo = np.dot(D[0,:,:],v)
+    if (varDA.precondition == 0):
+        dxo = np.dot(D[0, :, :], v)
+    elif (varDA.precondition == 1):
+        dxo = np.dot(D[0, :, :], np.dot(S, w))
+    elif (varDA.precondition == 2):
+        dxo = np.dot(D[0, :, :], v)
 
     xa = xa + dxo
 
@@ -1455,8 +1691,10 @@ def EnsembleVarSolver(xb, S, D, y, R, H, varDA, ensDA, model):
 ###############################################################
 
 ###############################################################
+
+
 def EnsembleVar(xb, G, y, R, H, varDA, model):
-# {{{
+    # {{{
     '''
     Update the prior with Ensemble-based Variational algorithm to produce a posterior.
     This algorithm utilizes the sqrt(B) preconditioning described in Buehner 2005.
@@ -1484,44 +1722,47 @@ def EnsembleVar(xb, G, y, R, H, varDA, model):
     cost function:           J(w) =  Jb +  Jy
     cost function gradient: gJ(w) = gJb + gJy
      Jb = 0.5 *      w^T w
-     Jy = 0.5 * \sum dyi^T R^{-1} dyi
+     Jy = 0.5 * \\sum dyi^T R^{-1} dyi
     gJb = w
-    gJy = \sum [HMG]^T R^{-1} dyi
-    gJ  = [ I + \sum [HMG]^T R^{-1} [HMG] ] w - \sum [HMG]^T R^{-1} di
+    gJy = \\sum [HMG]^T R^{-1} dyi
+    gJ  = [ I + \\sum [HMG]^T R^{-1} [HMG] ] w - \\sum [HMG]^T R^{-1} di
     '''
 
     # start with background
-    xa   = xb.copy()
+    xa = xb.copy()
     Rinv = np.linalg.inv(R)
 
-    # advance the background through the assimilation window with full non-linear model
+    # advance the background through the assimilation window with full
+    # non-linear model
     xnl = model.advance(xa, varDA.fdvar.twind, perfect=False)
 
-    d  = np.zeros(y.shape)
-    g  = np.zeros(ensDA.Nens*varDA.localization.cov_trunc)
+    d = np.zeros(y.shape)
+    g = np.zeros(ensDA.Nens * varDA.localization.cov_trunc)
 
     for i in range(varDA.fdvar.nobstimes):
 
         valInd = np.isfinite(y[i,])
 
-        d[i,:] = y[i,:] - np.dot(H,xnl[varDA.fdvar.twind_obsIndex[i],:])
+        d[i, :] = y[i, :] - np.dot(H, xnl[varDA.fdvar.twind_obsIndex[i], :])
 
-        g = g + np.dot(G[i,:,:].T, Jgrad(H[valInd,:], np.diag(Rinv[valInd,valInd]), d[i,valInd]))
+        g = g + np.dot(G[i, :, :].T, Jgrad(H[valInd, :],
+                       np.diag(Rinv[valInd, valInd]), d[i, valInd]))
 
-    r  = g.copy()
-    s  = 0.0
-    p  = r.copy()
-    q  = 0.0
+    r = g.copy()
+    s = 0.0
+    p = r.copy()
+    q = 0.0
     dx = 0.0
-    w  = np.zeros(r.shape)
+    w = np.zeros(r.shape)
 
     niters = 0
 
-    residual_first = np.sum(r**2+s**2)
-    residual_tol   = 1.0
+    residual_first = np.sum(r**2 + s**2)
+    residual_tol = 1.0
     print('initial residual = %15.10f' % (residual_first))
 
-    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and (niters <= varDA.minimization.maxiter) ):
+    while ((np.sqrt(residual_tol) >= varDA.minimization.tol**2)
+           and (niters <= varDA.minimization.maxiter)):
 
         niters = niters + 1
 
@@ -1531,28 +1772,36 @@ def EnsembleVar(xb, G, y, R, H, varDA, model):
 
             valInd = np.isfinite(y[i,])
 
-            Ap = Ap + np.dot(G[i,:,:].T, hessian(H[valInd,:], np.diag(Rinv[valInd,valInd]), np.dot(G[i,:,:],p)))
+            Ap = Ap + np.dot(G[i, :, :].T, hessian(H[valInd, :],
+                             np.diag(Rinv[valInd, valInd]), np.dot(G[i, :, :], p)))
 
-        [dx,w,r,s,p,q] = minimize(varDA,dx,w,r,s,p,q,Ap,G)
+        [dx, w, r, s, p, q] = minimize(varDA, dx, w, r, s, p, q, Ap, G)
 
-        residual = np.sum(r**2+s**2)
+        residual = np.sum(r**2 + s**2)
         residual_tol = residual / residual_first
 
-        if ( not np.mod(niters,5) ):
-            print('        residual = %15.10f after %4d iterations' % (residual, niters))
+        if (not np.mod(niters, 5)):
+            print(
+                '        residual = %15.10f after %4d iterations' %
+                (residual, niters))
 
-    if ( niters > varDA.minimization.maxiter ): print('\033[0;31mexceeded maximum iterations allowed\033[0m')
-    print('  final residual = %15.10f after %4d iterations' % (residual, niters))
+    if (niters > varDA.minimization.maxiter):
+        print('\033[0;31mexceeded maximum iterations allowed\033[0m')
+    print(
+        '  final residual = %15.10f after %4d iterations' %
+        (residual, niters))
 
-    xa = xa + np.dot(G[0,:,:],w)
+    xa = xa + np.dot(G[0, :, :], w)
 
     return xa, niters
 # }}}
 ###############################################################
 
 ###############################################################
-def check_hybensvarDA(DA,ensDA,varDA):
-# {{{
+
+
+def check_hybensvarDA(DA, ensDA, varDA):
+    # {{{
     '''
     Check for valid hybrid ensemble-variational DA algorithms
 
@@ -1563,17 +1812,20 @@ def check_hybensvarDA(DA,ensDA,varDA):
     varDA - variational data assimilation class
     '''
 
-    check_hybDA(DA,ensDA,varDA)
+    check_hybDA(DA, ensDA, varDA)
 
     fail = False
 
     print('===========================================')
 
-    if   ( varDA.precondition == 0 ): pstr = 'nothing'
-    elif ( varDA.precondition == 1 ): pstr = 'square-root B'
-    elif ( varDA.precondition == 2 ): pstr = 'full B'
+    if (varDA.precondition == 0):
+        pstr = 'nothing'
+    elif (varDA.precondition == 1):
+        pstr = 'square-root B'
+    elif (varDA.precondition == 2):
+        pstr = 'full B'
 
-    if   ( varDA.precondition == 0 ):
+    if (varDA.precondition == 0):
         print('''Preconditioning with %s is not allowed when
 assimilating observations using hybrid ensemble-variational algorithm.
 Inverting B = [[Bs 0], [0 A]] is not possible, as it is singular.
@@ -1582,15 +1834,18 @@ varDA.precondition must be : 1 | 2 = square-root or full B''' % pstr)
 
     print('===========================================')
 
-    if ( fail ): sys.exit(1)
+    if (fail):
+        sys.exit(1)
 
     return
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 def update_hybensvarDA(xb, B, C, y, R, H, varDA, model):
-# {{{
+    # {{{
     '''
     Update the prior with a hybrid ensemble-variational-based state estimation algorithm
     to produce a posterior.
@@ -1610,13 +1865,13 @@ def update_hybensvarDA(xb, B, C, y, R, H, varDA, model):
       niters - number of iterations required for minimizing the cost function
     '''
 
-    if   ( varDA.update == 0 ):
+    if (varDA.update == 0):
         xa, niters = xb, np.NaN
 
-    elif ( varDA.update == 1 ):
+    elif (varDA.update == 1):
         xa, niters = HybridEnsembleThreeDvar(xb, B, C, y, R, H, varDA, model)
 
-    elif ( varDA.update == 2 ):
+    elif (varDA.update == 2):
         xa, niters = HybridEnsembleFourDvar(xb, B, C, y, R, H, varDA, model)
 
     else:
@@ -1628,8 +1883,10 @@ def update_hybensvarDA(xb, B, C, y, R, H, varDA, model):
 ###############################################################
 
 ###############################################################
+
+
 def HybridEnsembleThreeDvar(xb, B, C, y, R, H, varDA, model):
-# {{{
+    # {{{
     '''
     Update the prior with Hybrid Ensemble-based 3Dvar algorithm to produce a posterior.
     This algorithm is implemented with the extended control vector method of Lorenc 03.
@@ -1648,70 +1905,85 @@ def HybridEnsembleThreeDvar(xb, B, C, y, R, H, varDA, model):
       niters - number of iterations required for minimizing the cost function
     '''
 
-    xa   = xb.copy()
+    xa = xb.copy()
     Rinv = np.linalg.inv(R)
 
     valInd = np.isfinite(y)
 
-    d = y[valInd] - np.dot(H[valInd,:],xa)
+    d = y[valInd] - np.dot(H[valInd, :], xa)
 
-    g = np.dot(C.T, Jgrad(H[valInd,:], np.diag(Rinv[valInd,valInd]), d))
+    g = np.dot(C.T, Jgrad(H[valInd, :], np.diag(Rinv[valInd, valInd]), d))
 
-    if   ( varDA.precondition == 1 ):
-        r  = np.dot(B.T,g)
-        s  = 0.0
-        p  = r.copy()
-        q  = 0.0
+    if (varDA.precondition == 1):
+        r = np.dot(B.T, g)
+        s = 0.0
+        p = r.copy()
+        q = 0.0
         dx = 0.0
-        w  = np.zeros(r.shape)
-    elif ( varDA.precondition == 2 ):
-        r  = -g
-        s  = np.dot(B,r)
-        p  = -s
-        q  = -r
+        w = np.zeros(r.shape)
+    elif (varDA.precondition == 2):
+        r = -g
+        s = np.dot(B, r)
+        p = -s
+        q = -r
         dx = np.zeros(B.shape[0])
-        w  = np.zeros(B.shape[0])
+        w = np.zeros(B.shape[0])
 
     niters = 0
 
-    residual_first = np.sum(r**2+s**2)
-    residual_tol   = 1.0
+    residual_first = np.sum(r**2 + s**2)
+    residual_tol = 1.0
     print('initial residual = %15.10f' % (residual_first))
 
-    while ( (np.sqrt(residual_tol) >= varDA.minimization.tol**2) and ( niters <= varDA.minimization.maxiter) ):
+    while ((np.sqrt(residual_tol) >= varDA.minimization.tol**2)
+           and (niters <= varDA.minimization.maxiter)):
 
         niters = niters + 1
 
-        if   ( varDA.precondition == 1 ): tmp = np.dot(B,p)
-        elif ( varDA.precondition == 2 ): tmp = p.copy()
+        if (varDA.precondition == 1):
+            tmp = np.dot(B, p)
+        elif (varDA.precondition == 2):
+            tmp = p.copy()
 
-        Ap = np.dot(C.T, hessian(H[valInd,:], np.diag(Rinv[valInd,valInd]), np.dot(C,tmp)))
+        Ap = np.dot(C.T, hessian(H[valInd, :], np.diag(
+            Rinv[valInd, valInd]), np.dot(C, tmp)))
 
-        if   ( varDA.precondition == 1 ): Ap = p + np.dot(B.T,Ap)
-        elif ( varDA.precondition == 2 ): Ap = q + Ap
+        if (varDA.precondition == 1):
+            Ap = p + np.dot(B.T, Ap)
+        elif (varDA.precondition == 2):
+            Ap = q + Ap
 
-        [dx,w,r,s,p,q] = minimize(varDA,dx,w,r,s,p,q,Ap,B)
+        [dx, w, r, s, p, q] = minimize(varDA, dx, w, r, s, p, q, Ap, B)
 
-        residual     = np.sum(r**2+s**2)
+        residual = np.sum(r**2 + s**2)
         residual_tol = residual / residual_first
 
-        if ( not np.mod(niters,5) ):
-            print('        residual = %15.10f after %4d iterations' % (residual, niters))
+        if (not np.mod(niters, 5)):
+            print(
+                '        residual = %15.10f after %4d iterations' %
+                (residual, niters))
 
-    if ( niters > varDA.minimization.maxiter ): print('\033[0;31mexceeded maximum iterations allowed\033[0m')
-    print('  final residual = %15.10f after %4d iterations' % (residual, niters))
+    if (niters > varDA.minimization.maxiter):
+        print('\033[0;31mexceeded maximum iterations allowed\033[0m')
+    print(
+        '  final residual = %15.10f after %4d iterations' %
+        (residual, niters))
 
     # 3DVAR estimate
-    if   ( varDA.precondition == 1 ): xa = xa + np.dot(C,np.dot(B,w))
-    elif ( varDA.precondition == 2 ): xa = xa + np.dot(C,dx)
+    if (varDA.precondition == 1):
+        xa = xa + np.dot(C, np.dot(B, w))
+    elif (varDA.precondition == 2):
+        xa = xa + np.dot(C, dx)
 
     return xa, niters
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 def HybridEnsembleFourDvar(xb, B, C, y, R, H, varDA, model):
-# {{{
+    # {{{
     '''
     Update the prior with Hybrid Ensemble-based 4Dvar algorithm to produce a posterior.
     This algorithm is implemented with the extended control vector method of Lorenc 03.
@@ -1735,8 +2007,10 @@ def HybridEnsembleFourDvar(xb, B, C, y, R, H, varDA, model):
 ###############################################################
 
 ###############################################################
-def Jgrad(H,Rinv,d):
-# {{{
+
+
+def Jgrad(H, Rinv, d):
+    # {{{
     '''
     Compute the initial cost function gradient H^T R^{-1} d
 
@@ -1747,15 +2021,17 @@ def Jgrad(H,Rinv,d):
        d - innovation vector
     '''
 
-    Jgrad = np.dot(H.T,np.dot(Rinv,d))
+    Jgrad = np.dot(H.T, np.dot(Rinv, d))
 
     return Jgrad
 # }}}
 ###############################################################
 
 ###############################################################
-def hessian(H,Rinv,q):
-# {{{
+
+
+def hessian(H, Rinv, q):
+    # {{{
     '''
     Compute the Hessian operator H^T R^{-1} H q
 
@@ -1766,15 +2042,17 @@ def hessian(H,Rinv,q):
        q - input vector
     '''
 
-    hessian = np.dot(H.T,np.dot(Rinv,np.dot(H,q)))
+    hessian = np.dot(H.T, np.dot(Rinv, np.dot(H, q)))
 
     return hessian
 # }}}
 ###############################################################
 
 ###############################################################
-def minimize(varDA,dxo,wo,ro,so,po,qo,Apo,B):
-# {{{
+
+
+def minimize(varDA, dxo, wo, ro, so, po, qo, Apo, B):
+    # {{{
     '''
     Call appropriate minimization method
 
@@ -1788,22 +2066,28 @@ def minimize(varDA,dxo,wo,ro,so,po,qo,Apo,B):
       B - preconditioning matrix
     '''
 
-    if   ( varDA.precondition == 0 ):
-        dx,r,p = cg(dxo,ro,po,Apo)
-        w = wo ; s = so; q = qo
-    elif ( varDA.precondition == 1 ):
-        w,r,p = cg(wo,ro,po,Apo)
-        dx = dxo ; s = so; q = qo
-    elif ( varDA.precondition == 2 ):
-        dx,w,r,s,p,q = doublecg(dxo,wo,ro,so,po,qo,Apo,B)
+    if (varDA.precondition == 0):
+        dx, r, p = cg(dxo, ro, po, Apo)
+        w = wo
+        s = so
+        q = qo
+    elif (varDA.precondition == 1):
+        w, r, p = cg(wo, ro, po, Apo)
+        dx = dxo
+        s = so
+        q = qo
+    elif (varDA.precondition == 2):
+        dx, w, r, s, p, q = doublecg(dxo, wo, ro, so, po, qo, Apo, B)
 
-    return [dx,w,r,s,p,q]
+    return [dx, w, r, s, p, q]
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 def cg(xo, ro, do, Ado):
-# {{{
+    # {{{
     '''
     Perform minimization using conjugate gradient method
 
@@ -1815,10 +2099,10 @@ def cg(xo, ro, do, Ado):
     Ado - A times search direction
     '''
 
-    alpha = np.dot(ro.T,ro) / np.dot(do.T,Ado)
+    alpha = np.dot(ro.T, ro) / np.dot(do.T, Ado)
     x = xo + alpha * do
     r = ro - alpha * Ado
-    beta = np.dot(r.T,r) / np.dot(ro.T,ro)
+    beta = np.dot(r.T, r) / np.dot(ro.T, ro)
     d = r + beta * do
 
     return [x, r, d]
@@ -1826,8 +2110,10 @@ def cg(xo, ro, do, Ado):
 ###############################################################
 
 ###############################################################
-def doublecg(wo,zo,ro,so,po,qo,Apo,B):
-# {{{
+
+
+def doublecg(wo, zo, ro, so, po, qo, Apo, B):
+    # {{{
     '''
     Perform minimization using double conjugate gradient method
 
@@ -1840,22 +2126,24 @@ def doublecg(wo,zo,ro,so,po,qo,Apo,B):
        B - preconditioning matrix
     '''
 
-    alpha = np.dot(ro.T,so) / np.dot(po.T,Apo)
+    alpha = np.dot(ro.T, so) / np.dot(po.T, Apo)
     w = wo + alpha * po
     z = zo + alpha * qo
     r = ro + alpha * Apo
-    s = np.dot(B,r)
-    beta = np.dot(r.T,s) / np.dot(ro.T,so.T)
+    s = np.dot(B, r)
+    beta = np.dot(r.T, s) / np.dot(ro.T, so.T)
     p = beta * po - s
     q = beta * qo - r
 
-    return [w,z,r,s,p,q]
+    return [w, z, r, s, p, q]
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 def precondition(X, varDA, ensDA, model, L=None):
-# {{{
+    # {{{
     '''
     Setup the preconditioner before variational data assimilation
 
@@ -1868,40 +2156,51 @@ def precondition(X, varDA, ensDA, model, L=None):
      L - localize the matrix to precondition, if desired [None]
     '''
 
-    if   ( varDA.update == 1 ):
+    if (varDA.update == 1):
 
-        Xp = (X[0,:,:].T - np.mean(X[0,:,:],axis=1)).T
-        if ( L is None ):
+        Xp = (X[0, :, :].T - np.mean(X[0, :, :], axis=1)).T
+        if (L is None):
             G = Xp.copy()
         else:
-            G = np.zeros((model.Ndof,varDA.localization.cov_trunc*ensDA.Nens))
+            G = np.zeros(
+                (model.Ndof, varDA.localization.cov_trunc * ensDA.Nens))
             for m in range(ensDA.Nens):
-                si = varDA.localization.cov_trunc *  m
-                ei = varDA.localization.cov_trunc * (m+1)
-                G[:,si:ei] = np.dot(np.diag(Xp[:,m]),L) / np.sqrt(ensDA.Nens - 1.0)
+                si = varDA.localization.cov_trunc * m
+                ei = varDA.localization.cov_trunc * (m + 1)
+                G[:, si:ei] = np.dot(np.diag(Xp[:, m]), L) / \
+                    np.sqrt(ensDA.Nens - 1.0)
 
-    elif ( varDA.update == 2 ):
+    elif (varDA.update == 2):
 
-        if ( L is None ): G = np.zeros(X.shape)
-        else:             G = np.zeros((varDA.fdvar.nobstimes,model.Ndof,varDA.localization.cov_trunc*ensDA.Nens))
+        if (L is None):
+            G = np.zeros(X.shape)
+        else:
+            G = np.zeros(
+                (varDA.fdvar.nobstimes,
+                 model.Ndof,
+                 varDA.localization.cov_trunc *
+                 ensDA.Nens))
 
         for i in range(varDA.fdvar.nobstimes):
-            Xp = (X[i,:,:].T - np.mean(X[i,:,:],axis=1)).T
-            if ( L is None ):
-                G[i,:,:] = Xp.copy()
+            Xp = (X[i, :, :].T - np.mean(X[i, :, :], axis=1)).T
+            if (L is None):
+                G[i, :, :] = Xp.copy()
             else:
                 for m in range(ensDA.Nens):
-                    si = varDA.localization.cov_trunc *  m
-                    ei = varDA.localization.cov_trunc * (m+1)
-                    G[i,:,si:ei] = np.dot(np.diag(Xp[:,m]),L) / np.sqrt(ensDA.Nens - 1.0)
+                    si = varDA.localization.cov_trunc * m
+                    ei = varDA.localization.cov_trunc * (m + 1)
+                    G[i, :, si:ei] = np.dot(
+                        np.diag(Xp[:, m]), L) / np.sqrt(ensDA.Nens - 1.0)
 
     return G
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 def localization_operator(model, localization):
-# {{{
+    # {{{
     '''
     Get localization operator given model and localization classes
 
@@ -1912,21 +2211,24 @@ localization - localization class
            L - localization operator | size(L) == [model.Ndof,model.Ndof]
     '''
 
-    L = np.ones((model.Ndof,model.Ndof))
+    L = np.ones((model.Ndof, model.Ndof))
 
     for i in range(model.Ndof):
         for j in range(model.Ndof):
-            dist = np.float( np.abs( i - j ) ) / model.Ndof
-            if ( dist > 0.5 ): dist = 1.0 - dist
-            L[i,j] = compute_cov_factor(dist, localization)
+            dist = np.float(np.abs(i - j)) / model.Ndof
+            if (dist > 0.5):
+                dist = 1.0 - dist
+            L[i, j] = compute_cov_factor(dist, localization)
 
     return L
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 def advance_ensemble(Xi, t, model, perfect=True, parallel=False, **kwargs):
-# {{{
+    # {{{
     '''
     Advance an ensemble given initial conditions, length of integration and model information.
 
@@ -1943,30 +2245,39 @@ def advance_ensemble(Xi, t, model, perfect=True, parallel=False, **kwargs):
 
     Xf = np.zeros(Xi.shape)
 
-    if ( parallel ):
+    if (parallel):
 
         result_queue = mp.Queue()
-        madvs = [ model.advance(xi,t,perfect=perfect,result=result_queue) for xi in Xi.T ]
-        jobs = [ mp.Process(madv) for madv in madvs ]
-        for job in jobs: job.start()
-        for job in jobs: job.join()
-        Xs = [ result_queue.get() for madv in madvs ]
+        madvs = [
+            model.advance(
+                xi,
+                t,
+                perfect=perfect,
+                result=result_queue) for xi in Xi.T]
+        jobs = [mp.Process(madv) for madv in madvs]
+        for job in jobs:
+            job.start()
+        for job in jobs:
+            job.join()
+        Xs = [result_queue.get() for madv in madvs]
         for m, xs in enumerate(Xs):
-            Xf[:,m] = xs[-1,:].copy()
+            Xf[:, m] = xs[-1, :].copy()
 
     else:
 
         for m, xi in enumerate(Xi.T):
             xs = model.advance(xi, t, perfect=perfect, **kwargs)
-            Xf[:,m] = xs[-1,:].copy()
+            Xf[:, m] = xs[-1, :].copy()
 
     return Xf
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 def inflate_ensemble(Xi, inflation_factor):
-# {{{
+    # {{{
     '''
     Inflate an ensemble.
 
@@ -1977,7 +2288,7 @@ inflation_factor - Factor with which to inflate ensemble perturbations
               Xo - Inflated ensemble [ shape(Xo) = [Ne, Ndof] ]
     '''
 
-    xm = np.mean(Xi,axis=0)
+    xm = np.mean(Xi, axis=0)
     Xo = xm + inflation_factor * (Xi - xm)
 
     return Xo
@@ -1985,8 +2296,10 @@ inflation_factor - Factor with which to inflate ensemble perturbations
 ###############################################################
 
 ###############################################################
-def compute_B(varDA,Bc,outer=0):
-# {{{
+
+
+def compute_B(varDA, Bc, outer=0):
+    # {{{
     '''
     Load climatological background error covariance matrix and
     and make ready for variational update
@@ -2001,20 +2314,23 @@ def compute_B(varDA,Bc,outer=0):
 
     # inflate climatological background error cov. matrix
     B = varDA.inflation.infl_fac * Bc
-    if ( varDA.inflation.infl_adp ): B /= ( outer + 1 )
+    if (varDA.inflation.infl_adp):
+        B /= (outer + 1)
 
     # precondition B to sqrt(B)
-    if ( varDA.precondition == 1 ):
-        [U,S2,_] = np.linalg.svd(B, full_matrices=True, compute_uv=True)
-        B = np.dot(U,np.diag(np.sqrt(S2)))
+    if (varDA.precondition == 1):
+        [U, S2, _] = np.linalg.svd(B, full_matrices=True, compute_uv=True)
+        B = np.dot(U, np.diag(np.sqrt(S2)))
 
     return B
 # }}}
 ###############################################################
 
 ###############################################################
-def create_obs(model,varDA,xt,H,R,yold=None):
-# {{{
+
+
+def create_obs(model, varDA, xt, H, R, yold=None):
+    # {{{
     '''
     y = create_obs(model,varDA,xt,H,R,yold=None)
 
@@ -2030,24 +2346,31 @@ def create_obs(model,varDA,xt,H,R,yold=None):
     '''
     # new observations from noise about truth
 
-    if ( not hasattr(varDA,'minimization') ):
+    if (not hasattr(varDA, 'minimization')):
         # This is an ensemble update
-        y = np.zeros((1,model.Ndof))
-        y[0,:] = np.dot(H,xt + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
+        y = np.zeros((1, model.Ndof))
+        y[0, :] = np.dot(H, xt +
+                         np.random.randn(model.Ndof) *
+                         np.sqrt(np.diag(R)))
         return y
 
-    if ( varDA.update in [1,2] ):
+    if (varDA.update in [1, 2]):
 
-        y = np.zeros((varDA.fdvar.nobstimes,model.Ndof))
+        y = np.zeros((varDA.fdvar.nobstimes, model.Ndof))
 
-        # integrate truth within the obs. window and collect state at obs. times
-        xs = model.advance(xt, varDA.fdvar.twind, perfect=True)[varDA.fdvar.twind_obsIndex,:]
+        # integrate truth within the obs. window and collect state at obs.
+        # times
+        xs = model.advance(xt, varDA.fdvar.twind, perfect=True)[
+            varDA.fdvar.twind_obsIndex, :]
 
         for i in range(varDA.fdvar.nobstimes):
-            if ( i < varDA.fdvar.noverlap ):
-                y[i,:] = yold[varDA.fdvar.nobstimes-varDA.fdvar.noverlap+i,:].copy()
+            if (i < varDA.fdvar.noverlap):
+                y[i, :] = yold[varDA.fdvar.nobstimes -
+                               varDA.fdvar.noverlap + i, :].copy()
             else:
-                y[i,:] = np.dot(H,xs[i,:] + np.random.randn(model.Ndof) * np.sqrt(np.diag(R)))
+                y[i, :] = np.dot(H, xs[i, :] +
+                                 np.random.randn(model.Ndof) *
+                                 np.sqrt(np.diag(R)))
 
         return y
 

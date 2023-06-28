@@ -1,5 +1,6 @@
 __all__ = ['ModelBase']
 
+
 class ModelBase(object):
     '''
     This provides a base class for all models.
@@ -8,7 +9,8 @@ class ModelBase(object):
     @classmethod
     def create(cls, modelConfig):
         modelName = modelConfig.get('Name')
-        return next(c for c in cls.__subclasses__() if c.__name__ == modelName)(modelConfig)
+        return next(c for c in cls.__subclasses__()
+                    if c.__name__ == modelName)(modelConfig)
 
     def __init__(self, modelConfig):
         '''
@@ -18,10 +20,10 @@ class ModelBase(object):
         self.dt = modelConfig.get('dt')
 
     def __repr__(self):
-        return {'Name':self.Name, 'dt':self.dt}
+        return {'Name': self.Name, 'dt': self.dt}
 
     def __str__(self):
-        return 'ModelBase(Name='+self.Name+', dt='+str(self.dt)+ ')'
+        return 'ModelBase(Name=' + self.Name + ', dt=' + str(self.dt) + ')'
 
     def advance(self, modelFunc, x0, t, *args, **kwargs):
         '''

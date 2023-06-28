@@ -60,7 +60,7 @@ class LorenzBase(ModelBase):
         read from a specified restart file
         """
 
-        filename = restart.get('filename','default.nc4')
+        filename = restart.get('filename', 'default.nc4')
         time = restart.get('time', 0)
 
         if not os.path.isfile(filename):
@@ -77,17 +77,18 @@ class LorenzBase(ModelBase):
             indx = ntime + time
         if (indx < 0) or (indx >= ntime):
             msg = 'ERROR : t = %d does not exist in %s\n' % (
-                indx+1, filename)
+                indx + 1, filename)
             msg += '        valid options are t = +/- [1 ... %d]' % ntime
             raise IndexError(msg)
         else:
-            print(('... from t = %d in %s' % (indx+1, filename)))
+            print(('... from t = %d in %s' % (indx + 1, filename)))
             xt = np.squeeze(nc.variables['truth'][indx, ])
             xa = np.transpose(np.squeeze(nc.variables['posterior'][indx, ]))
         nc.close()
 
         if len(np.shape(xa)) == 1:
-            # populate initial ensemble by perturbing the analysis and re-centering
+            # populate initial ensemble by perturbing the analysis and
+            # re-centering
             xa = self.perturb_state(xa, amplitude=0.001, Nens=Nens)
 
         elif len(np.shape(xa)) != 1:
@@ -131,9 +132,9 @@ class L63(LorenzBase):
         x, y, z = x0
         s, r, b = self.Par
 
-        x_dot = s*(y-x)
-        y_dot = r*x -y -x*z
-        z_dot = x*y - b*z
+        x_dot = s * (y - x)
+        y_dot = r * x - y - x * z
+        z_dot = x * y - b * z
 
         xt = np.array([x_dot, y_dot, z_dot])
 
@@ -156,15 +157,15 @@ class L63(LorenzBase):
 
         s, r, b = self.Par
 
-        x = np.interp(t,tsave,xsave[:,0])
-        y = np.interp(t,tsave,xsave[:,1])
-        z = np.interp(t,tsave,xsave[:,2])
+        x = np.interp(t, tsave, xsave[:, 0])
+        y = np.interp(t, tsave, xsave[:, 1])
+        z = np.interp(t, tsave, xsave[:, 2])
 
-        M = np.array([[-s,   s,  0],
-                      [r-z, -1, -x],
-                      [y,    x, -b]])
+        M = np.array([[-s, s, 0],
+                      [r - z, -1, -x],
+                      [y, x, -b]])
 
-        xs = np.dot(np.transpose(M),x0) if adjoint else np.dot(M, x0)
+        xs = np.dot(np.transpose(M), x0) if adjoint else np.dot(M, x0)
 
         return xs
 
@@ -198,7 +199,15 @@ class L63(LorenzBase):
 
         return xt
 
-    def plot(self, obs=None, ver=None, xb=None, xa=None, xdim=0, ydim=2, **kwargs):
+    def plot(
+            self,
+            obs=None,
+            ver=None,
+            xb=None,
+            xa=None,
+            xdim=0,
+            ydim=2,
+            **kwargs):
         """
         Plot the Lorenz 1963 attractor in 2D
 
@@ -217,27 +226,38 @@ class L63(LorenzBase):
             xdim = 0
             ydim = 2
 
-        if xdim < 0  or xdim > 2: xdim = 0
-        if ydim < 0  or ydim > 2: ydim = 2
+        if xdim < 0 or xdim > 2:
+            xdim = 0
+        if ydim < 0 or ydim > 2:
+            ydim = 2
 
-        if xdim == 0: xlab = 'X'
-        elif xdim == 1: xlab = 'Y'
-        elif xdim == 2: xlab = 'Z'
+        if xdim == 0:
+            xlab = 'X'
+        elif xdim == 1:
+            xlab = 'Y'
+        elif xdim == 2:
+            xlab = 'Z'
 
-        if ydim == 0: ylab = 'X'
-        elif ydim == 1: ylab = 'Y'
-        elif ydim == 2: ylab = 'Z'
+        if ydim == 0:
+            ylab = 'X'
+        elif ydim == 1:
+            ylab = 'Y'
+        elif ydim == 2:
+            ylab = 'Z'
 
         fig = plt.figure()
         plt.clf()
 
         att = kwargs.get('att', None)
 
-        if att is not None: plt.plot(att[:,xdim], att[:,ydim], color='gray', linewidth=1)
-        if xb is not None: plt.plot(xb[ :,xdim], xb[ :,ydim], 'b-', linewidth=1)
-        if xa is not None: plt.plot(xa[ :,xdim], xa[ :,ydim], 'r-', linewidth=1)
-        #if ver is not None: plt.plot(ver[:,xdim], ver[:,ydim], 'k-', linewidth=1)
-        #if obs is not None: plt.plot(obs[:,xdim], obs[:,ydim], 'yo', markeredgecolor='y')
+        if att is not None:
+            plt.plot(att[:, xdim], att[:, ydim], color='gray', linewidth=1)
+        if xb is not None:
+            plt.plot(xb[:, xdim], xb[:, ydim], 'b-', linewidth=1)
+        if xa is not None:
+            plt.plot(xa[:, xdim], xa[:, ydim], 'r-', linewidth=1)
+        # if ver is not None: plt.plot(ver[:,xdim], ver[:,ydim], 'k-', linewidth=1)
+        # if obs is not None: plt.plot(obs[:,xdim], obs[:,ydim], 'yo', markeredgecolor='y')
 
         plt.xlabel(xlab, fontweight='bold', fontsize=12)
         plt.ylabel(ylab, fontweight='bold', fontsize=12)
@@ -368,7 +388,15 @@ class L96(LorenzBase):
 
         return xt
 
-    def plot(self, obs=None, ver=None, xb=None, xa=None, t=0, figNum=None, **kwargs):
+    def plot(
+            self,
+            obs=None,
+            ver=None,
+            xb=None,
+            xa=None,
+            t=0,
+            figNum=None,
+            **kwargs):
         """
         Plot the Lorenz 1996 attractor in polar coordinates
 
@@ -388,53 +416,53 @@ class L96(LorenzBase):
         plt.clf()
         mean_dist = 35.0
         plt.subplot(111, polar=True)
-        theta = np.linspace(0.0, 2*np.pi, num=N+1)
+        theta = np.linspace(0.0, 2 * np.pi, num=N + 1)
 
         # start by plotting a dummy tiny white dot at (0, 0)
         plt.plot(0, 0, 'w.', markeredgecolor='w', markersize=0.0)
 
         if xb is not None:
             if len(xb.shape) == 1:
-                tmp = np.zeros(N+1)
+                tmp = np.zeros(N + 1)
                 tmp[1:] = xb
                 tmp[0] = xb[-1]
             else:
                 tmp, tmpmin, tmpmax = self._getLimits(xb)
                 plt.fill_between(theta,
-                                 tmpmin+mean_dist,
-                                 tmpmax+mean_dist,
+                                 tmpmin + mean_dist,
+                                 tmpmax + mean_dist,
                                  fc='blue', ec='blue', alpha=0.75)
-            plt.plot(theta, tmp+mean_dist, 'b-', linewidth=2.0)
+            plt.plot(theta, tmp + mean_dist, 'b-', linewidth=2.0)
 
         if xa is not None:
             if len(xa.shape) == 1:
-                tmp = np.zeros(N+1)
+                tmp = np.zeros(N + 1)
                 tmp[1:] = xa
                 tmp[0] = xa[-1]
             else:
                 tmp, tmpmin, tmpmax = self._getLimits(xa)
                 plt.fill_between(theta,
-                                 tmpmin+mean_dist,
-                                 tmpmax+mean_dist,
+                                 tmpmin + mean_dist,
+                                 tmpmax + mean_dist,
                                  fc='red', ec='red', alpha=0.5)
-            plt.plot(theta, tmp+mean_dist, 'r-', linewidth=2.0)
+            plt.plot(theta, tmp + mean_dist, 'r-', linewidth=2.0)
 
         if ver is not None:
-            tmp = np.zeros(N+1)
+            tmp = np.zeros(N + 1)
             tmp[1:] = ver
             tmp[0] = ver[-1]
-            plt.plot(theta, tmp+mean_dist, 'k-', linewidth=2.0)
+            plt.plot(theta, tmp + mean_dist, 'k-', linewidth=2.0)
 
         if obs is not None:
-            tmp = np.zeros(N+1)
+            tmp = np.zeros(N + 1)
             tmp[1:] = obs
             tmp[0] = obs[-1]
-            plt.plot(theta, tmp+mean_dist, 'yo',
+            plt.plot(theta, tmp + mean_dist, 'yo',
                      markersize=7.5, mec='y', alpha=0.95)
 
         plt.gca().set_rmin(0.0)
-        plt.gca().set_rmax(mean_dist+25.0)
-        rgrid = np.array(np.linspace(10, mean_dist+25,
+        plt.gca().set_rmax(mean_dist + 25.0)
+        rgrid = np.array(np.linspace(10, mean_dist + 25,
                                      num=5, endpoint=False), dtype=int)
         rlabel = []
         rgrid, rlabel = plt.rgrids(rgrid, rlabel)
@@ -443,7 +471,7 @@ class L96(LorenzBase):
         tgrid = np.array(np.linspace(
             0, 360, num=20, endpoint=False), dtype=int)
         tlabel = np.array(np.linspace(
-            0, 40,  num=20, endpoint=False), dtype=int)
+            0, 40, num=20, endpoint=False), dtype=int)
         tgrid, tlabel = plt.thetagrids(tgrid, tlabel)
 
         pretitle = None
@@ -463,13 +491,13 @@ class L96(LorenzBase):
         # {{{
         xmin, xmax, xmean = np.min(xd, axis=1), np.max(
             xd, axis=1), np.mean(xd, axis=1)
-        tmpmin = np.zeros(self.Ndof+1)
+        tmpmin = np.zeros(self.Ndof + 1)
         tmpmin[1:] = xmin
         tmpmin[0] = xmin[-1]
-        tmpmax = np.zeros(self.Ndof+1)
+        tmpmax = np.zeros(self.Ndof + 1)
         tmpmax[1:] = xmax
         tmpmax[0] = xmax[-1]
-        tmp = np.zeros(self.Ndof+1)
+        tmp = np.zeros(self.Ndof + 1)
         tmp[1:] = xmean
         tmp[0] = xmean[-1]
         return tmp, tmpmin, tmpmax

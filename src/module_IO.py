@@ -13,21 +13,21 @@
 ###############################################################
 
 ###############################################################
-__author__    = "Rahul Mahajan"
-__email__     = "rahul.mahajan@nasa.gov"
+from module_DA import DataAssim, EnsDataAssim, VarDataAssim
+from module_Lorenz import Lorenz
+from netCDF4 import Dataset
+import numpy as np
+import getopt
+import sys
+import os
+__author__ = "Rahul Mahajan"
+__email__ = "rahul.mahajan@nasa.gov"
 __copyright__ = "Copyright 2012, NASA / GSFC / GMAO"
-__license__   = "GPL"
-__status__    = "Prototype"
+__license__ = "GPL"
+__status__ = "Prototype"
 ###############################################################
 
 ###############################################################
-import os
-import sys
-import getopt
-import numpy   as     np
-from   netCDF4 import Dataset
-from module_Lorenz import Lorenz
-from module_DA import DataAssim, EnsDataAssim, VarDataAssim
 ###############################################################
 
 ###############################################################
@@ -35,8 +35,10 @@ module = 'module_IO.py'
 ###############################################################
 
 ###############################################################
+
+
 def create_diag(dfile, ndof, nouter=1, nobs=None, nens=None, hybrid=False):
-# {{{
+    # {{{
     '''
     create an output file for writing diagnostics
 
@@ -52,47 +54,53 @@ def create_diag(dfile, ndof, nouter=1, nobs=None, nens=None, hybrid=False):
 
     source = 'create_diag'
 
-    if ( nobs is None ):
+    if (nobs is None):
         nobs = ndof
 
-    if ( ( hybrid ) and ( nens is None ) ):
+    if ((hybrid) and (nens is None)):
         print('nens cannot be None if doing hybrid')
         sys.exit(2)
 
     try:
 
-        nc  = Dataset(dfile.filename, mode='w', clobber=True, format='NETCDF4')
+        nc = Dataset(dfile.filename, mode='w', clobber=True, format='NETCDF4')
 
         Dim = nc.createDimension('ntime', size=None)
-        Dim = nc.createDimension('nouter',size=nouter)
-        Dim = nc.createDimension('ndof',  size=ndof)
-        Dim = nc.createDimension('nobs',  size=nobs)
+        Dim = nc.createDimension('nouter', size=nouter)
+        Dim = nc.createDimension('ndof', size=ndof)
+        Dim = nc.createDimension('nobs', size=nobs)
 
-        if not ( nens is None ):
-            Dim = nc.createDimension('ncopy',size=nens)
+        if not (nens is None):
+            Dim = nc.createDimension('ncopy', size=nens)
 
-        Var = nc.createVariable('truth','f8',('ntime','ndof',))
+        Var = nc.createVariable('truth', 'f8', ('ntime', 'ndof',))
 
-        if ( nens is None ):
-            Var = nc.createVariable('prior',    'f8',('ntime','nouter','ndof',))
-            Var = nc.createVariable('posterior','f8',('ntime','nouter','ndof',))
-            Var = nc.createVariable('niters',   'f8',('ntime','nouter',))
+        if (nens is None):
+            Var = nc.createVariable(
+                'prior', 'f8', ('ntime', 'nouter', 'ndof',))
+            Var = nc.createVariable(
+                'posterior', 'f8', ('ntime', 'nouter', 'ndof',))
+            Var = nc.createVariable('niters', 'f8', ('ntime', 'nouter',))
         else:
-            Var = nc.createVariable('prior',    'f8',('ntime','nouter','ncopy','ndof',))
-            Var = nc.createVariable('posterior','f8',('ntime','nouter','ncopy','ndof',))
-            Var = nc.createVariable('evratio',  'f8',('ntime','nouter',))
+            Var = nc.createVariable(
+                'prior', 'f8', ('ntime', 'nouter', 'ncopy', 'ndof',))
+            Var = nc.createVariable(
+                'posterior', 'f8', ('ntime', 'nouter', 'ncopy', 'ndof',))
+            Var = nc.createVariable('evratio', 'f8', ('ntime', 'nouter',))
 
-        Var = nc.createVariable('obs',         'f8',('ntime','nobs',))
-        Var = nc.createVariable('obs_operator','f8',('ntime','ndof',))
-        Var = nc.createVariable('obs_err_var', 'f8',('ntime','ndof',))
+        Var = nc.createVariable('obs', 'f8', ('ntime', 'nobs',))
+        Var = nc.createVariable('obs_operator', 'f8', ('ntime', 'ndof',))
+        Var = nc.createVariable('obs_err_var', 'f8', ('ntime', 'ndof',))
 
-        if ( hybrid ):
-            Var = nc.createVariable('central_prior',    'f8',('ntime','nouter','ndof',))
-            Var = nc.createVariable('central_posterior','f8',('ntime','nouter','ndof',))
-            Var = nc.createVariable('niters',           'f8',('ntime','nouter',))
+        if (hybrid):
+            Var = nc.createVariable(
+                'central_prior', 'f8', ('ntime', 'nouter', 'ndof',))
+            Var = nc.createVariable(
+                'central_posterior', 'f8', ('ntime', 'nouter', 'ndof',))
+            Var = nc.createVariable('niters', 'f8', ('ntime', 'nouter',))
 
-        for (key,value) in dfile.attributes.items():
-            exec( 'nc.%s = value' % (key) )
+        for (key, value) in dfile.attributes.items():
+            exec('nc.%s = value' % (key))
 
         nc.close()
 
@@ -110,9 +118,23 @@ def create_diag(dfile, ndof, nouter=1, nobs=None, nens=None, hybrid=False):
 ###############################################################
 
 ###############################################################
-def write_diag(fname, time, outer, truth, prior, posterior, obs, obs_operator, obs_err_var,
-        central_prior=None, central_posterior=None, niters=None, evratio=None):
-# {{{
+
+
+def write_diag(
+        fname,
+        time,
+        outer,
+        truth,
+        prior,
+        posterior,
+        obs,
+        obs_operator,
+        obs_err_var,
+        central_prior=None,
+        central_posterior=None,
+        niters=None,
+        evratio=None):
+    # {{{
     '''
     write the diagnostics to an output file
 
@@ -143,26 +165,28 @@ def write_diag(fname, time, outer, truth, prior, posterior, obs, obs_operator, o
 
         nc = Dataset(fname, mode='a', clobber=True, format='NETCDF4')
 
-        nc.variables['prior'    ][time,outer,:] = prior.copy()
-        nc.variables['posterior'][time,outer,:] = posterior.copy()
+        nc.variables['prior'][time, outer, :] = prior.copy()
+        nc.variables['posterior'][time, outer, :] = posterior.copy()
 
-        if ( outer == 0 ):
-            nc.variables['truth'       ][time,:] = truth.copy()
-            nc.variables['obs'         ][time,:] = obs.copy()
-            nc.variables['obs_operator'][time,:] = obs_operator.copy()
-            nc.variables['obs_err_var' ][time,:] = obs_err_var.copy()
+        if (outer == 0):
+            nc.variables['truth'][time, :] = truth.copy()
+            nc.variables['obs'][time, :] = obs.copy()
+            nc.variables['obs_operator'][time, :] = obs_operator.copy()
+            nc.variables['obs_err_var'][time, :] = obs_err_var.copy()
 
-        if not ( central_prior is None ):
-            nc.variables['central_prior'    ][time,outer,:] = central_prior.copy()
+        if not (central_prior is None):
+            nc.variables['central_prior'][time,
+                                          outer, :] = central_prior.copy()
 
-        if not ( central_posterior is None ):
-            nc.variables['central_posterior'][time,outer,:] = central_posterior.copy()
+        if not (central_posterior is None):
+            nc.variables['central_posterior'][time,
+                                              outer, :] = central_posterior.copy()
 
-        if not ( niters is None ):
-            nc.variables['niters'][time,outer] = niters
+        if not (niters is None):
+            nc.variables['niters'][time, outer] = niters
 
-        if not ( evratio is None ):
-            nc.variables['evratio'][time,outer] = evratio
+        if not (evratio is None):
+            nc.variables['evratio'][time, outer] = evratio
 
         nc.close()
 
@@ -180,8 +204,10 @@ def write_diag(fname, time, outer, truth, prior, posterior, obs, obs_operator, o
 ###############################################################
 
 ###############################################################
+
+
 def read_diag_info(fname):
-# {{{
+    # {{{
     '''
     read the meta data from an output diagnostic file given name
     and reconstruct the classes for model, DA etc.
@@ -209,69 +235,89 @@ def read_diag_info(fname):
 
         Name = nc.model
         Ndof = len(nc.dimensions['ndof'])
-        dt   = nc.dt
-        if   ( Name == 'L63' ):
+        dt = nc.dt
+        if (Name == 'L63'):
             Par = [nc.sigma, nc.rho, nc.beta]
-        elif ( Name == 'L96' ):
-            Par = [nc.F, nc.F+nc.dF]
+        elif (Name == 'L96'):
+            Par = [nc.F, nc.F + nc.dF]
         else:
             print('model %s is not implemented' % (Name))
             sys.exit(2)
 
-        if ( Name in ['L63', 'L96'] ):
+        if (Name in ['L63', 'L96']):
             model = Lorenz()
-            model.init(Name=Name,Ndof=Ndof,Par=Par,dt=dt)
+            model.init(Name=Name, Ndof=Ndof, Par=Par, dt=dt)
 
-        nassim   = len(nc.dimensions['ntime'])
-        ntimes   = nc.ntimes
-        Nobs     = len(nc.dimensions['nobs'  ]) if ( 'nobs'   in nc.dimensions ) else model.Ndof
-        maxouter = len(nc.dimensions['nouter']) if ( 'nouter' in nc.dimensions ) else 1
+        nassim = len(nc.dimensions['ntime'])
+        ntimes = nc.ntimes
+        Nobs = len(
+            nc.dimensions['nobs']) if (
+            'nobs' in nc.dimensions) else model.Ndof
+        maxouter = len(
+            nc.dimensions['nouter']) if (
+            'nouter' in nc.dimensions) else 1
 
         DA = DataAssim()
-        DA.init(nassim=nassim,ntimes=ntimes,maxouter=maxouter,Nobs=Nobs)
+        DA.init(nassim=nassim, ntimes=ntimes, maxouter=maxouter, Nobs=Nobs)
 
         if 'do_hybrid' in nc.ncattrs():
-            setattr(DA,'do_hybrid',  nc.do_hybrid)
-            setattr(DA,'hybrid_wght',nc.hybrid_wght)
-            setattr(DA,'hybrid_rcnt',nc.hybrid_rcnt)
+            setattr(DA, 'do_hybrid', nc.do_hybrid)
+            setattr(DA, 'hybrid_wght', nc.hybrid_wght)
+            setattr(DA, 'hybrid_rcnt', nc.hybrid_rcnt)
         else:
-            setattr(DA,'do_hybrid',  False)
+            setattr(DA, 'do_hybrid', False)
 
         ensDA = EnsDataAssim()
         if 'Eupdate' in nc.ncattrs():
-            update     = nc.Eupdate
-            Nens       = len(nc.dimensions['ncopy'])
-            inflate    = nc.Einflate
-            infl_fac   = nc.Einfl_fac
-            localize   = nc.Elocalize
+            update = nc.Eupdate
+            Nens = len(nc.dimensions['ncopy'])
+            inflate = nc.Einflate
+            infl_fac = nc.Einfl_fac
+            localize = nc.Elocalize
             cov_cutoff = nc.Ecov_cutoff
-            cov_trunc  = nc.Ecov_trunc
-            ensDA.init(model,DA,\
-                       update=update,Nens=Nens,\
-                       inflate=inflate,infl_fac=infl_fac,\
-                       localize=localize,cov_cutoff=cov_cutoff,cov_trunc=cov_trunc)
+            cov_trunc = nc.Ecov_trunc
+            ensDA.init(
+                model,
+                DA,
+                update=update,
+                Nens=Nens,
+                inflate=inflate,
+                infl_fac=infl_fac,
+                localize=localize,
+                cov_cutoff=cov_cutoff,
+                cov_trunc=cov_trunc)
 
         varDA = VarDataAssim()
         if 'Vupdate' in nc.ncattrs():
-            update       = nc.Vupdate
+            update = nc.Vupdate
             precondition = nc.precondition
-            maxiter      = nc.maxiter
-            tol          = nc.tol
-            inflate      = nc.Vinflate
-            infl_fac     = nc.Vinfl_fac
-            infl_adp     = nc.Vinfl_adp
-            localize     = nc.Vlocalize
-            cov_cutoff   = nc.Vcov_cutoff
-            cov_trunc    = nc.Vcov_trunc
-            window       = nc.window
-            offset       = nc.offset
-            nobstimes    = nc.nobstimes
-            varDA.init(model,DA,\
-                       update=update,precondition=precondition,\
-                       maxiter=maxiter,tol=tol,\
-                       inflate=inflate,infl_fac=infl_fac,infl_adp=infl_adp,\
-                       localize=localize,cov_cutoff=cov_cutoff,cov_trunc=cov_trunc,\
-                       window=window,offset=offset,nobstimes=nobstimes)
+            maxiter = nc.maxiter
+            tol = nc.tol
+            inflate = nc.Vinflate
+            infl_fac = nc.Vinfl_fac
+            infl_adp = nc.Vinfl_adp
+            localize = nc.Vlocalize
+            cov_cutoff = nc.Vcov_cutoff
+            cov_trunc = nc.Vcov_trunc
+            window = nc.window
+            offset = nc.offset
+            nobstimes = nc.nobstimes
+            varDA.init(
+                model,
+                DA,
+                update=update,
+                precondition=precondition,
+                maxiter=maxiter,
+                tol=tol,
+                inflate=inflate,
+                infl_fac=infl_fac,
+                infl_adp=infl_adp,
+                localize=localize,
+                cov_cutoff=cov_cutoff,
+                cov_trunc=cov_trunc,
+                window=window,
+                offset=offset,
+                nobstimes=nobstimes)
 
         nc.close()
 
@@ -290,8 +336,10 @@ def read_diag_info(fname):
 ###############################################################
 
 ###############################################################
+
+
 def read_diag(fname, time, end_time=None):
-# {{{
+    # {{{
     '''
     read the diagnostics from an output file given name and time index
 
@@ -316,7 +364,8 @@ def read_diag(fname, time, end_time=None):
         print('file does not exist ' + fname)
         sys.exit(2)
 
-    if ( end_time is None ): end_time = time + 1
+    if (end_time is None):
+        end_time = time + 1
 
     [model, DA, ensDA, varDA] = read_diag_info(fname)
 
@@ -324,16 +373,18 @@ def read_diag(fname, time, end_time=None):
 
         nc = Dataset(fname, mode='r', format='NETCDF4')
 
-        truth        = np.squeeze(nc.variables[ 'truth'       ][time:end_time,])
-        prior        = np.squeeze(nc.variables[ 'prior'       ][time:end_time,])
-        posterior    = np.squeeze(nc.variables[ 'posterior'   ][time:end_time,])
-        obs          = np.squeeze(nc.variables[ 'obs'         ][time:end_time,])
-        obs_operator = np.squeeze(nc.variables[ 'obs_operator'][time:end_time,])
-        obs_err_var  = np.squeeze(nc.variables['obs_err_var' ][time:end_time,])
+        truth = np.squeeze(nc.variables['truth'][time:end_time,])
+        prior = np.squeeze(nc.variables['prior'][time:end_time,])
+        posterior = np.squeeze(nc.variables['posterior'][time:end_time,])
+        obs = np.squeeze(nc.variables['obs'][time:end_time,])
+        obs_operator = np.squeeze(nc.variables['obs_operator'][time:end_time,])
+        obs_err_var = np.squeeze(nc.variables['obs_err_var'][time:end_time,])
 
-        if ( DA.do_hybrid ):
-            central_prior     = np.squeeze(nc.variables['central_prior'    ][time:end_time,])
-            central_posterior = np.squeeze(nc.variables['central_posterior'][time:end_time,])
+        if (DA.do_hybrid):
+            central_prior = np.squeeze(
+                nc.variables['central_prior'][time:end_time,])
+            central_posterior = np.squeeze(
+                nc.variables['central_posterior'][time:end_time,])
 
         if 'niters' in list(nc.variables.keys()):
             niters = nc.variables['niters'][time:end_time]
@@ -352,12 +403,12 @@ def read_diag(fname, time, end_time=None):
         print(Instance)
         sys.exit(1)
 
-    if ( DA.do_hybrid ):
+    if (DA.do_hybrid):
         return truth, prior, posterior, obs, obs_operator, obs_err_var, central_prior, central_posterior, niters, evratio
     else:
-        if   ( 'niters' in list(nc.variables.keys()) ):
+        if ('niters' in list(nc.variables.keys())):
             return truth, prior, posterior, obs, obs_operator, obs_err_var, niters
-        elif ( 'evratio' in list(nc.variables.keys()) ):
+        elif ('evratio' in list(nc.variables.keys())):
             return truth, prior, posterior, obs, obs_operator, obs_err_var, evratio
         else:
             return truth, prior, posterior, obs, obs_operator, obs_err_var
@@ -365,8 +416,10 @@ def read_diag(fname, time, end_time=None):
 ###############################################################
 
 ###############################################################
+
+
 def get_input_arguments():
-# {{{
+    # {{{
     '''
     get input arguments from command line
 
@@ -379,13 +432,14 @@ def get_input_arguments():
 
     source = 'get_input_arguments'
 
-    model    = []
+    model = []
     filename = []
-    start    = -1
-    end      = -1
+    start = -1
+    end = -1
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:],'m:f:s:e:h',['model=','filename=','start=','end=','help'])
+        opts, args = getopt.getopt(sys.argv[1:], 'm:f:s:e:h', [
+                                   'model=', 'filename=', 'start=', 'end=', 'help'])
     except Exception as Instance:
         print('Exception occured in %s of %s' % (source, module))
         print('Exception occured during reading arguments')
@@ -399,13 +453,13 @@ def get_input_arguments():
             print('no help has been written for %s in %s' % (source, module))
             print('see code for details')
             sys.exit(0)
-        elif a in ('-m','--model'):
+        elif a in ('-m', '--model'):
             model = o
-        elif a in ('-f','--filename'):
+        elif a in ('-f', '--filename'):
             filename = o
-        elif a in ('-s','--start'):
+        elif a in ('-s', '--start'):
             start = int(o)
-        elif a in ('-e','--end'):
+        elif a in ('-e', '--end'):
             end = int(o)
         else:
             assert False, 'unhandled option in %s of %s' % (source, module)
@@ -419,8 +473,10 @@ def get_input_arguments():
 ###############################################################
 
 ###############################################################
+
+
 def create_truth(tfile, ndof, nobs=None):
-# {{{
+    # {{{
     '''
     create a truth file for writing truth and observations
 
@@ -433,23 +489,24 @@ def create_truth(tfile, ndof, nobs=None):
 
     source = 'create_truth'
 
-    if ( nobs is None ): nobs = ndof
+    if (nobs is None):
+        nobs = ndof
 
     try:
 
-        nc  = Dataset(tfile.filename, mode='w', clobber=True, format='NETCDF4')
+        nc = Dataset(tfile.filename, mode='w', clobber=True, format='NETCDF4')
 
-        Dim = nc.createDimension('ntime',size=None)
+        Dim = nc.createDimension('ntime', size=None)
         Dim = nc.createDimension('ndof', size=ndof)
         Dim = nc.createDimension('nobs', size=nobs)
 
-        Var = nc.createVariable('truth',       'f8',('ntime','ndof',))
-        Var = nc.createVariable('obs',         'f8',('ntime','ndof',))
-        Var = nc.createVariable('obs_operator','f8',('ntime','nobs',))
-        Var = nc.createVariable('obs_err_var', 'f8',('ntime','nobs',))
+        Var = nc.createVariable('truth', 'f8', ('ntime', 'ndof',))
+        Var = nc.createVariable('obs', 'f8', ('ntime', 'ndof',))
+        Var = nc.createVariable('obs_operator', 'f8', ('ntime', 'nobs',))
+        Var = nc.createVariable('obs_err_var', 'f8', ('ntime', 'nobs',))
 
-        for (key,value) in list(tfile.attributes.items()):
-            exec( 'nc.%s = value' % (key) )
+        for (key, value) in list(tfile.attributes.items()):
+            exec('nc.%s = value' % (key))
 
         nc.close()
 
@@ -467,8 +524,10 @@ def create_truth(tfile, ndof, nobs=None):
 ###############################################################
 
 ###############################################################
+
+
 def write_truth(tname, time, truth, obs, obs_operator, obs_err_var):
-# {{{
+    # {{{
     '''
     write the truth and observations to the output file
 
@@ -492,10 +551,10 @@ def write_truth(tname, time, truth, obs, obs_operator, obs_err_var):
 
         nc = Dataset(tname, mode='a', clobber=True, format='NETCDF4')
 
-        nc.variables['truth'][       time,:] =        truth.copy()
-        nc.variables['obs'][         time,:] =          obs.copy()
-        nc.variables['obs_operator'][time,:] = obs_operator.copy()
-        nc.variables['obs_err_var'][ time,:] =  obs_err_var.copy()
+        nc.variables['truth'][time, :] = truth.copy()
+        nc.variables['obs'][time, :] = obs.copy()
+        nc.variables['obs_operator'][time, :] = obs_operator.copy()
+        nc.variables['obs_err_var'][time, :] = obs_err_var.copy()
 
         nc.close()
 
@@ -513,8 +572,10 @@ def write_truth(tname, time, truth, obs, obs_operator, obs_err_var):
 ###############################################################
 
 ###############################################################
+
+
 def read_truth(fname, time, end_time=None):
-# {{{
+    # {{{
     '''
     read the truth and observations from an output file given name and time index
 
@@ -535,21 +596,23 @@ def read_truth(fname, time, end_time=None):
         print('file does not exist ' + fname)
         sys.exit(2)
 
-    if ( end_time is None ): end_time = time + 1
+    if (end_time is None):
+        end_time = time + 1
 
     try:
 
         nc = Dataset(fname, mode='r', format='NETCDF4')
 
-        truth        = np.squeeze(nc.variables['truth'][time:end_time,])
-        obs          = np.squeeze(nc.variables['obs'][time:end_time,])
+        truth = np.squeeze(nc.variables['truth'][time:end_time,])
+        obs = np.squeeze(nc.variables['obs'][time:end_time,])
         obs_operator = np.squeeze(nc.variables['obs_operator'][time:end_time,])
-        tmp          = np.squeeze(nc.variables['obs_err_var'][time:end_time,])
+        tmp = np.squeeze(nc.variables['obs_err_var'][time:end_time,])
 
-        if ( end_time - time == 1 ):
+        if (end_time - time == 1):
             obs_err_var = np.diag(tmp)
         else:
-            obs_err_var = np.zeros((np.shape(tmp)[0],np.shape(tmp)[1],np.shape(tmp)[1]))
+            obs_err_var = np.zeros(
+                (np.shape(tmp)[0], np.shape(tmp)[1], np.shape(tmp)[1]))
             for k in range(0, np.shape(tmp)[0]):
                 obs_err_var[k,] = np.diag(tmp[k,])
 
@@ -569,8 +632,10 @@ def read_truth(fname, time, end_time=None):
 ###############################################################
 
 ###############################################################
+
+
 def transfer_ga(file_src, file_dst):
-# {{{
+    # {{{
     '''
     transfer global attributes from one netCDF file to another
 
@@ -596,8 +661,8 @@ def transfer_ga(file_src, file_dst):
         nc_dst = Dataset(file_dst, mode='a', clobber=False, format='NETCDF4')
 
         for attr_name in nc_src.ncattrs():
-            exec( 'attr_value = nc_src.%s' % (attr_name) )
-            exec( 'nc_dst.%s = attr_value' % (attr_name) )
+            exec('attr_value = nc_src.%s' % (attr_name))
+            exec('nc_dst.%s = attr_value' % (attr_name))
 
         nc_src.close()
         nc_dst.close()
@@ -605,7 +670,9 @@ def transfer_ga(file_src, file_dst):
     except Exception as Instance:
 
         print('Exception occured in %s of %s' % (source, module))
-        print('Exception occured during transfering global attributes from %s to %s' % ( file_src, file_dst ))
+        print(
+            'Exception occured during transfering global attributes from %s to %s' %
+            (file_src, file_dst))
         print(type(Instance))
         print(Instance.args)
         print(Instance)
@@ -616,8 +683,10 @@ def transfer_ga(file_src, file_dst):
 ###############################################################
 
 ###############################################################
+
+
 def create_ObImpact_diag(fname, model, DA, ensDA, varDA, generic=False):
-# {{{
+    # {{{
     '''
     create an output file for writing observation impact diagnostics
 
@@ -635,21 +704,21 @@ def create_ObImpact_diag(fname, model, DA, ensDA, varDA, generic=False):
 
     try:
 
-        nc  = Dataset(fname, mode='w', clobber=True, format='NETCDF4')
+        nc = Dataset(fname, mode='w', clobber=True, format='NETCDF4')
 
-        Dim = nc.createDimension('ntime', size=None       )
-        Dim = nc.createDimension('ndof',  size=model.Ndof )
-        Dim = nc.createDimension('nobs',  size=DA.Nobs    )
-        Dim = nc.createDimension('nouter',size=DA.maxouter)
+        Dim = nc.createDimension('ntime', size=None)
+        Dim = nc.createDimension('ndof', size=model.Ndof)
+        Dim = nc.createDimension('nobs', size=DA.Nobs)
+        Dim = nc.createDimension('nouter', size=DA.maxouter)
 
-        if ( generic ):
-            Var = nc.createVariable('dJa','f8',('ntime','nobs',))
-            Var = nc.createVariable('dJb','f8',('ntime','nobs',))
+        if (generic):
+            Var = nc.createVariable('dJa', 'f8', ('ntime', 'nobs',))
+            Var = nc.createVariable('dJb', 'f8', ('ntime', 'nobs',))
         else:
-            Var = nc.createVariable('ens_dJa','f8',('ntime','nobs',))
-            Var = nc.createVariable('ens_dJb','f8',('ntime','nobs',))
-            Var = nc.createVariable('adj_dJa','f8',('ntime','nobs',))
-            Var = nc.createVariable('adj_dJb','f8',('ntime','nobs',))
+            Var = nc.createVariable('ens_dJa', 'f8', ('ntime', 'nobs',))
+            Var = nc.createVariable('ens_dJb', 'f8', ('ntime', 'nobs',))
+            Var = nc.createVariable('adj_dJa', 'f8', ('ntime', 'nobs',))
+            Var = nc.createVariable('adj_dJb', 'f8', ('ntime', 'nobs',))
 
         nc.close()
 
@@ -667,8 +736,18 @@ def create_ObImpact_diag(fname, model, DA, ensDA, varDA, generic=False):
 ###############################################################
 
 ###############################################################
-def write_ObImpact_diag(fname, time, dJa=None, dJb=None, ens_dJa=None, ens_dJb=None, adj_dJa=None, adj_dJb=None):
-# {{{
+
+
+def write_ObImpact_diag(
+        fname,
+        time,
+        dJa=None,
+        dJb=None,
+        ens_dJa=None,
+        ens_dJb=None,
+        adj_dJa=None,
+        adj_dJb=None):
+    # {{{
     '''
     write the observation impact diagnostics to an output file
 
@@ -694,12 +773,18 @@ def write_ObImpact_diag(fname, time, dJa=None, dJb=None, ens_dJa=None, ens_dJb=N
 
         nc = Dataset(fname, mode='a', clobber=True, format='NETCDF4')
 
-        if (     dJa is not None ): nc.variables[    'dJa'][time,:] =     dJa
-        if (     dJb is not None ): nc.variables[    'dJb'][time,:] =     dJb
-        if ( ens_dJa is not None ): nc.variables['ens_dJa'][time,:] = ens_dJa
-        if ( ens_dJb is not None ): nc.variables['ens_dJb'][time,:] = ens_dJb
-        if ( adj_dJa is not None ): nc.variables['adj_dJa'][time,:] = adj_dJa
-        if ( adj_dJb is not None ): nc.variables['adj_dJb'][time,:] = adj_dJb
+        if (dJa is not None):
+            nc.variables['dJa'][time, :] = dJa
+        if (dJb is not None):
+            nc.variables['dJb'][time, :] = dJb
+        if (ens_dJa is not None):
+            nc.variables['ens_dJa'][time, :] = ens_dJa
+        if (ens_dJb is not None):
+            nc.variables['ens_dJb'][time, :] = ens_dJb
+        if (adj_dJa is not None):
+            nc.variables['adj_dJa'][time, :] = adj_dJa
+        if (adj_dJb is not None):
+            nc.variables['adj_dJb'][time, :] = adj_dJb
 
         nc.close()
 
@@ -717,8 +802,10 @@ def write_ObImpact_diag(fname, time, dJa=None, dJb=None, ens_dJa=None, ens_dJb=N
 ###############################################################
 
 ###############################################################
+
+
 def read_ObImpact_diag(fname, time, end_time=None, generic=False):
-# {{{
+    # {{{
     '''
     read the observation impact diagnostics from an output file given name and time index
 
@@ -742,13 +829,14 @@ def read_ObImpact_diag(fname, time, end_time=None, generic=False):
         print('file does not exist ' + fname)
         sys.exit(2)
 
-    if ( end_time is None ): end_time = time + 1
+    if (end_time is None):
+        end_time = time + 1
 
     try:
 
         nc = Dataset(fname, mode='r', format='NETCDF4')
 
-        if ( generic ):
+        if (generic):
             dJa = nc.variables['dJa'][time:end_time,]
             dJb = nc.variables['dJb'][time:end_time,]
         else:
@@ -768,7 +856,7 @@ def read_ObImpact_diag(fname, time, end_time=None, generic=False):
         print(Instance)
         sys.exit(1)
 
-    if ( generic ):
+    if (generic):
         return [dJa, dJb]
     else:
         return [ens_dJa, ens_dJb, adj_dJa, adj_dJb]
@@ -776,8 +864,10 @@ def read_ObImpact_diag(fname, time, end_time=None, generic=False):
 ###############################################################
 
 ###############################################################
-def read_clim_cov(model=None,fname=None,norm=False):
-# {{{
+
+
+def read_clim_cov(model=None, fname=None, norm=False):
+    # {{{
     '''
     read the climatological covariance from file
 
@@ -791,18 +881,19 @@ def read_clim_cov(model=None,fname=None,norm=False):
 
     source = 'read_clim_cov'
 
-    if ( model is None and fname is None ):
+    if (model is None and fname is None):
         print('Exception occured in %s of %s' % (source, module))
         print('must pass either model class or filename')
         sys.exit(0)
 
-    if ( fname is None ): fname = '%s_climo_B.nc4' % model.Name
+    if (fname is None):
+        fname = '%s_climo_B.nc4' % model.Name
 
     print('load climatological covariance for from %s ...' % (fname))
 
     try:
 
-        nc = Dataset(fname,'r')
+        nc = Dataset(fname, 'r')
         Bc = nc.variables['B'][:]
         nc.close()
 
@@ -815,37 +906,45 @@ def read_clim_cov(model=None,fname=None,norm=False):
         print(Instance)
         sys.exit(1)
 
-    if ( norm ): Bc = Bc / np.max(np.diag(Bc))
+    if (norm):
+        Bc = Bc / np.max(np.diag(Bc))
 
     return Bc
 # }}}
 ###############################################################
 
 ###############################################################
+
+
 class Container(object):
 
-    def __setattr__(self,key,val):
+    def __setattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to rebind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to rebind read-only instance variable %s' %
+                key)
         else:
             self.__dict__[key] = val
 
-    def __delattr__(self,key,val):
+    def __delattr__(self, key, val):
         if key in self.__dict__:
-            raise AttributeError('Attempt to unbind read-only instance variable %s' % key)
+            raise AttributeError(
+                'Attempt to unbind read-only instance variable %s' %
+                key)
         else:
             del self.__dict__[key]
 
-    def __init__(self,**kwargs):
-    #{{{
+    def __init__(self, **kwargs):
+        # {{{
         '''
         Initializes a blank Container class for the purposes of
         writing a diagnostic file attributes, or
         restart file attributes
         '''
 
-        for key, value in kwargs.items(): self.__setattr__(key,value)
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
 
         pass
-    #}}}
+    # }}}
 ###############################################################

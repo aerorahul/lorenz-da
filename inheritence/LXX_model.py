@@ -16,10 +16,16 @@ from .Lorenz import LorenzBase
 # insure the same sequence of random numbers EVERY TIME
 np.random.seed(0)
 
-parser = ArgumentParser(description='Test TLM and Adjoint for Lorenz class of models',
-                        formatter_class=ArgumentDefaultsHelpFormatter)
-parser.add_argument('-i', '--input', help='input yaml file containing the model configuration',
-                    type=str, required=False, default='L96.yaml')
+parser = ArgumentParser(
+    description='Test TLM and Adjoint for Lorenz class of models',
+    formatter_class=ArgumentDefaultsHelpFormatter)
+parser.add_argument(
+    '-i',
+    '--input',
+    help='input yaml file containing the model configuration',
+    type=str,
+    required=False,
+    default='L96.yaml')
 args = parser.parse_args()
 
 yaml = YAML(typ='safe')
@@ -33,7 +39,7 @@ if modelConf is None:
 model = LorenzBase.create(modelConf)
 
 # Get initial conditions
-#xt, x0 = model.getIC()
+# xt, x0 = model.getIC()
 x0 = np.array([1.508870, -1.531271, 25.46091])
 
 # How long to run (ncycles; each cycle is 6 hrs (0.05 time-units))

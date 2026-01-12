@@ -8,6 +8,7 @@ Main entry point for running Lorenz data assimilation experiments.
 import sys
 import argparse
 import importlib
+import importlib.util
 from pathlib import Path
 
 
@@ -108,16 +109,33 @@ lorenzda/config/ subdirectory.
 
 def load_config(config_name):
     """
-    Load configuration module from config_name.
+    Load configuration from config_name (YAML or Python module).
 
     Tries multiple approaches:
-    1. Direct import from current directory
-    2. Import from lorenzda.config subpackage
-    3. Import from lorenzda/config/ directory
+    1. Load as YAML file (.yaml or .yml extension)
+    2. Direct import as Python module
+    3. Import from lorenzda.config subpackage
+    4. Load from lorenzda/config/ directory (Python)
+    5. Load from lorenzda/config/ directory (YAML)
     """
+    from lorenzda.config.yaml_loader import load_config_from_yaml, Config
+
+    config_path = Path(config_name)
+
+    # Check for YAML files in current directory
+    for ext in ['.yaml', '.yml']:
+        if config_path.with_suffix(ext).exists():
+            return load_config_from_yaml(str(config_path.with_suffix(ext)))
+
+    # Check for YAML files in lorenzda/config/
+    yaml_path = Path(f'lorenzda/config/{config_name}')
+    for ext in ['.yaml', '.yml']:
+        if yaml_path.with_suffix(ext).exists():
+            return load_config_from_yaml(str(yaml_path.with_suffix(ext)))
+
     config_module = None
 
-    # Try direct import
+    # Try direct Python module import
     try:
         config_module = importlib.import_module(config_name)
         return config_module
@@ -131,7 +149,7 @@ def load_config(config_name):
     except ImportError:
         pass
 
-    # Try loading as file from config directory
+    # Try loading Python file from config directory
     config_file = Path(f'lorenzda/config/{config_name}.py')
     if config_file.exists():
         spec = importlib.util.spec_from_file_location(config_name, config_file)
@@ -139,7 +157,12 @@ def load_config(config_name):
         spec.loader.exec_module(config_module)
         return config_module
 
-    raise ImportError(f"Cannot find configuration module: {config_name}")
+    raise ImportError(
+        f"Cannot find configuration: {config_name}\n"
+        f"Tried: {config_name}.yaml, {config_name}.yml, "
+        f"lorenzda/config/{config_name}.yaml, lorenzda/config/{config_name}.yml, "
+        f"lorenzda/config/{config_name}.py"
+    )
 
 
 def cmd_truth(args):

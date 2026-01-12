@@ -1,0 +1,63 @@
+# L96 Variational DA Parameters
+# Lorenz 96 model configuration for 3DVar/4DVar
+
+model:
+  name: L96
+  ndof: 40
+  parameters: [8.0, 8.4]
+  dt: 0.0001
+  random_seed: 0
+
+da:
+  nassim: 1000
+  ntimes: 0.1  # 2*0.05
+  t0: 0.0
+  maxouter: 1
+
+# Model error covariance
+q: null
+
+# Observation operator (identity - all variables observed)
+h: null
+
+# Observation error covariance
+r: null
+
+# Variational DA configuration
+variational:
+  update: 2  # 1=3DVar, 2=4DVar
+  precondition: 1  # 0=None, 1=sqrtB, 2=FullB
+  minimization:
+    maxiter: 1000
+    tolerance: 0.0001
+  inflation:
+    inflate: true  # use inflation
+    infl_fac: 1.85  # inflation factor
+    infl_adp: true  # adaptive inflation
+  localization:
+    localize: 1  # 0=None, 1=Gaspari-Cohn, 2=Boxcar, 3=Ramped
+    cov_cutoff: 0.0625
+    cov_trunc: 40
+  fv4d:
+    window: 0.75
+    offset: 0.25
+    nobstimes: 4
+
+# Output file configuration
+output:
+  filename: L96_varDA_diag.nc4
+  attributes:
+    model: L96
+    F: 8.0
+    dF: 0.4
+    dt: 0.0001
+    ntimes: 0.1
+    method: 4DVar
+    precondition: 1
+    maxiter: 1000
+    tolerance: 0.0001
+
+# Restart conditions
+restart:
+  time: null
+  filename: ""

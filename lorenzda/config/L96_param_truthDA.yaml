@@ -1,0 +1,41 @@
+# L96 Truth Generation Parameters
+# Lorenz 96 model configuration for generating truth trajectories
+
+model:
+  name: L96
+  ndof: 40
+  parameters: [8.0, 8.4]  # F, F+dF
+  dt: 0.0001  # model time-step
+  random_seed: 0
+
+da:
+  nassim: 2000  # number of assimilation cycles
+  ntimes: 0.05  # assimilation interval (non-dimensional time units)
+  t0: 0.0
+  nobs: 20  # number of observations (observations randomly selected)
+
+# Model error covariance (zero for deterministic model)
+q_diag: null  # diagonal of Q (will use zeros)
+
+# Observation operator (partial - 20 out of 40 variables observed)
+# Only first 20 variables observed (others are NaN)
+h_obs_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+
+# Observation error covariance (varies per observation)
+r_mean: 1.0
+r_noise: true  # add random noise to r
+
+# Output file configuration
+output:
+  filename: L96_truthDA_diag.nc4
+  attributes:
+    model: L96
+    F: 8.0
+    dF: 0.4
+    ntimes: 0.05
+    dt: 0.0001
+
+# Restart conditions
+restart:
+  time: null
+  filename: ""

@@ -1,0 +1,61 @@
+# L63 Variational DA Parameters
+# Lorenz 63 model configuration for 3DVar/4DVar
+
+model:
+  name: L63
+  ndof: 3
+  parameters: [10.0, 28.0, 2.666666667]  # sigma, rho, beta
+  dt: 0.01  # model time-step
+  random_seed: 0
+
+da:
+  nassim: 200  # number of assimilation cycles
+  ntimes: 0.25  # assimilation interval (non-dimensional time units)
+  t0: 0.0  # initial time
+
+# Model error covariance
+q: [0.0, 0.0, 0.0]
+
+# Observation operator (identity)
+h: [1.0, 1.0, 1.0]
+
+# Observation error covariance
+r: [2.0, 2.0, 2.0]
+
+# Variational DA configuration
+variational:
+  update: 1  # 1=3DVar, 2=4DVar
+  precondition: 1  # 0=None, 1=sqrtB, 2=FullB
+  maxouter: 1  # number of outer loops
+  minimization:
+    maxiter: 1000  # maximum iterations
+    tolerance: 0.0001  # convergence tolerance
+  localization:
+    localize: 1  # 0=None, 1=Gaspari-Cohn, 2=Boxcar, 3=Ramped
+    cov_cutoff: 0.0625  # normalized covariance cutoff
+    cov_trunc: 3  # truncate localization matrix
+  # 4DVar specific
+  fv4d:
+    window: 0.25  # length of assimilation window
+    offset: 0.5  # time offset
+    nobstimes: 5  # number of obs times in window
+
+# Output file configuration
+output:
+  filename: L63_varDA_diag.nc4
+  attributes:
+    model: L63
+    sigma: 10.0
+    rho: 28.0
+    beta: 2.666666667
+    ntimes: 0.25
+    dt: 0.01
+    method: 3DVar
+    precondition: 1
+    maxiter: 1000
+    tolerance: 0.0001
+
+# Restart conditions
+restart:
+  time: null
+  filename: ""

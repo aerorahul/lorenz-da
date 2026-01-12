@@ -1,0 +1,75 @@
+# L63 Hybrid DA Parameters
+# Lorenz 63 model configuration for hybrid ensemble-variational DA
+
+model:
+  name: L63
+  ndof: 3
+  parameters: [10.0, 28.0, 2.666666667]  # sigma, rho, beta
+  dt: 0.01
+  random_seed: 0
+
+da:
+  nassim: 200  # number of assimilation cycles
+  ntimes: 0.25  # assimilation interval
+  t0: 0.0
+  do_hybrid: true  # true for hybrid mode
+  hybrid_weight: 0.5  # 0=static, 1=ensemble
+  hybrid_recenter: true  # recenter ensemble about varDA
+
+# Model error covariance
+q: [0.0, 0.0, 0.0]
+
+# Observation operator
+h: [1.0, 1.0, 1.0]
+
+# Observation error covariance
+r: [2.0, 2.0, 2.0]
+
+# Ensemble configuration
+ensemble:
+  update: 2  # 0=No Assim, 1=EnKF, 2=EnSRF, 3=EAKF
+  nens: 100  # number of ensemble members
+  init_ens_infl_fac: 1.0
+  inflation:
+    inflate: 1  # 0=None, 1=Multiplicative, 2=Additive, 3=CovRelax, 4=SpreadRestoration
+    infl_fac: 1.1
+  localization:
+    localize: 0  # 0=None, 1=Gaspari-Cohn, 2=Boxcar, 3=Ramped
+    cov_cutoff: 1.0
+    cov_trunc: 3
+
+# Variational configuration
+variational:
+  update: 1  # 1=3DVar, 2=4DVar
+  precondition: 1  # 0=None, 1=sqrtB, 2=FullB
+  maxouter: 1  # number of outer loops
+  minimization:
+    maxiter: 1000
+    tolerance: 0.0001
+  localization:
+    localize: 0  # 0=None, 1=Gaspari-Cohn, 2=Boxcar, 3=Ramped
+    cov_cutoff: 1.0
+    cov_trunc: 3
+  fv4d:
+    window: 0.025
+    offset: 0.5
+    nobstimes: 2
+
+# Output file configuration
+output:
+  filename: L63_hybDA_diag.nc4
+  attributes:
+    model: L63
+    sigma: 10.0
+    rho: 28.0
+    beta: 2.666666667
+    dt: 0.01
+    ntimes: 0.25
+    do_hybrid: 1
+    hybrid_weight: 0.5
+    hybrid_recenter: 1
+
+# Restart conditions
+restart:
+  time: null
+  filename: ""

@@ -1,0 +1,39 @@
+# L63 Truth Generation Parameters
+# Lorenz 63 model configuration for generating truth trajectories
+
+model:
+  name: L63
+  ndof: 3
+  parameters: [10.0, 28.0, 2.666666667]  # sigma, rho, beta
+  dt: 0.01  # model time-step
+  random_seed: 0
+
+da:
+  nassim: 200  # number of assimilation cycles
+  ntimes: 0.05  # assimilation interval (non-dimensional time units)
+  t0: 0.0  # initial time
+
+# Model error covariance (zero for deterministic model)
+q: [0.0, 0.0, 0.0]
+
+# Observation operator (identity - all variables observed)
+h: [1.0, 1.0, 1.0]
+
+# Observation error covariance
+r: [2.0, 2.0, 2.0]
+
+# Output file configuration
+output:
+  filename: L63_truthDA_diag.nc4
+  attributes:
+    model: L63
+    sigma: 10.0
+    rho: 28.0
+    beta: 2.666666667
+    ntimes: 0.05
+    dt: 0.01
+
+# Restart conditions
+restart:
+  time: null  # null for default, -1...-N or 0 1...N for specific times
+  filename: ""

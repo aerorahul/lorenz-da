@@ -1,0 +1,58 @@
+# L63 Ensemble DA Parameters
+# Lorenz 63 model configuration for EnKF/EnSRF/EAKF
+
+model:
+  name: L63
+  ndof: 3
+  parameters: [10.0, 28.0, 2.666666667]  # sigma, rho, beta
+  dt: 0.01  # model time-step
+  random_seed: 0
+
+da:
+  nassim: 200  # number of assimilation cycles
+  ntimes: 0.05  # assimilation interval (non-dimensional time units)
+  t0: 0.0  # initial time
+
+# Model error covariance
+q: [0.0, 0.0, 0.0]
+
+# Observation operator (identity)
+h: [1.0, 1.0, 1.0]
+
+# Observation error covariance
+r: [2.0, 2.0, 2.0]
+
+# Ensemble DA configuration
+ensemble:
+  update: 2  # 0=No Assim, 1=EnKF, 2=EnSRF, 3=EAKF
+  nens: 100  # number of ensemble members
+  init_ens_infl_fac: 1.0  # initial ensemble inflation
+  inflation:
+    inflate: 1  # 0=None, 1=Multiplicative, 2=Additive, 3=CovRelax, 4=SpreadRestoration
+    infl_fac: 1.1  # inflation factor
+  localization:
+    localize: 0  # 0=None, 1=Gaspari-Cohn, 2=Boxcar, 3=Ramped
+    cov_cutoff: 1.0  # normalized covariance cutoff
+    cov_trunc: 3  # truncate localization matrix
+
+# Output file configuration
+output:
+  filename: L63_ensDA_diag.nc4
+  attributes:
+    model: L63
+    sigma: 10.0
+    rho: 28.0
+    beta: 2.666666667
+    ntimes: 0.05
+    dt: 0.01
+    update: 2
+    localization: 0
+    cov_cutoff: 1.0
+    cov_trunc: 3
+    inflation: 1
+    infl_fac: 1.1
+
+# Restart conditions
+restart:
+  time: null
+  filename: ""

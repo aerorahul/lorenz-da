@@ -10,7 +10,7 @@ import sys
 import numpy as np
 from lorenzda.core import Lorenz, get_IC
 from lorenzda.core import create_diag
-from lorenzda.core.module_IO import write_truth, advance_model
+from lorenzda.core.module_IO import write_truth
 
 
 def run_truth_da(config_module):
@@ -53,7 +53,7 @@ def run_truth_da(config_module):
         print(f'========== assimilation cycle = {k+1:5d} ==========')
 
         # Advance truth with full nonlinear model
-        xs = advance_model(model, xt, DA.tanal, perfect=True)
+        xs = Lorenz.advance(model, xt, DA.tanal, perfect=True)
         xt = xs[-1, :].copy()
 
         # Generate observations from truth with noise

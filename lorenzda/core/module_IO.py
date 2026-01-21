@@ -26,8 +26,8 @@ import sys
 import getopt
 import numpy   as     np
 from   netCDF4 import Dataset
-from module_Lorenz import Lorenz
-from module_DA import DataAssim, EnsDataAssim, VarDataAssim
+from lorenzda.core.module_Lorenz import Lorenz
+from lorenzda.core.module_DA import DataAssim, EnsDataAssim, VarDataAssim
 ###############################################################
 
 ###############################################################

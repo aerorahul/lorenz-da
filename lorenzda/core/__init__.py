@@ -11,7 +11,7 @@ from .module_DA import (
     update_ensDA, update_varDA, update_ensvarDA,
     check_ensvarDA, check_hybensvarDA, update_hybensvarDA
 )
-from .module_IO import create_diag, create_obs_diag, read_diag
+from .module_IO import create_diag, read_diag
 
 __all__ = [
     'Lorenz',

@@ -128,6 +128,14 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Editor backup files (Emacs, vim)
+*~
 *.sw[a-p]
+.DS_Store
+
+# Pycharm IDE files
 .idea/
-.vscode/
+
+# netCDF files
+*.nc
+*.nc4

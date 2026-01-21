@@ -1,0 +1,6 @@
+---
+model:
+  Name: "L96"
+  Ndof: 40
+  Par: [8., 8.4]
+  dt: 1.e-4

@@ -124,7 +124,7 @@ class Lorenz(object):
             if ( perfect ): par = self.Par[0]
             else:           par = self.Par[1]
         else:
-            print '%s is an invalid model, exiting.' % self.Name
+            print('%s is an invalid model, exiting.' % self.Name)
             sys.exit(1)
 
         exec('xs = integrate.odeint(self.%s, x0, t, (par, 0.0), **kwargs)' % (self.Name))
@@ -166,7 +166,7 @@ class Lorenz(object):
             if ( perfect ): par = self.Par[0]
             else:           par = self.Par[1]
         else:
-            print '%s is an invalid model, exiting.' % self.Name
+            print('%s is an invalid model, exiting.' % self.Name)
             sys.exit(1)
 
         if ( adjoint ): xref = numpy.flipud(xref)
@@ -740,7 +740,7 @@ def get_IC(model, restart, Nens=None):
         '''
 
         if not os.path.isfile(restart.filename):
-            print 'ERROR : %s does not exist ' % restart.filename
+            print('ERROR : %s does not exist ' % restart.filename)
             sys.exit(2)
 
         try:
@@ -750,19 +750,19 @@ def get_IC(model, restart, Nens=None):
             elif ( restart.time >  0 ): read_index = restart.time - 1
             elif ( restart.time <  0 ): read_index = ntime + restart.time
             if ( (read_index < 0) or (read_index >= ntime) ):
-                print 'ERROR : t = %d does not exist in %s' % (read_index+1, restart.filename)
-                print '        valid options are t = +/- [1 ... %d]' % ntime
+                print('ERROR : t = %d does not exist in %s' % (read_index+1, restart.filename))
+                print('        valid options are t = +/- [1 ... %d]' % ntime)
                 sys.exit(2)
             else:
-                print '... from t = %d in %s' % (read_index+1, restart.filename)
+                print('... from t = %d in %s' % (read_index+1, restart.filename))
                 xt = numpy.squeeze(nc.variables['truth'][read_index,])
                 xa = numpy.transpose(numpy.squeeze(nc.variables['posterior'][read_index,]))
             nc.close()
         except Exception as Instance:
-            print 'Exception occured during reading of %s' % (restart.filename)
-            print type(Instance)
-            print Instance.args
-            print Instance
+            print('Exception occured during reading of %s' % (restart.filename))
+            print(type(Instance))
+            print(Instance.args)
+            print(Instance)
             sys.exit(1)
 
         if ( (len(numpy.shape(xa)) == 1) and (Nens is not None) ):
@@ -775,7 +775,7 @@ def get_IC(model, restart, Nens=None):
             if ( Nens <= numpy.shape(xa)[1] ):
                 xa = numpy.squeeze(xa[:,0:Nens])
             else:
-                print 'size(Xa) = [%d, %d]' % (numpy.shape(xa)[0], numpy.shape(xa)[1])
+                print('size(Xa) = [%d, %d]' % (numpy.shape(xa)[0], numpy.shape(xa)[1]))
                 sys.exit(1)
         elif ( (len(numpy.shape(xa)) != 1) and (Nens is None) ):
             xa = numpy.mean(xa, axis=1)
@@ -787,12 +787,12 @@ def get_IC(model, restart, Nens=None):
 
     source = 'get_IC'
 
-    print 'Generating ICs for %s' % model.Name
+    print('Generating ICs for %s' % model.Name)
 
     if (   model.Name == 'L63' ):
 
         if ( restart.time is None ):
-            print '... from Miller et al., 1994'
+            print('... from Miller et al., 1994')
 
             xt = numpy.array([1.508870, -1.531271, 25.46091])
 
@@ -805,7 +805,7 @@ def get_IC(model, restart, Nens=None):
     elif ( model.Name == 'L96' ):
 
         if ( restart.time is None ):
-            print '... from Lorenz and Emanuel, 1998'
+            print('... from Lorenz and Emanuel, 1998')
 
             xt    = numpy.ones(model.Ndof) * model.Par[0]
             xt[0] = 1.001 * model.Par[0]
@@ -819,7 +819,7 @@ def get_IC(model, restart, Nens=None):
     elif ( model.Name == 'L96_2scale' ):
 
         if ( restart.time is None ):
-            print '... from Lorenz 1996 2 scale'
+            print('... from Lorenz 1996 2 scale')
 
             xt = numpy.zeros(model.Ndof)
             xt[:model.Par[0]] = numpy.ones(model.Par[0]) * model.Par[2]

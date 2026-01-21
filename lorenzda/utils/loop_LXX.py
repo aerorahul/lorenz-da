@@ -44,7 +44,7 @@ def main():
     save_fig = args.save_figure
 
     if ( not os.path.isfile(fname) ):
-        print '%s does not exist' % fname
+        print('%s does not exist' % fname)
         sys.exit(1)
 
     fname_fig = fname.split('.nc4')[0]
@@ -53,7 +53,7 @@ def main():
     [model, DA, ensDA, varDA] = read_diag_info(fname)
 
     # print some info so the user knows the script is doing something
-    print 'no. of assimilation cycles = %d' % DA.nassim
+    print('no. of assimilation cycles = %d' % DA.nassim)
 
     if ( sOI == -1 ): sOI = DA.nassim-1
     if ( eOI == -1 ): eOI = DA.nassim
@@ -94,14 +94,14 @@ def main():
 
         fname = fname_fig + '_%05d.png' % (t)
         if ( save_fig ):
-            print 'Saving frame %d as %s'  % (t, fname)
+            print('Saving frame %d as %s'  % (t, fname))
             fig.savefig(fname)
         else:
-            print 'Showing frame %d as %s' % (t, fname)
+            print('Showing frame %d as %s' % (t, fname))
             pyplot.pause(0.1)
 
     if ( not save_fig ): pyplot.show()
-    print '... all done'
+    print('... all done')
     sys.exit(0)
 ###############################################################
 

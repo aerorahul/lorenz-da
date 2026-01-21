@@ -56,7 +56,7 @@ def create_diag(dfile, ndof, nouter=1, nobs=None, nens=None, hybrid=False):
         nobs = ndof
 
     if ( ( hybrid ) and ( nens is None ) ):
-        print 'nens cannot be None if doing hybrid'
+        print('nens cannot be None if doing hybrid')
         sys.exit(2)
 
     try:
@@ -98,11 +98,11 @@ def create_diag(dfile, ndof, nouter=1, nobs=None, nens=None, hybrid=False):
 
     except Exception as Instance:
 
-        print 'Exception occured in %s of %s' % (source, module)
-        print 'Exception occured during creating  %s' % (dfile.filename)
-        print type(Instance)
-        print Instance.args
-        print Instance
+        print('Exception occured in %s of %s' % (source, module))
+        print('Exception occured during creating  %s' % (dfile.filename))
+        print(type(Instance))
+        print(Instance.args)
+        print(Instance)
         sys.exit(1)
 
     return
@@ -136,7 +136,7 @@ def write_diag(fname, time, outer, truth, prior, posterior, obs, obs_operator, o
     source = 'write_diag'
 
     if not os.path.isfile(fname):
-        print 'file does not exist ' + fname
+        print('file does not exist ' + fname)
         sys.exit(2)
 
     try:
@@ -168,11 +168,11 @@ def write_diag(fname, time, outer, truth, prior, posterior, obs, obs_operator, o
 
     except Exception as Instance:
 
-        print 'Exception occured in %s of %s' % (source, module)
-        print 'Exception occured during writing to %s' % (fname)
-        print type(Instance)
-        print Instance.args
-        print Instance
+        print('Exception occured in %s of %s' % (source, module))
+        print('Exception occured during writing to %s' % (fname))
+        print(type(Instance))
+        print(Instance.args)
+        print(Instance)
         sys.exit(1)
 
     return
@@ -198,9 +198,9 @@ def read_diag_info(fname):
     source = 'read_diag_info'
 
     if not os.path.isfile(fname):
-        print 'error occured in %s of %s' % (source, module)
-        print 'during the reading of %s' % (fname)
-        print 'Error: File does not exist'
+        print('error occured in %s of %s' % (source, module))
+        print('during the reading of %s' % (fname))
+        print('Error: File does not exist')
         sys.exit(2)
 
     try:
@@ -215,7 +215,7 @@ def read_diag_info(fname):
         elif ( Name == 'L96' ):
             Par = [nc.F, nc.F+nc.dF]
         else:
-            print 'model %s is not implemented' % (Name)
+            print('model %s is not implemented' % (Name))
             sys.exit(2)
 
         if ( Name in ['L63', 'L96'] ):
@@ -277,11 +277,11 @@ def read_diag_info(fname):
 
     except Exception as Instance:
 
-        print 'Exception occured in %s of %s' % (source, module)
-        print 'Exception occured during reading of %s' % (fname)
-        print type(Instance)
-        print Instance.args
-        print Instance
+        print('Exception occured in %s of %s' % (source, module))
+        print('Exception occured during reading of %s' % (fname))
+        print(type(Instance))
+        print(Instance.args)
+        print(Instance)
         sys.exit(1)
 
     return [model, DA, ensDA, varDA]
@@ -313,7 +313,7 @@ def read_diag(fname, time, end_time=None):
     source = 'read_diag'
 
     if not os.path.isfile(fname):
-        print 'file does not exist ' + fname
+        print('file does not exist ' + fname)
         sys.exit(2)
 
     if ( end_time is None ): end_time = time + 1
@@ -345,11 +345,11 @@ def read_diag(fname, time, end_time=None):
 
     except Exception as Instance:
 
-        print 'Exception occured in %s of %s' % (source, module)
-        print 'Exception occured during reading of %s' % (fname)
-        print type(Instance)
-        print Instance.args
-        print Instance
+        print('Exception occured in %s of %s' % (source, module))
+        print('Exception occured during reading of %s' % (fname))
+        print(type(Instance))
+        print(Instance.args)
+        print(Instance)
         sys.exit(1)
 
     if ( DA.do_hybrid ):
@@ -387,17 +387,17 @@ def get_input_arguments():
     try:
         opts, args = getopt.getopt(sys.argv[1:],'m:f:s:e:h',['model=','filename=','start=','end=','help'])
     except Exception as Instance:
-        print 'Exception occured in %s of %s' % (source, module)
-        print 'Exception occured during reading arguments'
-        print type(Instance)
-        print Instance.args
-        print Instance
+        print('Exception occured in %s of %s' % (source, module))
+        print('Exception occured during reading arguments')
+        print(type(Instance))
+        print(Instance.args)
+        print(Instance)
         sys.exit(1)
 
     for a, o, in opts:
         if a in ('-h', '--help'):
-            print 'no help has been written for %s in %s' % (source, module)
-            print 'see code for details'
+            print('no help has been written for %s in %s' % (source, module))
+            print('see code for details')
             sys.exit(0)
         elif a in ('-m','--model'):
             model = o
@@ -455,11 +455,11 @@ def create_truth(tfile, ndof, nobs=None):
 
     except Exception as Instance:
 
-        print 'Exception occured in %s of %s' % (source, module)
-        print 'Exception occured during creating  %s' % (tfile.filename)
-        print type(Instance)
-        print Instance.args
-        print Instance
+        print('Exception occured in %s of %s' % (source, module))
+        print('Exception occured during creating  %s' % (tfile.filename))
+        print(type(Instance))
+        print(Instance.args)
+        print(Instance)
         sys.exit(1)
 
     return
@@ -485,7 +485,7 @@ def write_truth(tname, time, truth, obs, obs_operator, obs_err_var):
     source = 'write_truth'
 
     if not os.path.isfile(tname):
-        print 'file does not exist ' + tname
+        print('file does not exist ' + tname)
         sys.exit(2)
 
     try:
@@ -501,11 +501,11 @@ def write_truth(tname, time, truth, obs, obs_operator, obs_err_var):
 
     except Exception as Instance:
 
-        print 'Exception occured in %s of %s' % (source, module)
-        print 'Exception occured during writing to %s' % (fname)
-        print type(Instance)
-        print Instance.args
-        print Instance
+        print('Exception occured in %s of %s' % (source, module))
+        print('Exception occured during writing to %s' % (fname))
+        print(type(Instance))
+        print(Instance.args)
+        print(Instance)
         sys.exit(1)
 
     return
@@ -532,7 +532,7 @@ def read_truth(fname, time, end_time=None):
     source = 'read_truth'
 
     if not os.path.isfile(fname):
-        print 'file does not exist ' + fname
+        print('file does not exist ' + fname)
         sys.exit(2)
 
     if ( end_time is None ): end_time = time + 1
@@ -557,11 +557,11 @@ def read_truth(fname, time, end_time=None):
 
     except Exception as Instance:
 
-        print 'Exception occured in %s of %s' % (source, module)
-        print 'Exception occured during reading of %s' % (fname)
-        print type(Instance)
-        print Instance.args
-        print Instance
+        print('Exception occured in %s of %s' % (source, module))
+        print('Exception occured during reading of %s' % (fname))
+        print(type(Instance))
+        print(Instance.args)
+        print(Instance)
         sys.exit(1)
 
     return truth, obs, obs_operator, obs_err_var
@@ -583,11 +583,11 @@ def transfer_ga(file_src, file_dst):
     source = 'transfer_ga'
 
     if not os.path.isfile(file_src):
-        print 'file to read global attributes from does not exist ' + file_src
+        print('file to read global attributes from does not exist ' + file_src)
         sys.exit(2)
 
     if not os.path.isfile(file_dst):
-        print 'file to write global attributes to does not exist ' + file_dst
+        print('file to write global attributes to does not exist ' + file_dst)
         sys.exit(2)
 
     try:
@@ -604,11 +604,11 @@ def transfer_ga(file_src, file_dst):
 
     except Exception as Instance:
 
-        print 'Exception occured in %s of %s' % (source, module)
-        print 'Exception occured during transfering global attributes from %s to %s' % ( file_src, file_dst )
-        print type(Instance)
-        print Instance.args
-        print Instance
+        print('Exception occured in %s of %s' % (source, module))
+        print('Exception occured during transfering global attributes from %s to %s' % ( file_src, file_dst ))
+        print(type(Instance))
+        print(Instance.args)
+        print(Instance)
         sys.exit(1)
 
     return
@@ -655,11 +655,11 @@ def create_ObImpact_diag(fname, model, DA, ensDA, varDA, generic=False):
 
     except Exception as Instance:
 
-        print 'Exception occured in %s of %s' % (source, module)
-        print 'Exception occured during creating %s' % (fname)
-        print type(Instance)
-        print Instance.args
-        print Instance
+        print('Exception occured in %s of %s' % (source, module))
+        print('Exception occured during creating %s' % (fname))
+        print(type(Instance))
+        print(Instance.args)
+        print(Instance)
         sys.exit(1)
 
     return
@@ -687,7 +687,7 @@ def write_ObImpact_diag(fname, time, dJa=None, dJb=None, ens_dJa=None, ens_dJb=N
     source = 'write_ObImpact_diag'
 
     if not os.path.isfile(fname):
-        print 'file does not exist ' + fname
+        print('file does not exist ' + fname)
         sys.exit(2)
 
     try:
@@ -705,11 +705,11 @@ def write_ObImpact_diag(fname, time, dJa=None, dJb=None, ens_dJa=None, ens_dJb=N
 
     except Exception as Instance:
 
-        print 'Exception occured in %s of %s' % (source, module)
-        print 'Exception occured during writing to %s' % (fname)
-        print type(Instance)
-        print Instance.args
-        print Instance
+        print('Exception occured in %s of %s' % (source, module))
+        print('Exception occured during writing to %s' % (fname))
+        print(type(Instance))
+        print(Instance.args)
+        print(Instance)
         sys.exit(1)
 
     return
@@ -739,7 +739,7 @@ def read_ObImpact_diag(fname, time, end_time=None, generic=False):
     source = 'read_ObImpact_diag'
 
     if not os.path.isfile(fname):
-        print 'file does not exist ' + fname
+        print('file does not exist ' + fname)
         sys.exit(2)
 
     if ( end_time is None ): end_time = time + 1
@@ -761,11 +761,11 @@ def read_ObImpact_diag(fname, time, end_time=None, generic=False):
 
     except Exception as Instance:
 
-        print 'Exception occured in %s of %s' % (source, module)
-        print 'Exception occured during reading of %s' % (fname)
-        print type(Instance)
-        print Instance.args
-        print Instance
+        print('Exception occured in %s of %s' % (source, module))
+        print('Exception occured during reading of %s' % (fname))
+        print(type(Instance))
+        print(Instance.args)
+        print(Instance)
         sys.exit(1)
 
     if ( generic ):
@@ -792,13 +792,13 @@ def read_clim_cov(model=None,fname=None,norm=False):
     source = 'read_clim_cov'
 
     if ( model is None and fname is None ):
-        print 'Exception occured in %s of %s' % (source, module)
-        print 'must pass either model class or filename'
+        print('Exception occured in %s of %s' % (source, module))
+        print('must pass either model class or filename')
         sys.exit(0)
 
     if ( fname is None ): fname = '%s_climo_B.nc4' % model.Name
 
-    print 'load climatological covariance for from %s ...' % (fname)
+    print('load climatological covariance for from %s ...' % (fname))
 
     try:
 
@@ -808,11 +808,11 @@ def read_clim_cov(model=None,fname=None,norm=False):
 
     except Exception as Instance:
 
-        print 'Exception occured in %s of %s' % (source, module)
-        print 'Exception occured during reading of %s' % (fname)
-        print type(Instance)
-        print Instance.args
-        print Instance
+        print('Exception occured in %s of %s' % (source, module))
+        print('Exception occured during reading of %s' % (fname))
+        print(type(Instance))
+        print(Instance.args)
+        print(Instance)
         sys.exit(1)
 
     if ( norm ): Bc = Bc / np.max(np.diag(Bc))

@@ -66,11 +66,7 @@ def main():
                 [nobs]),
             np.diag(H),
             np.diag(R),
-            niters=np.NaN)
-
-    print('Cycling ON the attractor ...')
-
-    for k in range(DA.nassim):
+        niters=np.nan)
 
         print('========== assimilation time = %5d ========== ' % (k + 1))
 

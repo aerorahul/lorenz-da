@@ -42,7 +42,7 @@ def main():
     fname_fig = dir_ObImp + os.sep + fprefix + 'HR'
     save_fig = False
 
-    Matrix = np.zeros((nR, nH)) * np.NaN
+    Matrix = np.zeros((nR, nH)) * np.nan
 
     for h in range(0, nH):
         for r in range(0, nR):

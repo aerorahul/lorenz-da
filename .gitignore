@@ -131,3 +131,7 @@ dmypy.json
 *.sw[a-p]
 .idea/
 .vscode/
+
+# Diagnostic files
+*.nc
+*.nc4

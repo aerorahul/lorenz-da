@@ -56,7 +56,7 @@ def main():
     L2 = np.ones((model.Ndof, model.Ndof))
     for i in range(0, model.Ndof):
         for j in range(0, model.Ndof):
-            dist = np.float(np.abs(i - j)) / model.Ndof
+            dist = float(np.abs(i - j)) / model.Ndof
             if (dist > 0.5):
                 dist = 1.0 - dist
             cov_factor = compute_cov_factor(dist, ensDA.localization)

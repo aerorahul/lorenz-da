@@ -42,17 +42,28 @@ def main():
     # time between assimilations
     DA.tanal = model.dt * np.linspace(DA.t0,
                                       np.rint(DA.ntimes / model.dt),
-                                      np.int(np.rint(DA.ntimes / model.dt) + 1))
+                                      int(np.rint(DA.ntimes / model.dt) + 1))
 
     # create diagnostic file
-    create_truth(truth_file, model.Ndof)
-    write_truth(
-        truth_file.filename,
+    #create_truth(diag_file, model.Ndof)
+    #write_truth(
+    #    diag_file.filename,
+    #    0,
+    #    xt,
+    #    np.dot(
+    #        H,
+    #        xt),
+    #    np.diag(H),
+    #    np.diag(R))
+    create_diag(diag_file, model.Ndof, nouter=1)
+    write_diag(
+        diag_file.filename,
+        0,
         0,
         xt,
-        np.dot(
-            H,
-            xt),
+        xt,
+        xt,
+        np.dot(H, xt),
         np.diag(H),
         np.diag(R))
 
@@ -63,14 +74,24 @@ def main():
         print('========== assimilation time = %5d ========== ' % (k + 1))
 
         # advance truth with the full nonlinear model
-        xs = advance_model(model, xt, DA.tanal, perfect=True)
+        #xs = advance_model(model, xt, DA.tanal, perfect=True)
+        xs = model.advance(xt, DA.tanal, perfect=True)
         xt = xs[-1, :].copy()
 
         # new observations from noise about truth; set verification values
         y = np.dot(H, xt) + np.random.randn(model.Ndof) * np.sqrt(np.diag(R))
 
         # write diagnostics to disk
-        write_truth(truth_file.filename, k + 1, xt, y, np.diag(H), np.diag(R))
+        write_diag(
+            diag_file.filename,
+            k + 1,
+            0,
+            xt,
+            xt,
+            xt,
+            y,
+            np.diag(H),
+            np.diag(R))
 
     print('... all done ...')
     sys.exit(0)

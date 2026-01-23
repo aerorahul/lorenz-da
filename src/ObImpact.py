@@ -55,10 +55,10 @@ def main():
         eOI = DA.nassim
 
     # allocate appropriate space for variables upfront:
-    e_dJb = np.zeros(model.Ndof) * np.NaN
-    e_dJa = np.zeros(model.Ndof) * np.NaN
-    a_dJb = np.zeros(model.Ndof) * np.NaN
-    a_dJa = np.zeros(model.Ndof) * np.NaN
+    e_dJb = np.zeros(model.Ndof) * np.nan
+    e_dJa = np.zeros(model.Ndof) * np.nan
+    a_dJb = np.zeros(model.Ndof) * np.nan
+    a_dJa = np.zeros(model.Ndof) * np.nan
 
     # time-vector for DA.t0 to nf*DA.ntimes:
     tf = np.arange(DA.t0, nf * DA.ntimes + model.dt, model.dt)

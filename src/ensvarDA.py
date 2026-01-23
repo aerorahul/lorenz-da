@@ -82,12 +82,8 @@ def main():
             np.diag(R),
             central_prior=xbc,
             central_posterior=xac,
-            evratio=np.NaN,
-            niters=np.NaN)
-
-    for k in range(DA.nassim):
-
-        print('========== assimilation time = %5d ========== ' % (k + 1))
+        evratio=np.nan,
+        niters=np.nan)
 
         # advance truth with the full nonlinear model; set verification values
         xs = model.advance(xt, varDA.fdvar.tbkgd, perfect=True)

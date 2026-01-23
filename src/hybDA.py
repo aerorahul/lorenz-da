@@ -79,12 +79,8 @@ def main():
             np.diag(R),
             central_prior=xbc,
             central_posterior=xac,
-            evratio=np.NaN,
-            niters=np.NaN)
-
-    print('Cycling ON the attractor ...')
-
-    for k in range(DA.nassim):
+        evratio=np.nan,
+        niters=np.nan)
 
         print('========== assimilation time = %5d ========== ' % (k + 1))
 

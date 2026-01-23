@@ -125,6 +125,8 @@ def main():
             fstr, niters = vstr, tmpvar
         elif (hasattr(ensDA, 'update')):
             fstr, evratio = estr, tmpvar
+        else:
+            fstr = 'UnknownDA'
 
     # Loop through the states
     for t in range(sOI, eOI):

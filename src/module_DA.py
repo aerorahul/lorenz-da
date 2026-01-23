@@ -427,9 +427,9 @@ class fdvar(object):
 
         # time index from analysis to ... background, next analysis, end of
         # window, window
-        self.tb = np.int(np.rint(self.offset * DA.ntimes / model.dt))
-        self.ta = np.int(np.rint(DA.ntimes / model.dt))
-        self.tf = np.int(
+        self.tb = int(np.rint(self.offset * DA.ntimes / model.dt))
+        self.ta = int(np.rint(DA.ntimes / model.dt))
+        self.tf = int(
             np.rint(
                 (self.offset +
                  self.window) *
@@ -466,7 +466,7 @@ class fdvar(object):
             self.twind_obsInterval,
             self.twind_obsInterval + 1) * model.dt
 
-        overlap = np.int(self.tf - (1.0 + self.offset) * self.ta)
+        overlap = int(self.tf - (1.0 + self.offset) * self.ta)
         if (overlap >= 0.0):
             self.noverlap = np.sum(i <= overlap for i in self.twind_obsIndex)
         else:
@@ -497,7 +497,7 @@ def check_DA(DA):
         if (DA.do_hybrid):
             print('Doing hybrid data assimilation')
             print('Using %d%% of the flow-dependent covariance' %
-                  (np.int(DA.hybrid_wght * 100)))
+                  (int(DA.hybrid_wght * 100)))
             if (DA.hybrid_rcnt):
                 print('Re-centering the ensemble about the central analysis')
             else:
@@ -637,8 +637,8 @@ def update_ensDA(Xb, y, R, H, ensDA, model):
     temp_ens = Xb.copy()
 
     # initialize innovation and total variance
-    innov = np.zeros(y.shape[0]) * np.NaN
-    totvar = np.zeros(y.shape[0]) * np.NaN
+    innov = np.zeros(y.shape[0]) * np.nan
+    totvar = np.zeros(y.shape[0]) * np.nan
 
     # assimilate all obs., one-by-one
     for ob in range(y.shape[0]):
@@ -650,7 +650,7 @@ def update_ensDA(Xb, y, R, H, ensDA, model):
 
         if (ensDA.update == 0):  # no assimilation
             obs_inc, innov[ob], totvar[ob] = np.zeros(
-                model.Ndof), np.NaN, np.NaN
+                model.Ndof), np.nan, np.nan
 
         elif (ensDA.update == 1):  # update using the EnKF
             obs_inc, innov[ob], totvar[ob] = obs_increment_EnKF(
@@ -672,7 +672,7 @@ def update_ensDA(Xb, y, R, H, ensDA, model):
             state_inc = state_increment(obs_inc, temp_ens[i, :], ye)
 
             # localization
-            dist = np.float(np.abs(ob - i)) / model.Ndof
+            dist = float(np.abs(ob - i)) / model.Ndof
             if (dist > 0.5):
                 dist = 1.0 - dist
             cov_factor = compute_cov_factor(dist, ensDA.localization)
@@ -1017,7 +1017,7 @@ def update_varDA(xb, B, y, R, H, varDA, model):
     '''
 
     if (varDA.update == 0):
-        xa, niters = xb, np.NaN
+        xa, niters = xb, np.nan
 
     elif (varDA.update in [1, 2]):
         xa, niters = VarSolver(xb, B, y, R, H, varDA, model)
@@ -1527,7 +1527,7 @@ def update_ensvarDA(xb, D, S, y, R, H, varDA, ensDA, model):
     '''
 
     if (varDA.update == 0):
-        xa, niters = xb, np.NaN
+        xa, niters = xb, np.nan
 
     elif (varDA.update in [1, 2]):
         xa, niters = EnsembleVarSolver(xb, S, D, y, R, H, varDA, ensDA, model)
@@ -1866,7 +1866,7 @@ def update_hybensvarDA(xb, B, C, y, R, H, varDA, model):
     '''
 
     if (varDA.update == 0):
-        xa, niters = xb, np.NaN
+        xa, niters = xb, np.nan
 
     elif (varDA.update == 1):
         xa, niters = HybridEnsembleThreeDvar(xb, B, C, y, R, H, varDA, model)
@@ -2215,7 +2215,7 @@ localization - localization class
 
     for i in range(model.Ndof):
         for j in range(model.Ndof):
-            dist = np.float(np.abs(i - j)) / model.Ndof
+            dist = float(np.abs(i - j)) / model.Ndof
             if (dist > 0.5):
                 dist = 1.0 - dist
             L[i, j] = compute_cov_factor(dist, localization)

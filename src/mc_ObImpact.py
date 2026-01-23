@@ -72,12 +72,12 @@ def main():
     print('no. of ensemble members .............. = %d' % nEns)
     print('no. of samples in each ensemble member = %d' % nSubSam)
 
-    adJ_s = np.zeros((nEns, nSam / nEns)) * np.NaN
-    edJ_s = np.zeros((nEns, nSam / nEns)) * np.NaN
-    adJa_s = np.zeros((nEns, nSam / nEns)) * np.NaN
-    adJb_s = np.zeros((nEns, nSam / nEns)) * np.NaN
-    edJa_s = np.zeros((nEns, nSam / nEns)) * np.NaN
-    edJb_s = np.zeros((nEns, nSam / nEns)) * np.NaN
+    adJ_s = np.zeros((nEns, nSam / nEns)) * np.nan
+    edJ_s = np.zeros((nEns, nSam / nEns)) * np.nan
+    adJa_s = np.zeros((nEns, nSam / nEns)) * np.nan
+    adJb_s = np.zeros((nEns, nSam / nEns)) * np.nan
+    edJa_s = np.zeros((nEns, nSam / nEns)) * np.nan
+    edJb_s = np.zeros((nEns, nSam / nEns)) * np.nan
 
     sInd = 0
 

@@ -54,7 +54,7 @@ Q = numpy.diag(Q) * 0.0
 
 # obs operator ( eye(Ndof) gives identity obs )
 H = numpy.ones(model.Ndof)
-# H[::2] = numpy.NaN
+# H[::2] = numpy.nan
 H = numpy.diag(H)
 
 R = numpy.ones(model.Ndof)                   # observation error covariance
@@ -99,6 +99,7 @@ diag_file = Container(filename=filename, attributes=attributes)
 
 # restart conditions
 time = -1            # None == default | -N...-1 0 1...N
+time = None          # None == default | -N...-1 0 1...N
 filename = 'L96_ensDA_diag.nc4'
 restart = Container(time=time, filename=filename)
 

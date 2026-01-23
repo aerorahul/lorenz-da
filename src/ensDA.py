@@ -44,11 +44,11 @@ def main():
     [xt, Xa] = get_IC(model, restart, Nens=ensDA.Nens)
     Xa = (inflate_ensemble(Xa.T, ensDA.init_ens_infl_fac)).T
     Xb = Xa.copy()
-
+    print(Xa)
     # time between assimilations
     DA.tanal = model.dt * np.linspace(DA.t0,
                                       np.rint(DA.ntimes / model.dt),
-                                      np.int(np.rint(DA.ntimes / model.dt) + 1))
+                                      int(np.rint(DA.ntimes / model.dt) + 1))
 
     # create diagnostic file
     create_diag(diag_file, model.Ndof, nens=ensDA.Nens, nouter=1)
@@ -64,7 +64,7 @@ def main():
             xt),
         np.diag(H),
         np.diag(R),
-        evratio=np.NaN)
+        evratio=np.nan)
 
     print('Cycling ON the attractor ...')
 

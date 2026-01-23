@@ -274,7 +274,7 @@ def plot_iteration_stats(itstats, figNum=None, pretitle=None):
     str = 'min  iterations : %d' % (np.min(itstats[1:]))
     pyplot.text(0.05 * len(itstats), yoff, str, fontsize=10)
     yoff = yoff - dyl / 20
-    str = 'mean iterations : %d' % (np.int(np.mean(itstats[1:])))
+    str = 'mean iterations : %d' % (int(np.mean(itstats[1:])))
     pyplot.text(0.05 * len(itstats), yoff, str, fontsize=10)
     yoff = yoff - dyl / 20
     str = 'max  iterations : %d' % (np.max(itstats[1:]))

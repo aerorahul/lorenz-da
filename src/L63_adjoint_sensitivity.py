@@ -1,14 +1,6 @@
 #!/usr/bin/env python
 
 ###############################################################
-# < next few lines under version control, D O  N O T  E D I T >
-# $Date$
-# $Revision$
-# $Author$
-# $Id$
-###############################################################
-
-###############################################################
 # L63_adjoint_sensitivity.py - compute adjoint sensitivity for
 #                              the 1963 Lorenz attractor
 #
@@ -21,11 +13,6 @@ from scipy import integrate, io
 from netCDF4 import Dataset
 import numpy as np
 import sys
-__author__ = "Rahul Mahajan"
-__email__ = "rahul.mahajan@nasa.gov"
-__copyright__ = "Copyright 2011, NASA / GSFC / GMAO"
-__license__ = "GPL"
-__status__ = "Prototype"
 
 
 # insure the same sequence of random numbers EVERY TIME

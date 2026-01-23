@@ -1,14 +1,6 @@
 #!/usr/bin/env python
 
 ###############################################################
-# < next few lines under version control, D O  N O T  E D I T >
-# $Date$
-# $Revision$
-# $Author$
-# $Id$
-###############################################################
-
-###############################################################
 # hybensvarDA.py - driver script for Hybrid Ensemble-Var DA
 ###############################################################
 
@@ -20,11 +12,6 @@ from module_Lorenz import *
 from scipy import linalg
 import numpy as np
 import sys
-__author__ = "Rahul Mahajan"
-__email__ = "rahul.mahajan@noaa.gov"
-__copyright__ = "Copyright 2014, NOAA / NCEP / EMC"
-__license__ = "GPL"
-__status__ = "Prototype"
 ###############################################################
 
 ###############################################################

@@ -1,14 +1,6 @@
 #!/usr/bin/env python
 
 ###############################################################
-# < next few lines under version control, D O  N O T  E D I T >
-# $Date$
-# $Revision$
-# $Author$
-# $Id$
-###############################################################
-
-###############################################################
 # ensvarDA.py - driver script for Ensemble-Var DA
 ###############################################################
 
@@ -19,11 +11,6 @@ from module_DA import *
 from module_Lorenz import *
 import numpy as np
 import sys
-__author__ = "Rahul Mahajan"
-__email__ = "rahul.mahajan@nasa.gov"
-__copyright__ = "Copyright 2012, NASA / GSFC / GMAO"
-__license__ = "GPL"
-__status__ = "Prototype"
 ###############################################################
 
 ###############################################################

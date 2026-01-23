@@ -1,14 +1,6 @@
 #!/usr/bin/env python
 
 ###############################################################
-# < next few lines under version control, D O  N O T  E D I T >
-# $Date$
-# $Revision$
-# $Author$
-# $Id$
-###############################################################
-
-###############################################################
 # ObImpact.py - compute observation impact from Adjoint- and
 #               Ensemble- based sensitivity analysis
 ###############################################################
@@ -18,11 +10,6 @@ from module_IO import *
 from module_Lorenz import *
 import numpy as np
 import sys
-__author__ = "Rahul Mahajan"
-__email__ = "rahul.mahajan@nasa.gov"
-__copyright__ = "Copyright 2012, NASA / GSFC / GMAO"
-__license__ = "GPL"
-__status__ = "Prototype"
 ###############################################################
 
 ###############################################################

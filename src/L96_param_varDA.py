@@ -1,14 +1,6 @@
 #!/usr/bin/env python
 
 ###############################################################
-# < next few lines under version control, D O  N O T  E D I T >
-# $Date$
-# $Revision$
-# $Author$
-# $Id$
-###############################################################
-
-###############################################################
 # L96_param_varDA.py - parameters for variational DA on L96
 ###############################################################
 
@@ -17,11 +9,6 @@ from module_IO import Container
 from module_DA import DataAssim, VarDataAssim
 from module_Lorenz import Lorenz
 import numpy
-__author__ = "Rahul Mahajan"
-__email__ = "rahul.mahajan@nasa.gov"
-__copyright__ = "Copyright 2012, NASA / GSFC / GMAO"
-__license__ = "GPL"
-__status__ = "Prototype"
 ###############################################################
 
 ###############################################################

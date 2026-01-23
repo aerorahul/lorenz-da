@@ -1,14 +1,6 @@
 #!/usr/bin/env python
 
 ###############################################################
-# < next few lines under version control, D O  N O T  E D I T >
-# $Date$
-# $Revision$
-# $Author$
-# $Id$
-###############################################################
-
-###############################################################
 # module_Lorenz.py - Functions related to the Lorenz models
 #                    L63 and L96
 ###############################################################
@@ -20,11 +12,6 @@ from scipy import integrate
 import numpy
 import sys
 import os
-__author__ = "Rahul Mahajan"
-__email__ = "rahul.mahajan@nasa.gov"
-__copyright__ = "Copyright 2011, NASA / GSFC / GMAO"
-__license__ = "GPL"
-__status__ = "Prototype"
 ###############################################################
 
 ###############################################################

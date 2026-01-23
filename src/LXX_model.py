@@ -1,14 +1,6 @@
 #!/usr/bin/env python
 
 ###############################################################
-# < next few lines under version control, D O  N O T  E D I T >
-# $Date$
-# $Revision$
-# $Author$
-# $Id$
-###############################################################
-
-###############################################################
 # LXX_model.py - driver script for the Lorenz 1963 and
 #                1998 Lorenz and Emanuel model,
 #                test their respective TLM and adjoint
@@ -21,11 +13,6 @@ from module_Lorenz import *
 from matplotlib import pyplot
 import numpy as np
 import sys
-__author__ = "Rahul Mahajan"
-__email__ = "rahul.mahajan@nasa.gov"
-__copyright__ = "Copyright 2012, NASA / GSFC / GMAO"
-__license__ = "GPL"
-__status__ = "Prototype"
 ###############################################################
 
 ###############################################################

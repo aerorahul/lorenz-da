@@ -1,14 +1,6 @@
 #!/usr/bin/env python
 
 ###############################################################
-# < next few lines under version control, D O  N O T  E D I T >
-# $Date$
-# $Revision$
-# $Author$
-# $Id$
-###############################################################
-
-###############################################################
 # loop_LXX.py - read diagnostics for LXX and make loops
 ###############################################################
 
@@ -17,11 +9,6 @@ from module_IO import read_diag_info, read_diag
 from module_Lorenz import plot_L96
 from matplotlib import pyplot
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-__author__ = "Rahul Mahajan"
-__email__ = "rahul.mahajan@nasa.gov"
-__copyright__ = "Copyright 2012, NASA / GSFC / GMAO"
-__license__ = "GPL"
-__status__ = "Prototype"
 ###############################################################
 
 ###############################################################

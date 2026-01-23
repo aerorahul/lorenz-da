@@ -1,14 +1,6 @@
 #!/usr/bin/env python
 
 ###############################################################
-# < next few lines under version control, D O  N O T  E D I T >
-# $Date$
-# $Revision$
-# $Author$
-# $Id$
-###############################################################
-
-###############################################################
 # truthDA.py - driver script for truth for DA
 ###############################################################
 
@@ -18,11 +10,6 @@ from module_IO import *
 from module_Lorenz import *
 import numpy as np
 import sys
-__author__ = "Rahul Mahajan"
-__email__ = "rahul.mahajan@nasa.gov"
-__copyright__ = "Copyright 2012, NASA / GSFC / GMAO"
-__license__ = "GPL"
-__status__ = "Prototype"
 ###############################################################
 
 ###############################################################
@@ -45,16 +32,6 @@ def main():
                                       int(np.rint(DA.ntimes / model.dt) + 1))
 
     # create diagnostic file
-    #create_truth(diag_file, model.Ndof)
-    #write_truth(
-    #    diag_file.filename,
-    #    0,
-    #    xt,
-    #    np.dot(
-    #        H,
-    #        xt),
-    #    np.diag(H),
-    #    np.diag(R))
     create_diag(diag_file, model.Ndof, nouter=1)
     write_diag(
         diag_file.filename,
@@ -74,7 +51,6 @@ def main():
         print('========== assimilation time = %5d ========== ' % (k + 1))
 
         # advance truth with the full nonlinear model
-        #xs = advance_model(model, xt, DA.tanal, perfect=True)
         xs = model.advance(xt, DA.tanal, perfect=True)
         xt = xs[-1, :].copy()
 
